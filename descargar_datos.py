@@ -4,8 +4,8 @@
     .venv\\Scripts\\python.exe descargar_datos.py hr gaia    # only some
     .venv\\Scripts\\python.exe descargar_datos.py --forzar   # re-download
 
-- hr     -> datos/hr_estrellas_cercanas.csv: Gaia DR3 stars closer than 50 pc with good parallax
-            (colour BP-RP ~ temperature, absolute G magnitude ~ luminosity) for K-Means vs the HR diagram.
+- hr     -> datos/hr_hipparcos.csv: Hipparcos catalogue (VizieR I/239) stars with parallax better than 10 %
+            (colour B-V ~ temperature, absolute V magnitude ~ luminosity) for K-Means vs the HR diagram.
 - gaia   -> datos/gaia_pleiades.csv: Gaia DR3 cone of 3 deg around the Pleiades (M45), with proper motions
             and parallax, to find the cluster with DBSCAN (astroquery).
 - kepler -> datos/kepler10_curva_luz.csv: Kepler long-cadence light curve of Kepler-10 (all quarters,
@@ -19,12 +19,6 @@ from pathlib import Path
 import numpy as np
 
 DATOS = Path(__file__).resolve().parent / "datos"
-
-HR_ADQL = """
-SELECT TOP 20000 source_id, ra, dec, parallax, parallax_error, phot_g_mean_mag, bp_rp, teff_gspphot
-FROM gaiadr3.gaia_source
-WHERE parallax > 20 AND parallax_over_error > 10 AND bp_rp IS NOT NULL AND phot_g_mean_mag IS NOT NULL
-"""
 
 PLEIADES_ADQL = """
 SELECT TOP 50000 source_id, ra, dec, parallax, parallax_error, pmra, pmdec, phot_g_mean_mag, bp_rp
@@ -41,8 +35,11 @@ def gaia(adql: str):
 
 
 def hr(destino: Path) -> None:
-    df = gaia(HR_ADQL)
-    df["abs_g_mag"] = df["phot_g_mean_mag"] + 5 * np.log10(df["parallax"] / 1000) + 5  # parallax in mas
+    from astroquery.vizier import Vizier
+    v = Vizier(columns=["HIP", "RAICRS", "DEICRS", "Vmag", "Plx", "e_Plx", "B-V", "SpType"], row_limit=-1)
+    df = v.get_catalogs("I/239/hip_main")[0].to_pandas()
+    df = df[(df["Plx"] > 0) & (df["e_Plx"] / df["Plx"] < 0.1)].dropna(subset=["Vmag", "B-V"])
+    df["abs_v_mag"] = df["Vmag"] + 5 * np.log10(df["Plx"] / 1000) + 5  # Plx in mas
     df.to_csv(destino, index=False)
 
 
@@ -61,7 +58,7 @@ def kepler(destino: Path) -> None:
 
 
 TAREAS = {
-    "hr": ("hr_estrellas_cercanas.csv", hr),
+    "hr": ("hr_hipparcos.csv", hr),
     "gaia": ("gaia_pleiades.csv", pleiades),
     "kepler": ("kepler10_curva_luz.csv", kepler),
 }

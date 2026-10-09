@@ -37,6 +37,20 @@ Contenido 20 % · organización 10 % · exposición (mantener el interés) 30 % 
 tiempo 5 % · trabajo en equipo 5 % (todos exponen y conocen la presentación entera) · respuesta a
 preguntas 20 %.
 
+## Entorno y datos
+```
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt        # Linux/Mac: .venv/bin/pip
+.venv\Scripts\python descargar_datos.py              # descarga todo en datos/ (no se sube a git)
+```
+| Dataset | Fichero | Para |
+|---|---|---|
+| Hipparcos (VizieR I/239), estrellas con paralaje mejor del 10 %: B−V y magnitud absoluta V | `datos/hr_hipparcos.csv` (~20 800 estrellas) | K-Means vs diagrama HR (fácil) |
+| Gaia DR3, cono de 3° alrededor de las Pléyades (M45) con movimientos propios y paralaje | `datos/gaia_pleiades.csv` | DBSCAN para encontrar el cúmulo (media) |
+| Kepler-10, curva de luz de cadencia larga (todos los trimestres) | `datos/kepler10_curva_luz.csv` (~52 000 puntos) | Tránsitos como anomalías con Isolation Forest (difícil) |
+
+Comprobación: en la curva de Kepler-10, un BLS da el periodo de Kepler-10b (0,8375 d, ~160 ppm de profundidad).
+
 ## Estructura
 - `problemas/`: un script por problema; cada uno descarga sus datos en `datos/`, que no se sube a git.
 - `docs/`: enunciado, rúbrica y el documento de descripción.
