@@ -41,7 +41,7 @@ preguntas 20 %.
 ```
 python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt        # Linux/Mac: .venv/bin/pip
-.venv\Scripts\python descargar_datos.py              # descarga todo en datos/ (no se sube a git)
+.venv\Scripts\python descargar_datos.py              # solo si quieres regenerar datos/ (los CSV ya están en git)
 ```
 | Dataset | Fichero | Para |
 |---|---|---|
@@ -52,6 +52,6 @@ python -m venv .venv
 Comprobación: en la curva de Kepler-10, un BLS da el periodo de Kepler-10b (0,8375 d, ~160 ppm de profundidad).
 
 ## Estructura
-- `problemas/`: un script por problema; cada uno descarga sus datos en `datos/`, que no se sube a git.
+- `problemas/`: un script por problema; leen los CSV de `datos/`.
 - `docs/`: enunciado, rúbrica y el documento de descripción.
 - `presentacion/`: las diapositivas.

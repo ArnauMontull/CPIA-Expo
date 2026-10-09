@@ -4,9 +4,8 @@ __pycache__/
 .ipynb_checkpoints/
 .venv/
 venv/
-# datos descargados (Gaia, Kepler...): se regeneran con el código
-datos/*
-!datos/README.md
+# los CSV de datos/ sí se suben; la caché de lightkurve (FITS de Kepler) se regenera
+datos/lightkurve_cache/
 # ficheros temporales de Office / LibreOffice
 ~$*
 .~lock.*#
