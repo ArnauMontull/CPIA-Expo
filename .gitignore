@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+# datos descargados (Gaia, Kepler...): se regeneran con el código
+datos/*
+!datos/README.md
+# ficheros temporales de Office / LibreOffice
+~$*
+.~lock.*#
+# sistema
+desktop.ini
+Thumbs.db
+.DS_Store
