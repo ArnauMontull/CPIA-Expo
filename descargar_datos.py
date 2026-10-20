@@ -8,6 +8,8 @@
             (colour B-V ~ temperature, absolute V magnitude ~ luminosity) for K-Means vs the HR diagram.
 - gaia   -> datos/gaia_pleiades.csv: Gaia DR3 cone of 3 deg around the Pleiades (M45), with proper motions
             and parallax, to find the cluster with DBSCAN (astroquery).
+- cercanas -> datos/gaia_50pc.csv: Gaia DR3 stars within 50 pc (parallax > 20 mas, error < 10 %, RUWE < 1.4)
+            with BP-RP colour and absolute G magnitude: full HR diagram, white dwarf sequence included.
 - kepler -> datos/kepler10_curva_luz.csv: Kepler long-cadence light curve of Kepler-10 (all quarters,
             stitched and normalised) to detect transits as anomalies (lightkurve).
 """
@@ -25,6 +27,13 @@ SELECT TOP 50000 source_id, ra, dec, parallax, parallax_error, pmra, pmdec, phot
 FROM gaiadr3.gaia_source
 WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', 56.75, 24.12, 3.0))
   AND parallax > 1 AND parallax_over_error > 5 AND phot_g_mean_mag < 18
+"""
+
+CERCANAS_ADQL = """
+SELECT source_id, ra, dec, parallax, parallax_error, phot_g_mean_mag, bp_rp, ruwe
+FROM gaiadr3.gaia_source
+WHERE parallax > 20 AND parallax_over_error > 10 AND ruwe < 1.4
+  AND phot_g_mean_mag IS NOT NULL AND bp_rp IS NOT NULL
 """
 
 
@@ -47,6 +56,12 @@ def pleiades(destino: Path) -> None:
     gaia(PLEIADES_ADQL).to_csv(destino, index=False)
 
 
+def cercanas(destino: Path) -> None:
+    df = gaia(CERCANAS_ADQL)
+    df["abs_g_mag"] = df["phot_g_mean_mag"] + 5 * np.log10(df["parallax"] / 1000) + 5  # parallax in mas
+    df.to_csv(destino, index=False)
+
+
 def kepler(destino: Path) -> None:
     import lightkurve as lk
     res = lk.search_lightcurve("Kepler-10", mission="Kepler", author="Kepler", exptime="long")
@@ -60,6 +75,7 @@ def kepler(destino: Path) -> None:
 TAREAS = {
     "hr": ("hr_hipparcos.csv", hr),
     "gaia": ("gaia_pleiades.csv", pleiades),
+    "cercanas": ("gaia_50pc.csv", cercanas),
     "kepler": ("kepler10_curva_luz.csv", kepler),
 }
 
