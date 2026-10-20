@@ -10,6 +10,9 @@
             and parallax, to find the cluster with DBSCAN (astroquery).
 - cercanas -> datos/gaia_50pc.csv: Gaia DR3 stars within 50 pc (parallax > 20 mas, error < 10 %, RUWE < 1.4)
             with BP-RP colour and absolute G magnitude: full HR diagram, white dwarf sequence included.
+- sismos -> datos/sismos_usgs.csv: USGS catalogue: earthquakes M>=4.5 (2010-2025) plus ALL events typed
+            "nuclear explosion" (1951-2017, mostly Nevada, Novaya Zemlya, Lop Nur, North Korea). Column `tipo`
+            is the USGS label: use it only to validate an unsupervised detector, never to train it.
 - kepler -> datos/kepler10_curva_luz.csv: Kepler long-cadence light curve of Kepler-10 (all quarters,
             stitched and normalised) to detect transits as anomalies (lightkurve).
 """
@@ -62,6 +65,19 @@ def cercanas(destino: Path) -> None:
     df.to_csv(destino, index=False)
 
 
+def sismos(destino: Path) -> None:
+    import pandas as pd
+    base = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc"
+    cols = ["time", "latitude", "longitude", "depth", "mag", "magType", "nst", "gap", "dmin", "rms",
+            "place", "type", "horizontalError", "depthError", "magError", "magNst", "status"]
+    partes = [pd.read_csv(f"{base}&eventtype=nuclear%20explosion&starttime=1900-01-01")]
+    for anyo in range(2010, 2026):  # one request per year: the API caps a query at 20 000 events
+        partes.append(pd.read_csv(f"{base}&eventtype=earthquake&minmagnitude=4.5"
+                                  f"&starttime={anyo}-01-01&endtime={anyo + 1}-01-01"))
+    df = pd.concat(partes, ignore_index=True)[cols].rename(columns={"type": "tipo"})
+    df.to_csv(destino, index=False)
+
+
 def kepler(destino: Path) -> None:
     import lightkurve as lk
     res = lk.search_lightcurve("Kepler-10", mission="Kepler", author="Kepler", exptime="long")
@@ -76,6 +92,7 @@ TAREAS = {
     "hr": ("hr_hipparcos.csv", hr),
     "gaia": ("gaia_pleiades.csv", pleiades),
     "cercanas": ("gaia_50pc.csv", cercanas),
+    "sismos": ("sismos_usgs.csv", sismos),
     "kepler": ("kepler10_curva_luz.csv", kepler),
 }
 
