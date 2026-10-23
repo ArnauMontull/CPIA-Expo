@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # 1. Leer el catálogo Hipparcos (paralaje mejor del 10 %): B-V y magnitud absoluta V
-DATOS = Path(__file__).resolve().parent.parent / 'datos'
+DATOS = Path(__file__).resolve().parent.parent.parent / 'datos'
 df = pd.read_csv(DATOS / 'hr_hipparcos.csv')
 
 # 2. Color B-V -> temperatura efectiva (Ballesteros 2012, EPL 97, 34008)

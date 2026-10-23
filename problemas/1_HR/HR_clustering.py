@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 # 1. Leer el CSV (separado por comas, decimales con punto) desde datos/,
 #    sin depender de la carpeta desde la que se ejecute el script
-DATOS = Path(__file__).resolve().parent.parent / 'datos'
+DATOS = Path(__file__).resolve().parent.parent.parent / 'datos'
 df = pd.read_csv(DATOS / 'star_dataset.csv')
 
 # 2. Filtrar valores no positivos para poder aplicar escala logarítmica
