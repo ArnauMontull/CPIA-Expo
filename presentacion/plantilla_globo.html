@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explosiones entre sismos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Concepto: cuaderno de sismógrafo. Física del foco, globo con todos los epicentros, detector DBSCAN en vivo con tres mandos y comparación de métodos. */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --earth:#e6ebf0; --ink:#14202b; --ink2:#46566a; --muted:#6d7c8d;
+  --line:#d3dae2; --quake:#4f7aa6; --nuke:#d3431a; --noise:#8c99a8; --amber:#b87400; --good:#12923f; --violet:#7b3fe4; --sphere:#fafcfd;
+  --f-head:"IBM Plex Sans Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d141b; --surface:#141d26; --earth:#1b2733; --ink:#e6edf3; --ink2:#a5b3c2; --muted:#7a8b9e;
+  --line:#26333f; --quake:#7ba3cc; --nuke:#ff6a3d; --noise:#5f6e7e; --amber:#ffb938; --good:#35e07a; --violet:#b99cff; --sphere:#101922; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d141b; --surface:#141d26; --earth:#1b2733; --ink:#e6edf3; --ink2:#a5b3c2; --muted:#7a8b9e;
+  --line:#26333f; --quake:#7ba3cc; --nuke:#ff6a3d; --noise:#5f6e7e; --amber:#ffb938; --good:#35e07a; --violet:#b99cff; --sphere:#101922; color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body);
+  padding-block:32px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1,h2{font-family:var(--f-head);font-weight:700;letter-spacing:-.01em;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,6vw,56px);line-height:1.02}
+h2{font-size:27px;line-height:1.1}
+h3{font:600 15px var(--f-body);margin:0}
+p{margin:0}
+.lead{max-width:66ch;color:var(--ink2);font-size:17px}
+.eyebrow{font:500 12px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+header{display:flex;flex-direction:column;gap:16px}
+section{display:flex;flex-direction:column;gap:18px;min-width:0}
+.sec-text{max-width:68ch;color:var(--ink2)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:6px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.kpi b{font:500 34px/1.1 var(--f-mono);font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:var(--ink2)}
+.kpi.hot b{color:var(--good)}
+.scenes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.scene .cap{font-size:13px;color:var(--ink2);margin:2px 0 8px}
+canvas{display:block;width:100%;border-radius:6px}
+.globe-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(290px,1fr);gap:16px;align-items:start}
+@media(max-width:860px){.globe-wrap{grid-template-columns:minmax(0,1fr)}}
+.globe-box{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px}
+#globe{aspect-ratio:1/1;cursor:grab;touch-action:none;max-width:100%}
+#globe:active{cursor:grabbing}
+.zoom{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:4px}
+.zoom button{width:34px;height:34px;padding:0;font-size:18px;line-height:1}
+.date{position:absolute;left:14px;top:12px;font:600 26px/1.1 var(--f-mono);color:var(--ink);pointer-events:none}
+.hint{position:absolute;left:14px;top:50px;font:12px var(--f-mono);color:var(--muted)}
+.timebar{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 6px 4px;font-size:13px}
+.timebar output{font:500 13px var(--f-mono);min-width:12ch;text-align:right}
+.timebar button{width:36px;height:32px;padding:0}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font:12px/1.4 var(--f-mono);padding:6px 8px;border-radius:5px;white-space:nowrap;display:none;z-index:2}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+button{font:500 13px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 11px;cursor:pointer}
+button:hover{border-color:var(--ink2)}
+button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--quake);outline-offset:2px}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.explain{color:var(--ink2);font-size:14px}
+.jump{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.jump[hidden]{display:none}
+.jump span{font-size:12px;color:var(--muted);margin-right:2px}
+.jump button{padding:4px 9px;font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px}
+.stat{border-top:2px solid var(--line);padding-top:6px}
+.stat b{display:block;font:500 22px var(--f-mono);font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.ctl{display:grid;gap:11px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.ctl[hidden]{display:none}
+.ctl label{display:grid;grid-template-columns:118px 1fr 74px;gap:10px;align-items:center;font-size:13px}
+.ctl output{font:500 13px var(--f-mono);text-align:right}
+.ctl label.chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--ink2)}
+.ctl label.chk input{margin-top:3px;accent-color:var(--violet)}
+.ctl .st{font:12px var(--f-mono);color:var(--muted);min-height:1.2em}
+input[type=range]{width:100%;accent-color:var(--quake)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:16px;align-items:start}
+@media(max-width:860px){.two{grid-template-columns:minmax(0,1fr)}}
+.cm{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:stretch;font-size:12.5px}
+.cm .h{color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;padding:4px}
+.cm .c{border-radius:6px;padding:14px 8px;text-align:center;display:flex;flex-direction:column;gap:2px;border:1px solid var(--line)}
+.cm .c b{font:500 26px var(--f-mono);font-variant-numeric:tabular-nums}
+.cm .c span{color:var(--ink2);font-size:12px}
+.cm .tp{background:color-mix(in srgb,var(--good) 26%,var(--surface))}
+.cm .fn{background:color-mix(in srgb,var(--ink) 10%,var(--surface))}
+.cm .fp{background:color-mix(in srgb,var(--amber) 24%,var(--surface))}
+.cm .tn{background:var(--surface)}
+.rows{display:flex;flex-direction:column;gap:7px}
+.row{display:grid;grid-template-columns:minmax(120px,1.1fr) 2fr auto;gap:10px;align-items:center;font-size:12.5px}
+.row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)}
+.row .bar{height:12px;border-radius:3px;display:flex;overflow:hidden;gap:2px;background:var(--line)}
+.row .bar i{display:block;height:100%}
+.row .v{font:12px var(--f-mono);color:var(--ink2);white-space:nowrap}
+.heat{display:grid;gap:3px;font:12px var(--f-mono)}
+.heat .l{color:var(--muted);display:flex;align-items:center;justify-content:center;padding:2px 4px;font-size:11.5px}
+.heat .cell{border-radius:4px;padding:9px 2px;text-align:center;font-variant-numeric:tabular-nums}
+.heat .cur{outline:2px solid var(--ink);outline-offset:1px}
+.heats{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
+.heats h3{margin-bottom:8px}
+.cmp{display:flex;flex-direction:column;gap:14px}
+.cmp .m{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;font-size:13px}
+.cmp .t{display:flex;flex-direction:column;gap:5px}
+.cmp .t div{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.cmp .t em{display:block;height:14px;border-radius:3px;min-width:2px}
+.cmp .t span{font:12px var(--f-mono);color:var(--ink2);min-width:14ch;text-align:right}
+.pr{width:100%;border-collapse:collapse;font-size:12.5px}
+.pr th,.pr td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.pr th{font-weight:500;color:var(--muted);font-size:11.5px}
+.pr td.m{font:12px var(--f-mono)}
+.pr .pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11.5px;border:1px solid var(--line)}
+.pr .si{color:var(--good);border-color:var(--good)}
+.pr .no{color:var(--amber);border-color:var(--amber)}
+.pr button{padding:3px 8px;font-size:12px}
+.tblwrap{overflow-x:auto}
+.hist svg{width:100%;height:auto;display:block}
+.hist text{font:11px var(--f-mono);fill:var(--ink2)}
+.limits{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.limits div{border-left:2px solid var(--line);padding-left:12px;color:var(--ink2);font-size:14px}
+.limits b{display:block;color:var(--ink);font-weight:600;margin-bottom:2px}
+.foot{font-size:12.5px;color:var(--muted);max-width:84ch}
+.note{font-size:13px;color:var(--ink2);margin-top:10px;max-width:64ch}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="eyebrow">CPIA · Exposición · Detección de anomalías · 27/10</div>
+  <h1 id="h1"></h1>
+  <p class="lead" id="lead"></p>
+  <div class="kpis" id="kpis"></div>
+</header>
+
+<section>
+  <h2>Cómo nace cada evento</h2>
+  <p class="sec-text">Un terremoto rompe una falla a decenas de kilómetros de profundidad y emite ondas P (compresión, rápidas) y S (cizalla, lentas). Una explosión empieza como un pulso de presión casi en la superficie y genera sobre todo ondas P. Las estaciones (triángulos) registran esa diferencia.</p>
+  <div class="scenes">
+    <div class="panel scene"><h3>Terremoto</h3><div class="cap" id="capQ"></div><canvas id="sc-q" height="300"></canvas></div>
+    <div class="panel scene"><h3>Explosión nuclear</h3><div class="cap" id="capN"></div><canvas id="sc-n" height="300"></canvas></div>
+  </div>
+  <div class="legend"><span><i style="background:var(--quake)"></i>onda P</span><span><i style="background:var(--noise)"></i>onda S</span><span>Escala vertical exagerada. El triángulo se enciende cuando le llega la onda P.</span></div>
+</section>
+
+<section>
+  <h2 id="h2globe"></h2>
+  <p class="sec-text" id="globetxt"></p>
+  <div class="globe-wrap">
+    <div class="globe-box">
+      <canvas id="globe" width="640" height="640" aria-label="Globo con los epicentros del catálogo"></canvas>
+      <div class="zoom"><button id="zin" aria-label="Acercar">+</button><button id="zout" aria-label="Alejar">−</button></div>
+      <div class="date" id="date"></div>
+      <div class="hint" id="hint"></div>
+      <div class="tip" id="tip"></div>
+      <div class="timebar"><button id="play" aria-label="Reproducir la línea de tiempo">▶</button><input id="yr" type="range" aria-label="Mostrar eventos hasta el año"><output id="yrv" for="yr"></output></div>
+    </div>
+    <div class="side">
+      <div class="tabs" role="group" aria-label="Vista">
+        <button data-m="tect" aria-pressed="true">1 · Terremotos</button>
+        <button data-m="tipo" aria-pressed="false">2 · Etiqueta real</button>
+        <button data-m="db" aria-pressed="false">3 · Clusters</button>
+        <button data-m="res" aria-pressed="false">4 · Resultado</button>
+      </div>
+      <p class="explain" id="explain"></p>
+      <div class="ctl" id="ctl" hidden>
+        <label for="eps">Radio ε<input id="eps" type="range" min="10" max="300" step="5" value="10"><output id="epsv"></output></label>
+        <label for="mp">Vecinos mínimos<input id="mp" type="range" min="2" max="30" step="1" value="3"><output id="mpv"></output></label>
+        <label for="thrmin">Profundidad mín.<input id="thrmin" type="range" min="-2" max="5" step="0.1" value="-0.1"><output id="thrminv"></output></label>
+        <label for="thr">Profundidad máx.<input id="thr" type="range" min="0.1" max="40" step="0.1" value="1"><output id="thrv"></output></label>
+        <label class="chk" for="fixmal"><input type="checkbox" id="fixmal"><span>Contar como explosiones las pruebas oficiales que el USGS dejó como terremoto (fuente DOE/NV-209, lista abajo)</span></label>
+        <div class="st" id="st"></div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="stats" id="stats"></div>
+      <div class="jump" id="fpjump" hidden><span>Falsas alarmas</span></div>
+      <div class="jump" id="sites"><span>Ir a</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Qué acierta y qué falla</h2>
+  <p class="sec-text" id="restxt"></p>
+  <div class="two">
+    <div class="panel">
+      <h3 style="margin-bottom:10px">Matriz de confusión</h3>
+      <div class="cm" id="cm"></div>
+      <p class="note" id="cmnote"></p>
+    </div>
+    <div class="panel">
+      <h3 style="margin-bottom:4px" id="rowsh"></h3>
+      <p class="note" style="margin:0 0 12px">Cada barra es el 100 % de un cluster: rojo explosiones, azul terremotos. Las barras azules enteras no tienen ninguna explosión: son las falsas alarmas.</p>
+      <div class="rows" id="rows"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Pruebas oficiales con etiqueta de terremoto</h2>
+  <p class="sec-text">El USGS tiene diez eventos del polígono de Nevada como <code>earthquake</code> que coinciden con pruebas nucleares de la lista oficial del Departamento de Energía (DOE/NV-209, revisión 16, 2015). El cruce es por fecha, hora UTC y coordenadas. La confianza indica cuánto del cruce se pudo comprobar de forma automática en el PDF.</p>
+  <div class="panel tblwrap"><table class="pr"><thead><tr><th>Fecha USGS</th><th>Prueba oficial</th><th>Hora oficial (UTC)</th><th>M · prof.</th><th>Cruce</th><th>¿Detectada?</th><th></th></tr></thead><tbody id="prbody"></tbody></table></div>
+  <p class="foot">Fuente: <a href="https://www.osti.gov/biblio/1351809" style="color:var(--quake)">DOE/NV-209 Rev. 16, «United States Nuclear Tests, July 1945 through September 1992»</a>. Hay otros 5 «terremotos» del polígono de 1973 a 1976 que ocurren horas o días después de una prueba; pueden ser réplicas y no se cuentan.</p>
+</section>
+
+<section>
+  <h2>Cuánto aguantan los parámetros</h2>
+  <p class="sec-text" id="senstxt"></p>
+  <div class="panel heats">
+    <div><h3>Precisión</h3><div class="heat" id="hp"></div></div>
+    <div><h3>Recall</h3><div class="heat" id="hr"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>DBSCAN frente a Isolation Forest</h2>
+  <p class="sec-text">Isolation Forest recibe las mismas variables (posición, profundidad y magnitud) y marca tantos eventos como explosiones hay. Las explosiones forman grupos densos, así que no son raras dentro de su zona y no se aíslan.</p>
+  <div class="panel cmp" id="cmp"></div>
+</section>
+
+<section>
+  <h2>La señal: la profundidad</h2>
+  <p class="sec-text" id="histtxt"></p>
+  <div class="panel hist" id="hist"></div>
+</section>
+
+<section>
+  <h2>Qué puede fallar</h2>
+  <div class="limits">
+    <div><b>Desequilibrio</b>Las explosiones son el 0,2 % del catálogo.</div>
+    <div><b>Profundidad por defecto</b>Un terremoto mal localizado con 0 o 10 km parece superficial. En las décadas antiguas ocurre mucho más.</div>
+    <div><b>Minas y canteras</b>Sus voladuras son superficiales y se parecen a una explosión.</div>
+    <div><b>Etiquetas imperfectas</b>Diez pruebas oficiales de Nevada figuran como terremoto en el catálogo. La validación depende de una etiqueta que tampoco es perfecta.</div>
+    <div><b>Catálogo revisado</b>Clasifica eventos ya detectados. No analiza las ondas en bruto.</div>
+  </div>
+  <p class="foot" id="foot"></p>
+</section>
+</main>
+
+<script>
+const D = __DATA__;
+const N = D.lat.length, B = D.base;
+const PR = D.pruebas, PRMAP = new Map(PR.map(p=>[p.i,p])), MAL = new Uint8Array(N); PR.forEach(p=>{ MAL[p.i] = 1; });
+let NUC = Uint8Array.from(D.nuc);
+const $ = s => document.querySelector(s);
+const fmt = n => n.toLocaleString('es');
+const pct = (v, d=1) => (100*v).toFixed(d).replace('.', ',') + ' %';
+const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const fecha = i => { const d = new Date(D.day[i]*864e5); return d.getUTCDate()+' '+MES[d.getUTCMonth()]+' '+d.getUTCFullYear(); };
+const YR = new Uint16Array(N); let YMIN = 9999, YMAX = 0;
+for(let i=0;i<N;i++){ const y = new Date(D.day[i]*864e5).getUTCFullYear(); YR[i] = y; if(y<YMIN) YMIN = y; if(y>YMAX) YMAX = y; }
+let yCut = YMAX;
+const median = a => { const s = Float32Array.from(a).sort(), m = s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
+const DQ = Math.round(median(D.dep.filter((_,i)=>!D.nuc[i])));
+const tok = () => { const c = getComputedStyle(document.documentElement), g = k => c.getPropertyValue(k).trim();
+  return {surface:g('--surface'),earth:g('--earth'),ink:g('--ink'),ink2:g('--ink2'),muted:g('--muted'),line:g('--line'),quake:g('--quake'),nuke:g('--nuke'),noise:g('--noise'),amber:g('--amber'),good:g('--good'),violet:g('--violet'),sphere:g('--sphere')}; };
+let T = tok(), dirty = true;
+const refreshTheme = () => { T = tok(); dirty = true; drawHist(); };
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refreshTheme);
+new MutationObserver(refreshTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function fitCanvas(cv, ratio){
+  const dpr = Math.min(window.devicePixelRatio||1, 2), w = cv.clientWidth, h = ratio ? w*ratio : parseInt(cv.getAttribute('height'));
+  cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); cv.style.height = h+'px';
+  const x = cv.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); return {x, w, h};
+}
+
+/* ---------- Texto que depende de los datos ---------- */
+let NT = D.n_terr, NE = D.n_expl;
+$('#h1').textContent = `${fmt(NE)} explosiones nucleares entre ${fmt(NT)} terremotos`;
+$('#lead').textContent = `El catálogo del USGS recoge los terremotos y las explosiones nucleares de magnitud 4,5 o más entre ${YMIN} y ${YMAX}. DBSCAN agrupa los epicentros sin ver la etiqueta, y un cluster se marca como sospechoso si es superficial. La etiqueta solo sirve para comprobar el resultado. Los tres mandos del globo (radio, vecinos y profundidad) recalculan todo en vivo.`;
+$('#h2globe').textContent = `Los ${fmt(N)} epicentros en el globo`;
+$('#globetxt').textContent = 'Arrastra para girar, usa la rueda o los botones para acercar. Los terremotos dibujan los bordes de placa y las explosiones están en pocos polígonos de pruebas. Pasa el cursor sobre un punto para ver sus datos y su fecha. La línea de tiempo muestra los eventos acumulados hasta cada año. En las vistas Clusters y Resultado aparecen los mandos de DBSCAN.';
+$('#capQ').textContent = `Foco a unos ${DQ} km (mediana del catálogo). Deslizamiento de falla: ondas P y S.`;
+$('#capN').textContent = `Foco a 0 km (mediana de las ${NE} explosiones). Pulso de presión: casi solo ondas P.`;
+$('#histtxt').textContent = 'Casi todas las explosiones están a menos de 1 km. Los terremotos se reparten por todas las profundidades, con picos en 10 y 33 km porque USGS fija esos valores cuando no puede calcular la profundidad.';
+$('#foot').textContent = `Datos: USGS Earthquake Catalog (públicos), ${fmt(N)} eventos con M ≥ 4,5 entre ${YMIN} y ${YMAX}. Código: problemas/2_Nuclear/data_extract.py. Pruebas oficiales: DOE/NV-209 Rev. 16. Las etiquetas solo validan, nunca entrenan. No se usan el año ni el número de estaciones, porque delatan la época del catálogo y no la física. Antes de 1973 el catálogo de terremotos es mucho más pobre.`;
+
+/* ---------- Física: dos escenas ---------- */
+function scene(cv, kind, t){
+  const {x, w, h} = cv._f, g = h*0.2, kmPx = (h-g-10)/Math.max(32, DQ+8);
+  x.clearRect(0,0,w,h);
+  x.fillStyle = T.surface; x.fillRect(0,0,w,h);
+  x.fillStyle = T.earth; x.fillRect(0,g,w,h-g);
+  x.strokeStyle = T.line; x.lineWidth = 1;
+  for(let k=10;k<=30;k+=10){ const y = g+k*kmPx; x.beginPath(); x.moveTo(0,y); x.lineTo(w,y); x.setLineDash([3,5]); x.stroke(); x.setLineDash([]);
+    x.fillStyle = T.muted; x.font = '11px "IBM Plex Mono",monospace'; x.fillText(k+' km', 6, y-4); }
+  x.strokeStyle = T.ink2; x.lineWidth = 1.5; x.beginPath(); x.moveTo(0,g); x.lineTo(w,g); x.stroke();
+  const fx = w*0.36, depth = kind==='q' ? DQ : 0.4, fy = g + depth*kmPx;
+  const cyc = 7, tau = t % cyc, vp = w*0.17, vs = w*0.095;
+  const st = [0.08,0.22,0.5,0.68,0.9].map(f=>f*w);
+  x.save(); x.beginPath(); x.rect(0,g,w,h-g); x.clip();
+  const ring = (r, col, a, lw) => { if(r<=0) return; x.strokeStyle = col; x.globalAlpha = a; x.lineWidth = lw; x.beginPath(); x.arc(fx,fy,r,0,Math.PI*2); x.stroke(); x.globalAlpha = 1; };
+  const fade = Math.max(0, 1 - tau/cyc*0.9);
+  ring(vp*tau, T.quake, fade, kind==='n'?3.5:2);
+  ring(vp*tau-14, T.quake, fade*0.5, kind==='n'?2.5:1.2);
+  if(kind==='q'){ ring(vs*tau, T.noise, fade, 2.2); ring(vs*tau-12, T.noise, fade*0.5, 1.2); }
+  x.restore();
+  if(kind==='q'){
+    x.strokeStyle = T.ink; x.lineWidth = 2.5; x.beginPath(); x.moveTo(fx-26,fy+34); x.lineTo(fx+26,fy-34); x.stroke();
+    x.fillStyle = T.nuke; x.beginPath(); x.arc(fx,fy,5,0,7); x.fill();
+    x.strokeStyle = T.ink; x.lineWidth = 1.5; const sl = tau<0.5 ? 5 : 0;
+    [[-1,1],[1,-1]].forEach(([s,u])=>{ const ax = fx+s*34+(s*sl), ay = fy+u*8; x.beginPath(); x.moveTo(ax, ay); x.lineTo(ax+s*14, ay+u*2); x.stroke(); });
+    x.fillStyle = T.ink; x.font = '12px "IBM Plex Sans",sans-serif'; x.fillText('falla', fx+30, fy-38);
+  } else {
+    const pulse = tau<0.6 ? 6+tau*40 : 6;
+    x.fillStyle = T.nuke; x.globalAlpha = tau<0.6 ? 0.35 : 0; x.beginPath(); x.arc(fx,fy,pulse+6,0,7); x.fill(); x.globalAlpha = 1;
+    x.fillStyle = T.nuke; x.beginPath(); x.arc(fx,fy,5,0,7); x.fill();
+    x.fillStyle = T.ink; x.font = '12px "IBM Plex Sans",sans-serif'; x.fillText('cavidad', fx+12, fy+18);
+  }
+  st.forEach(sx=>{
+    const d = Math.hypot(sx-fx, g-fy), arr = d/vp, since = tau-arr, on = since>=0 && since<0.7;
+    x.fillStyle = on ? T.nuke : T.ink2;
+    x.beginPath(); x.moveTo(sx,g-2); x.lineTo(sx-7,g-15); x.lineTo(sx+7,g-15); x.closePath(); x.fill();
+    if(on){ x.strokeStyle = T.nuke; x.globalAlpha = 1-since/0.7; x.lineWidth = 2; x.beginPath(); x.arc(sx,g-8,6+since*22,0,7); x.stroke(); x.globalAlpha = 1; }
+  });
+  x.fillStyle = T.ink; x.font = '600 12px "IBM Plex Mono",monospace';
+  x.fillText('foco: ' + (kind==='q' ? DQ : 0) + ' km', 8, 16);
+}
+const scQ = $('#sc-q'), scN = $('#sc-n');
+function setupScenes(){ [scQ,scN].forEach(c=>c._f = fitCanvas(c)); }
+function loopScenes(ms){ const t = reduced ? 3 : ms/1000; scene(scQ,'q',t); scene(scN,'n',t); if(!reduced) requestAnimationFrame(loopScenes); }
+
+/* ---------- DBSCAN en un Worker (rejilla 3D) ---------- */
+__GRID__
+const ux = new Float32Array(N), uy = new Float32Array(N), uz = new Float32Array(N);
+const phi = new Float32Array(N), lam = new Float32Array(N), sphi = new Float32Array(N), cphi = new Float32Array(N);
+for(let i=0;i<N;i++){ const a = D.lat[i]/100*Math.PI/180, b = D.lon[i]/100*Math.PI/180; phi[i]=a; lam[i]=b; sphi[i]=Math.sin(a); cphi[i]=Math.cos(a);
+  ux[i]=Math.cos(a)*Math.cos(b); uy[i]=Math.cos(a)*Math.sin(b); uz[i]=Math.sin(a); }
+let worker = null, busy = false, pending = null, reqId = 0;
+try {
+  const src = gridDBSCAN.toString() + `;let X,Y,Z;onmessage=e=>{const m=e.data;if(m.init){X=m.ux;Y=m.uy;Z=m.uz;return;}const r=gridDBSCAN(X,Y,Z,m.eps,m.ms);postMessage({id:m.id,lab:r.lab,K:r.K},[r.lab.buffer]);};`;
+  worker = new Worker(URL.createObjectURL(new Blob([src], {type:'text/javascript'})));
+  worker.postMessage({init:1, ux:ux.slice(), uy:uy.slice(), uz:uz.slice()});
+  worker.onmessage = e => { busy = false; if(e.data.id === reqId) onClusters(e.data.lab, e.data.K); runPending(); };
+  worker.onerror = () => { worker = null; };
+} catch(err){ worker = null; }
+function runPending(){ if(pending && !busy){ const p = pending; pending = null; launch(p); } }
+function launch(p){
+  busy = true; $('#st').textContent = 'calculando…';
+  if(worker){ worker.postMessage(p); }
+  else setTimeout(()=>{ const r = gridDBSCAN(ux,uy,uz,p.eps,p.ms); busy = false; if(p.id === reqId) onClusters(r.lab, r.K); runPending(); }, 30);
+}
+function requestClusters(){ reqId++; const p = {id:reqId, eps:+$('#eps').value, ms:+$('#mp').value}; if(busy) pending = p; else launch(p); }
+
+/* ---------- Resultados en vivo ---------- */
+let LIVE = null;   // {lab, K, cls:[{nuc,q,med,n,lat,lon}], eps, ms}
+let FLAG = new Uint8Array(0), mode = 'tect', LAY = new Uint8Array(N);
+const SITES = [['Nevada',37,-116],['Semipalátinsk',50,78],['Novaya Zemlya',73.5,55],['Mururoa',-21.9,-138.9],['Lop Nur',41.5,89],['Punggye-ri',41.3,129.1]];
+const dist = (a1,o1,a2,o2) => { const r = Math.PI/180, c = Math.sin(a1*r)*Math.sin(a2*r)+Math.cos(a1*r)*Math.cos(a2*r)*Math.cos((o1-o2)*r); return Math.acos(Math.max(-1,Math.min(1,c)))*6371; };
+function nombre(lat, lon){
+  let best = null, bd = 700; for(const [n,la,lo] of SITES){ const d = dist(lat,lon,la,lo); if(d<bd){ bd = d; best = n; } }
+  return (best ? best + ' · ' : '') + Math.abs(lat).toFixed(1) + '°' + (lat>=0?'N':'S') + ' ' + Math.abs(lon).toFixed(1) + '°' + (lon>=0?'E':'O');
+}
+function onClusters(lab, K){
+  const cnt = new Int32Array(K), sx = new Float64Array(K), sy = new Float64Array(K), sz = new Float64Array(K), nuc = new Int32Array(K);
+  for(let i=0;i<N;i++){ const l = lab[i]; if(l<0) continue; cnt[l]++; sx[l]+=ux[i]; sy[l]+=uy[i]; sz[l]+=uz[i]; if(NUC[i]) nuc[l]++; }
+  const off = new Int32Array(K+1); for(let k=0;k<K;k++) off[k+1] = off[k]+cnt[k];
+  const pos = off.slice(0,K), dep = new Float32Array(off[K]);
+  for(let i=0;i<N;i++){ const l = lab[i]; if(l>=0) dep[pos[l]++] = D.dep[i]; }
+  const cls = new Array(K);
+  for(let k=0;k<K;k++){
+    const a = dep.subarray(off[k], off[k+1]).slice().sort(), m = a.length>>1, med = a.length%2 ? a[m] : (a[m-1]+a[m])/2;
+    const n = Math.hypot(sx[k],sy[k],sz[k]) || 1;
+    cls[k] = {id:k, n:cnt[k], nuc:nuc[k], q:cnt[k]-nuc[k], med, lat:Math.asin(sz[k]/n)*180/Math.PI, lon:Math.atan2(sy[k],sx[k])*180/Math.PI};
+  }
+  LIVE = {lab, K, cls, eps:+$('#eps').value, ms:+$('#mp').value};
+  $('#st').textContent = '';
+  applyThreshold();
+}
+function applyThreshold(){
+  if(!LIVE) return;
+  const thr = +$('#thr').value, tmin = +$('#thrmin').value;
+  FLAG = new Uint8Array(LIVE.K); LIVE.cls.forEach(c=>{ FLAG[c.id] = (c.med >= tmin && c.med < thr) ? 1 : 0; });
+  let tp=0, fp=0, ruido=0;
+  for(let i=0;i<N;i++){ const l = LIVE.lab[i]; if(l<0){ ruido++; continue; } if(FLAG[l]) NUC[i] ? tp++ : fp++; }
+  LIVE.tp = tp; LIVE.fp = fp; LIVE.fn = NE-tp; LIVE.ruido = ruido; LIVE.thr = thr; LIVE.tmin = tmin;
+  LIVE.nflag = FLAG.reduce((a,b)=>a+b,0);
+  LIVE.malDet = PR.filter(p=>LIVE.lab[p.i]>=0 && FLAG[LIVE.lab[p.i]]).length;
+  LIVE.prec = tp+fp ? tp/(tp+fp) : 0; LIVE.rec = tp/NE;
+  buildLayers(); renderLive(); dirty = true;
+}
+function renderLive(){
+  const L = LIVE; if(!L) return;
+  $('#kpis').innerHTML =
+    `<div class="kpi hot"><b>${L.tp} / ${NE}</b><span>explosiones detectadas</span></div>` +
+    `<div class="kpi"><b>${pct(L.prec)}</b><span>precisión: de lo marcado, explosiones</span></div>` +
+    `<div class="kpi"><b>${pct(L.rec)}</b><span>recall: de las explosiones, detectadas</span></div>` +
+    `<div class="kpi"><b>${fmt(L.K)}</b><span>clusters, ${fmt(L.nflag)} sospechosos</span></div>`;
+  $('#restxt').textContent = `Con ε = ${L.eps} km, ${L.ms} vecinos mínimos y mediana de profundidad entre ${L.tmin} y ${L.thr} km, el detector marca ${fmt(L.tp+L.fp)} eventos. ${fmt(L.tp)} son explosiones. Los otros ${fmt(L.fp)} son terremotos superficiales que cayeron en clusters sospechosos${$('#fixmal').checked ? '' : (L.malDet ? ', entre ellos ' + L.malDet + ' pruebas oficiales con etiqueta de terremoto (lista más abajo)' : '')}. Mueve los mandos del globo y todo esto se recalcula.`;
+  $('#cmnote').textContent = $('#fixmal').checked ? `Se cuentan como explosiones las ${PR.length} pruebas oficiales con etiqueta de terremoto.` : (L.malDet ? `Las falsas alarmas incluyen ${L.malDet} pruebas oficiales con etiqueta de terremoto.` : '');
+  $('#prbody').innerHTML = PR.map(p=>{ const i = p.i, det = L.lab[i]>=0 && FLAG[L.lab[i]]; return `<tr><td>${fecha(i)}</td><td><b>${p.nombre}</b><div class="note" style="margin:2px 0 0">${p.nota}</div></td><td class="m">${p.hora}</td><td class="m">M ${D.mag[i].toFixed(1)} · ${D.dep[i]} km</td><td>${p.conf}</td><td><span class="pill ${det?'si':'no'}">${det ? 'sí' : 'no'}</span></td><td><button data-g="${i}">ver</button></td></tr>`; }).join('');
+  $('#prbody').querySelectorAll('button').forEach(b=>b.onclick = ()=>{ const i = +b.dataset.g; document.getElementById('globe').scrollIntoView({behavior:'smooth',block:'center'}); go(D.lat[i]/100, D.lon[i]/100, 8); });
+  $('#cm').innerHTML =
+    `<div></div><div class="h">marcado sospechoso</div><div class="h">no marcado</div>` +
+    `<div class="h">explosión real</div><div class="c tp"><b>${fmt(L.tp)}</b><span>detectadas</span></div><div class="c fn"><b>${fmt(L.fn)}</b><span>perdidas</span></div>` +
+    `<div class="h">terremoto</div><div class="c fp"><b>${fmt(L.fp)}</b><span>falsas alarmas</span></div><div class="c tn"><b>${fmt(NT-L.fp)}</b><span>correctos</span></div>`;
+  const fl = L.cls.filter(c=>FLAG[c.id]).sort((a,b)=>b.n-a.n), top = fl.slice(0,15);
+  $('#rowsh').textContent = fl.length > 15 ? `Los 15 clusters sospechosos más grandes (de ${fmt(fl.length)})` : `Los ${fl.length} clusters sospechosos`;
+  $('#rows').innerHTML = top.map(c=>{ const pe = 100*c.nuc/c.n, nm = nombre(c.lat,c.lon);
+    return `<div class="row"><div class="nm" title="${nm}">${nm}</div><div class="bar" role="img" aria-label="${c.nuc} explosiones y ${c.q} terremotos"><i style="width:${pe}%;background:var(--nuke)"></i><i style="width:${100-pe}%;background:var(--quake)"></i></div><div class="v">${fmt(c.nuc)} / ${fmt(c.q)}</div></div>`; }).join('') || '<div class="note">Ningún cluster sospechoso con estos mandos.</div>';
+  // botones de falsas alarmas: clusters sospechosos sin explosiones, los más grandes
+  const FPJ = $('#fpjump'); FPJ.querySelectorAll('button').forEach(b=>b.remove());
+  fl.filter(c=>c.nuc===0).slice(0,6).forEach(c=>{ const b = document.createElement('button'); b.textContent = nombre(c.lat,c.lon).replace(/^.* · /,'') + ' (' + c.q + ')'; b.onclick = ()=>go(c.lat, c.lon, 6); FPJ.appendChild(b); });
+  panel();
+  heat($('#hp'),'prec'); heat($('#hr'),'rec');
+}
+
+/* ---------- Globo ---------- */
+const LAYERS = 7; // 0 fondo, 1 terremoto, 2 ruido, 3 explosión/TP, 4 perdida (FN), 5 falsa alarma (FP), 6 prueba oficial con etiqueta de terremoto
+let SIZE = [1.2,1.3,1.2,2.6,3,2.6,6];
+function buildLayers(){
+  for(let i=0;i<N;i++){
+    const nuc = D.nuc[i], lb = LIVE ? LIVE.lab[i] : -1, fl = lb>=0 && FLAG[lb] === 1;
+    let l = 255;
+    if(mode==='tect'){ l = nuc ? 255 : 1; }
+    else if(mode==='tipo'){ l = nuc ? 3 : 0; }
+    else if(mode==='db'){ l = fl ? 3 : lb>=0 ? 1 : 2; }
+    else { l = MAL[i] ? 6 : (fl&&nuc) ? 3 : (!fl&&nuc) ? 4 : (fl&&!nuc) ? 5 : 0; }
+    if(YR[i] > yCut) l = 255;
+    LAY[i] = l;
+  }
+  SIZE = mode==='tect' ? [1.2,1.3,1.2,2.6,3,2.6,6] : mode==='res' ? [1,1.3,1,6,3,6,6] : [1.1,1.3,1.1,2.6,3,2.8,6];
+}
+const globe = $('#globe'), tip = $('#tip');
+let view = {lat0:35*Math.PI/180, lon0:-40*Math.PI/180}, zoom = 1, GF, auto = !reduced, dragging = false;
+const bufX = Array.from({length:LAYERS},()=>new Float32Array(N)), bufY = Array.from({length:LAYERS},()=>new Float32Array(N)), bufI = Array.from({length:LAYERS},()=>new Int32Array(N)), cnt = new Int32Array(LAYERS);
+const colOf = l => [T.noise, T.quake, T.noise, (mode==='res' ? T.good : T.nuke), T.ink, T.amber, T.violet][l];
+const alphaOf = l => [0.35,0.65,0.3,0.95,1,1,1][l] * (mode==='tipo' && l===0 ? 1.4 : mode==='res' && l===0 ? 0.5 : 1);
+const dotsPath = (x, l, s, extra) => { x.beginPath(); for(let k=0,n=cnt[l];k<n;k++){ x.moveTo(bufX[l][k]+s/2+extra, bufY[l][k]); x.arc(bufX[l][k], bufY[l][k], s/2+extra, 0, 6.283); } };
+
+function drawGlobe(){
+  const {x, w, h} = GF, R0 = (Math.min(w,h)/2 - 6) * zoom, cx = w/2, cy = h/2;
+  x.clearRect(0,0,w,h);
+  x.fillStyle = T.sphere; x.beginPath(); x.arc(cx,cy,R0,0,Math.PI*2); x.fill();
+  const sp0 = Math.sin(view.lat0), cp0 = Math.cos(view.lat0);
+  const pr = (a, dl) => { const z = sp0*Math.sin(a)+cp0*Math.cos(a)*Math.cos(dl); return z<=0 ? null : [cx+R0*Math.cos(a)*Math.sin(dl), cy-R0*(cp0*Math.sin(a)-sp0*Math.cos(a)*Math.cos(dl))]; };
+  x.strokeStyle = T.line; x.lineWidth = 0.7;
+  for(let la=-60; la<=60; la+=30){ x.beginPath(); let s = false;
+    for(let lo=-180; lo<=180; lo+=4){ const p = pr(la*Math.PI/180, lo*Math.PI/180-view.lon0); if(!p){ s=false; continue; } s ? x.lineTo(p[0],p[1]) : x.moveTo(p[0],p[1]); s = true; } x.stroke(); }
+  for(let lo=-180; lo<180; lo+=30){ x.beginPath(); let s = false;
+    for(let la=-88; la<=88; la+=4){ const p = pr(la*Math.PI/180, lo*Math.PI/180-view.lon0); if(!p){ s=false; continue; } s ? x.lineTo(p[0],p[1]) : x.moveTo(p[0],p[1]); s = true; } x.stroke(); }
+  cnt.fill(0);
+  const lon0 = view.lon0, lim = 8;
+  for(let i=0;i<N;i++){
+    const l = LAY[i]; if(l===255) continue;
+    const dl = lam[i]-lon0, cd = Math.cos(dl), z = sp0*sphi[i] + cp0*cphi[i]*cd; if(z<=0) continue;
+    const px = cx + R0*cphi[i]*Math.sin(dl); if(px<-lim||px>w+lim) continue;
+    const py = cy - R0*(cp0*sphi[i] - sp0*cphi[i]*cd); if(py<-lim||py>h+lim) continue;
+    const c = cnt[l]++; bufX[l][c] = px; bufY[l][c] = py; bufI[l][c] = i;
+  }
+  const grow = Math.min(1 + (zoom-1)*0.22, 2.4);
+  for(let l=0;l<LAYERS;l++){
+    const n = cnt[l]; if(!n) continue;
+    const s = SIZE[l]*grow;
+    x.globalAlpha = alphaOf(l);
+    if(l===5 || l===6 || (l===3 && mode==='res')){
+      dotsPath(x,l,s,0); x.fillStyle = colOf(l); x.fill(); x.strokeStyle = T.ink; x.lineWidth = 1.3; x.stroke();
+      dotsPath(x,l,s,5.5); x.strokeStyle = colOf(l); x.lineWidth = 2.2; x.stroke();
+    }
+    else if(l===3){ dotsPath(x,l,s,0); x.fillStyle = colOf(l); x.fill(); }
+    else if(l===4){ dotsPath(x,l,s,1.5); x.strokeStyle = colOf(l); x.lineWidth = 1.6; x.stroke(); }
+    else { x.fillStyle = colOf(l); for(let k=0;k<n;k++) x.fillRect(bufX[l][k]-s/2, bufY[l][k]-s/2, s, s); }
+  }
+  x.globalAlpha = 1;
+  x.beginPath(); x.arc(cx,cy,R0,0,Math.PI*2); x.strokeStyle = T.ink2; x.lineWidth = 1; x.stroke();
+  $('#hint').textContent = zoom>1 ? 'zoom ×'+zoom.toFixed(1) : '';
+}
+let last = 0, lastDraw = 0;
+function frame(ts){
+  if(auto && !dragging){ view.lon0 += (ts-last)*0.00005; dirty = true; }
+  last = ts;
+  if(dirty && ts-lastDraw > 24){ dirty = false; lastDraw = ts; drawGlobe(); }
+  requestAnimationFrame(frame);
+}
+const setZoom = z => { zoom = Math.max(1, Math.min(10, z)); dirty = true; };
+$('#zin').onclick = () => setZoom(zoom*1.4); $('#zout').onclick = () => setZoom(zoom/1.4);
+globe.addEventListener('wheel', e=>{ e.preventDefault(); setZoom(zoom*(e.deltaY<0?1.15:1/1.15)); }, {passive:false});
+
+let px0=0, py0=0;
+globe.addEventListener('pointerdown', e=>{ dragging = true; px0 = e.clientX; py0 = e.clientY; auto = false; globe.setPointerCapture(e.pointerId); });
+globe.addEventListener('pointerup', ()=>{ dragging = false; });
+globe.addEventListener('pointermove', e=>{
+  const rect = globe.getBoundingClientRect(), mx = e.clientX-rect.left, my = e.clientY-rect.top;
+  if(dragging){
+    const k = Math.PI/(Math.min(rect.width,rect.height)*0.9*zoom);
+    view.lon0 -= (e.clientX-px0)*k; view.lat0 = Math.max(-1.45, Math.min(1.45, view.lat0 + (e.clientY-py0)*k));
+    px0 = e.clientX; py0 = e.clientY; tip.style.display = 'none'; dirty = true; return;
+  }
+  let best = -1, bd = 49;
+  for(let l=LAYERS-1;l>=0;l--){ for(let k=0,n=cnt[l];k<n;k++){ const d = (bufX[l][k]-mx)**2 + (bufY[l][k]-my)**2; if(d<bd){ bd = d; best = bufI[l][k]; } } if(best>=0 && l>=3) break; }
+  if(best<0){ tip.style.display = 'none'; return; }
+  const i = best, lb = LIVE ? LIVE.lab[i] : -1;
+  tip.innerHTML = 'M ' + D.mag[i].toFixed(1) + ' · prof. ' + D.dep[i] + ' km<br>' + (D.lat[i]/100).toFixed(2) + '°, ' + (D.lon[i]/100).toFixed(2) + '°<br>fecha: ' + fecha(i) + '<br>etiqueta: ' + (D.nuc[i] ? 'explosión nuclear' : 'terremoto') + (MAL[i] ? '<br>prueba oficial: ' + PRMAP.get(i).nombre + ' (DOE/NV-209)' : '') + (LIVE && (mode==='db'||mode==='res') ? '<br>' + (lb<0 ? 'ruido' : 'cluster ' + lb + (FLAG[lb] ? ' (sospechoso)' : '')) : '');
+  tip.style.display = 'block';
+  const bx = globe.parentElement.getBoundingClientRect();
+  tip.style.left = Math.min(mx+16, bx.width-200)+'px'; tip.style.top = (my+16)+'px';
+});
+globe.addEventListener('pointerleave', ()=>{ tip.style.display = 'none'; });
+
+/* línea de tiempo */
+const yr = $('#yr'), yrv = $('#yrv'), play = $('#play'), dateEl = $('#date');
+yr.min = YMIN; yr.max = YMAX; yr.value = YMAX;
+let timer = 0;
+function setYear(y){
+  yCut = y; yr.value = y; buildLayers(); dirty = true;
+  let n = 0, e = 0; for(let i=0;i<N;i++) if(YR[i] <= y){ n++; if(D.nuc[i]) e++; }
+  const todo = y >= YMAX;
+  yrv.textContent = todo ? 'todas las fechas' : 'hasta ' + y;
+  dateEl.textContent = todo ? YMIN+'–'+YMAX : String(y);
+  dateEl.title = yrv.title = fmt(n) + ' eventos, ' + fmt(e) + ' explosiones';
+}
+function stop(){ clearInterval(timer); timer = 0; play.textContent = '▶'; }
+yr.oninput = () => { stop(); setYear(+yr.value); };
+play.onclick = () => {
+  if(timer){ stop(); return; }
+  play.textContent = '❚❚'; if(yCut >= YMAX) setYear(YMIN);
+  timer = setInterval(()=>{ if(yCut >= YMAX){ stop(); return; } setYear(yCut+1); }, 220);
+};
+
+const jump = $('#sites');
+const go = (la, lo, z) => { auto = false; const l0 = view.lat0, o0 = view.lon0, z0 = zoom, l1 = la*Math.PI/180, o1 = lo*Math.PI/180; let d = o1-o0; d = Math.atan2(Math.sin(d),Math.cos(d));
+  const t0 = performance.now(); const step = ts=>{ const k = Math.min(1,(ts-t0)/800), e = k*k*(3-2*k); view.lat0 = l0+(l1-l0)*e; view.lon0 = o0+d*e; zoom = z0+(z-z0)*e; dirty = true; if(k<1) requestAnimationFrame(step); }; requestAnimationFrame(step); };
+SITES.forEach(([n,la,lo])=>{ const b = document.createElement('button'); b.textContent = n; b.onclick = ()=>go(la,lo,4); jump.appendChild(b); });
+const reset = document.createElement('button'); reset.textContent = 'Todo el globo'; reset.onclick = ()=>go(35,-40,1); jump.appendChild(reset);
+
+/* ---------- Paneles por vista ---------- */
+const EXPL = {
+  tect: 'Solo terremotos. Trazan los bordes de placa: el Cinturón de Fuego del Pacífico, las dorsales oceánicas y la colisión de India con Asia.',
+  tipo: 'Se añaden las explosiones con la etiqueta de USGS. Están lejos de los bordes de placa y agrupadas en pocos lugares. Esa etiqueta solo se usará para validar.',
+  db: 'DBSCAN agrupa los epicentros por densidad, sin ver la etiqueta. Un cluster es sospechoso (rojo) si su profundidad mediana está entre la mínima y la máxima. Mueve los mandos.',
+  res: 'Se compara lo que marcó el detector con la etiqueta real. Verde con halo: explosión detectada. Anillo negro: explosión perdida. Ámbar con halo: terremoto marcado por error. Violeta con halo: prueba oficial que el USGS dejó como terremoto. Pulsa un botón para ir a cada falsa alarma.'
+};
+function legend(items){ $('#legend').innerHTML = items.map(([c,t,o])=>`<span><i style="background:${o?'transparent':c};${o?`border:2px solid ${c}`:''}"></i>${t}</span>`).join(''); }
+const stat = (v,l) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`;
+function panel(){
+  $('#explain').textContent = EXPL[mode];
+  $('#ctl').hidden = !(mode==='db' || mode==='res'); $('#fpjump').hidden = mode!=='res';
+  $('#epsv').textContent = $('#eps').value + ' km'; $('#mpv').textContent = $('#mp').value; $('#thrv').textContent = '< ' + $('#thr').value + ' km'; $('#thrminv').textContent = '≥ ' + $('#thrmin').value + ' km';
+  const S = $('#stats'), L = LIVE;
+  if(mode==='tect'){ legend([['var(--quake)','terremoto']]); S.innerHTML = stat(fmt(NT),'terremotos')+stat('M ≥ 4,5','umbral')+stat(YMIN+'-'+YMAX,'periodo'); }
+  else if(mode==='tipo'){ legend([['var(--noise)','terremoto'],['var(--nuke)','explosión nuclear']]); S.innerHTML = stat(NE,'explosiones')+stat('0 km','prof. mediana expl.')+stat(DQ+' km','prof. mediana terr.'); }
+  else if(mode==='db'){ legend([['var(--nuke)','cluster sospechoso'],['var(--quake)','cluster normal'],['var(--noise)','ruido']]); S.innerHTML = L ? stat(fmt(L.K),'clusters')+stat(fmt(L.ruido),'puntos de ruido')+stat(fmt(L.nflag),'sospechosos') : ''; }
+  else { legend([['var(--good)','explosión detectada'],['var(--ink)','explosión perdida',true],['var(--amber)','falsa alarma'],['var(--violet)','prueba oficial con etiqueta de terremoto']]);
+    const on = $('#fixmal').checked;
+    S.innerHTML = L ? stat(fmt(L.tp - (on ? L.malDet : 0)),'detectadas')+stat(fmt(L.fn - (on ? PR.length-L.malDet : 0)),'perdidas')+stat(fmt(L.fp - (on ? 0 : L.malDet)),'falsas alarmas')+stat(L.malDet+' / '+PR.length,'pruebas oficiales detectadas') : ''; }
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick = ()=>{
+  mode = b.dataset.m; document.querySelectorAll('.tabs button').forEach(o=>o.setAttribute('aria-pressed', o===b));
+  buildLayers(); panel(); dirty = true;
+});
+let slideTimer = 0;
+$('#eps').oninput = $('#mp').oninput = () => { panel(); clearTimeout(slideTimer); slideTimer = setTimeout(requestClusters, 160); };
+$('#thrmin').oninput = $('#thr').oninput = () => { panel(); applyThreshold(); };
+$('#fixmal').onchange = () => { NUC = Uint8Array.from(D.nuc); const on = $('#fixmal').checked; if(on) PR.forEach(p=>{ NUC[p.i] = 1; }); NE = D.n_expl + (on ? PR.length : 0); NT = N - NE; if(LIVE) onClusters(LIVE.lab, LIVE.K); };
+
+/* ---------- Sensibilidad (Python / scikit-learn, umbral 5 km) ---------- */
+const EPS = [...new Set(D.grid.map(g=>g.eps))], MSS = [...new Set(D.grid.map(g=>g.ms))];
+const DEF = D.grid.find(g=>g.eps===10 && g.ms===3);
+function sensTxt(){
+  const t5 = +$('#thr').value === 5 && +$('#thrmin').value === -0.1, u = t5 ? 5 : 1;
+  $('#senstxt').textContent = `Estos mapas salen de scikit-learn con todos los puntos, repitiendo DBSCAN con ${D.grid.length} combinaciones de radio y vecinos mínimos. Cuentan como sospechosos los clusters con profundidad mediana entre −0,1 y ${u} km (con la máxima en 5 km y la mínima en −0,1 se muestra el de 5 km; en cualquier otro caso, el de 1 km). El recuadro negro marca la combinación de los mandos, si coincide con alguna. Con ε = 200 km casi no hay falsas alarmas (98-99 % de precisión), pero el recall cae al 19-23 %: los clusters de explosiones se funden con los cinturones tectónicos y su profundidad mediana deja de ser baja. Algo parecido pasa con ε = 50 km y 3 vecinos en el rango de −0,1 a 1 km: el recall baja al 52 %. Con ε = 50 km, 3 vecinos y umbral de 5 km hay ${pct(D.base.fp/(D.base.tp+D.base.fp),0)} de falsas alarmas: terremotos muy superficiales, más de la mitad de los años 80 (sobre todo del sur de Washington, California y Alaska) y varios en el propio polígono de Nevada. Con solo los terremotos de 2010-2025, esa misma combinación daba una precisión del 96 %, antes de añadir los años antiguos.`;
+}
+function heat(el, key){
+  const t5 = +$('#thr').value === 5 && +$('#thrmin').value === -0.1; key = key + (t5 ? '5' : ''); sensTxt();
+  const cur = LIVE && +$('#thrmin').value === -0.1 && (+$('#thr').value === 5 || +$('#thr').value === 1) ? [LIVE.eps, LIVE.ms] : null;
+  let h = `<div></div>` + MSS.map(m=>`<div class="l">${m} vecinos</div>`).join('');
+  EPS.forEach(e=>{ h += `<div class="l">ε ${e} km</div>`;
+    MSS.forEach(m=>{ const g = D.grid.find(q=>q.eps===e&&q.ms===m), v = g[key], c = cur && cur[0]===e && cur[1]===m;
+      h += `<div class="cell${c?' cur':''}" style="background:color-mix(in srgb,var(--quake) ${Math.round(8+80*v*v)}%,var(--surface));color:${v>0.55?'#fff':'var(--ink)'}" title="ε ${e} km, ${m} vecinos: ${pct(v)}">${pct(v,0)}</div>`; }); });
+  el.style.gridTemplateColumns = `auto repeat(${MSS.length},1fr)`; el.innerHTML = h;
+}
+
+/* ---------- DBSCAN frente a Isolation Forest ---------- */
+$('#cmp').innerHTML = [[`DBSCAN (ε ${DEF.eps} km, ${DEF.ms} vecinos, −0,1 a 1 km)`, DEF.prec, DEF.rec, 'var(--nuke)'], ['Isolation Forest', D.iso.prec, D.iso.rec, 'var(--noise)']].map(([n,p,r,c])=>
+  `<div class="m"><b>${n}</b><div class="t"><div><em style="width:${Math.max(p*100,0.5)}%;background:${c}"></em><span>precisión ${pct(p)}</span></div><div><em style="width:${Math.max(r*100,0.5)}%;background:${c};opacity:.65"></em><span>recall ${pct(r)}</span></div></div></div>`).join('');
+
+/* ---------- Histograma ---------- */
+const BINS = ['< 1','1–5','5–10','10–20','20–35','35–70','70–150','> 150'];
+function drawHist(){
+  const q = D.hist.terr, e = D.hist.expl, W = 760, H = 250, L = 44, Bt = 34, Tp = 14, bw = (W-L-10)/BINS.length, ph = H-Bt-Tp;
+  const y = v => Tp + ph*(1-v);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Porcentaje de eventos por intervalo de profundidad, terremotos frente a explosiones">`;
+  [0,.25,.5,.75,1].forEach(v=>{ s += `<line x1="${L}" x2="${W-4}" y1="${y(v)}" y2="${y(v)}" stroke="${T.line}" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${Math.round(v*100)} %</text>`; });
+  BINS.forEach((b,k)=>{
+    const x0 = L + k*bw + bw*0.12, w = bw*0.38;
+    [[q[k],T.quake,0,'terremotos'],[e[k],T.nuke,1,'explosiones']].forEach(([v,c,o,nm])=>{
+      const hh = Math.max(v*ph, v>0?1.5:0), xx = x0 + o*(w+2), r = Math.min(3,hh);
+      s += `<path d="M${xx},${y(0)} V${y(0)-hh+r} q0,-${r} ${r},-${r} H${xx+w-r} q${r},0 ${r},${r} V${y(0)} Z" fill="${c}"><title>${nm}: ${(v*100).toFixed(1)} % a ${BINS[k]} km</title></path>`;
+      if(v>=0.04) s += `<text x="${xx+w/2}" y="${y(v)-4}" text-anchor="middle">${Math.round(v*100)}</text>`;
+    });
+    s += `<text x="${L+k*bw+bw/2}" y="${H-12}" text-anchor="middle">${b}</text>`;
+  });
+  s += `<text x="${L+(W-L)/2}" y="${H}" text-anchor="middle">profundidad (km)</text>`;
+  s += `<g transform="translate(${W-190},${Tp+2})"><rect width="9" height="9" fill="${T.quake}"/><text x="14" y="9">terremotos</text><rect y="16" width="9" height="9" fill="${T.nuke}"/><text x="14" y="25">explosiones</text></g></svg>`;
+  $('#hist').innerHTML = s;
+}
+
+function init(){
+  setupScenes(); GF = fitCanvas(globe, 1);
+  if(reduced) loopScenes(0); else requestAnimationFrame(loopScenes);
+  buildLayers(); panel(); drawHist(); setYear(YMAX); heat($('#hp'),'prec'); heat($('#hr'),'rec');
+  $('#kpis').innerHTML = '<div class="kpi"><b>…</b><span>calculando clusters</span></div>';
+  requestClusters();
+  last = performance.now(); requestAnimationFrame(frame);
+}
+addEventListener('resize', ()=>{ setupScenes(); GF = fitCanvas(globe, 1); dirty = true; if(reduced) loopScenes(0); });
+init();
+</script>
+</body>
+</html>
