@@ -3,81 +3,71 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 
-# 1. Cargar los datos
-# Leemos el catalogo de sismos
+# 1. Cargar los datos: sismos con magnitud >= 4.5
 df = pd.read_csv('datos/sismos_usgs.csv')
 df = df.dropna(subset=['latitude', 'longitude', 'depth', 'mag'])
-#  Nos quedamos solo con los grandes (magnitud >= 4.5)
 df = df[df['mag'] >= 4.5]
 df = df.reset_index(drop=True)
 
 
-# funcion DBSCAN
-def nukeDBSCAN(df, eps_km, vmin, dmin, dmax):
+# 2. Funcion que agrupa los sismos cercanos con DBSCAN
+def nukeDBSCAN(df, eps_km, vmin):
     """
-    Detecta los clusters y los filtra con DBSCAN
+    Agrupa los sismos cercanos con DBSCAN
 
     Args:
         df: tabla de sismos
-        eps_km: radio km
-        vmin: vecinos mínimos del cluster
-        dmin: profundidad mediana mínima (km) de un cluster sospechoso
-        dmax: profundidad mediana máxima (km) de un cluster sospechoso
+        eps_km: radio en km
+        vmin: sismos minimos por cluster
 
     Returns:
-        Serie True/False: el sismo cae en un cluster sospechoso
+        Numero de cluster de cada sismo (-1 = sismo aislado)
     """
-
-    # ---------------------------------------------------------------
-    # PASO 2: Agrupar sismos cercanos con DBSCAN
-    # ---------------------------------------------------------------
-    # DBSCAN junta sismos que estan a menos de eps_km unos de otros.
-    # Un grupo necesita al menos vmin sismos. Los que quedan solos reciben el grupo -1.
     radio_tierra_km = 6371
 
-    # Con la distancia 'haversine' (distancia sobre la esfera) hay que dar
-    # las coordenadas en radianes y el radio como fraccion del radio de la Tierra
+    # La distancia 'haversine' (sobre la esfera) pide las coordenadas en radianes
+    # y el radio como fraccion del radio de la Tierra
     coordenadas = np.radians(df[['latitude', 'longitude']])
 
-    dbscan = DBSCAN(eps=eps_km / radio_tierra_km,
+    eps_rad=eps_km / radio_tierra_km
+    dbscan = DBSCAN(eps=eps_rad,
                     min_samples=vmin,
                     metric='haversine')
-    df = df.copy()
-    df['cluster'] = dbscan.fit_predict(coordenadas)
-
-    # ---------------------------------------------------------------
-    # PASO 3: Decidir que grupos son sospechosos
-    # ---------------------------------------------------------------
-    # Una explosion nuclear ocurre casi en la superficie.
-    # Por eso un grupo es sospechoso si la profundidad mediana de sus sismos esta entre dmin y dmax.
-    sin_ruido = df[df['cluster'] != -1]
-    profundidad_mediana = sin_ruido.groupby('cluster')['depth'].median()
-    es_sospechoso = (profundidad_mediana >= dmin) & (profundidad_mediana < dmax)
-    grupos_sospechosos = profundidad_mediana[es_sospechoso].index
-
-    # detectado = True si el sismo pertenece a un grupo sospechoso
-    return df['cluster'].isin(grupos_sospechosos)
+    return dbscan.fit_predict(coordenadas)
 
 
-# PASO 4: Probar varios radios, cada vez con un 10% de los sismos al azar
-vec = np.linspace(1, 101, 100)
+# 3. Probar varios radios, cada vez con un 10% de los sismos al azar
+eps_vec = np.linspace(1, 201, 50)
 falsos_positivos = []
 falsos_negativos = []
 
-for i, eps in enumerate(vec):
-    # # Muestra nueva del 20% en cada vuelta (el random_state = eps la hace reproducible)
-    muestra = df.sample(frac=0.1, random_state=i)
+# Un cluster es sospechoso si la profundidad mediana de sus sismos esta entre dmin y dmax (km),
+# porque una explosion nuclear ocurre casi en la superficie
+dmin = -4
+dmax = 0.1
 
-    # Antes se guardaba en df[f'detectado_{eps}']; ahora se aplica a la muestra
-    detectado = nukeDBSCAN(muestra, eps_km=10, vmin=vec, dmin=-10, dmax=5)
+for i, eps in enumerate(eps_vec):
+    # Muestra distinta en cada vuelta; random_state=i la hace reproducible
+    muestra = df.sample(frac=0.1, random_state=i).copy()
+    muestra['cluster'] = nukeDBSCAN(muestra, eps_km=eps, vmin=3)
+
+    # Clusters sospechosos (sin contar el ruido, -1)
+    sin_ruido = muestra[muestra['cluster'] != -1]
+    profundidad_mediana = sin_ruido.groupby('cluster')['depth'].median()
+    es_sospechoso = (profundidad_mediana >= dmin) & (profundidad_mediana < dmax)
+    clusters_sospechosos = profundidad_mediana[es_sospechoso].index
+
+    # detectado: el sismo esta en un cluster sospechoso
+    detectado = muestra['cluster'].isin(clusters_sospechosos)
     es_explosion = muestra['tipo'] == 'nuclear explosion'
 
-    # Contamos los dos tipos de error de esta vuelta
-    falsos_positivos.append((detectado & ~es_explosion).sum())   # terremoto marcado como explosion
-    falsos_negativos.append((~detectado & es_explosion).sum())   # explosion que no detectamos
-    print(f'eps={eps} km: FP={falsos_positivos[-1]}, FN={falsos_negativos[-1]}')
+    # Falso positivo: terremoto marcado como explosion
+    # Falso negativo: explosion que no se detecta
+    falsos_positivos.append((detectado & ~es_explosion).sum())
+    falsos_negativos.append((~detectado & es_explosion).sum())
+    print(f'eps={eps:.1f} km: FP={falsos_positivos[-1]}, FN={falsos_negativos[-1]}')
 
-# PASO 5: Grafica con matplotlib (antes era plotly y se guardaba en HTML)
+# 4. Grafica de los errores segun el radio
 plt.plot(eps_vec, falsos_positivos, 'o-', color='orange', label='Falsos positivos')
 plt.plot(eps_vec, falsos_negativos, 'o-', color='gray', label='Falsos negativos')
 plt.title('Errores de DBSCAN con un 10% de los datos')
