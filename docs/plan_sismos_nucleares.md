@@ -36,8 +36,8 @@ E2 Diseño vence 29/10 (sin empezar; leer «Etapas de desarrollo del proyecto.pd
 Inferencia en C (OpenMP, MMR) y benchmarks sin hacer: no hay `.c` en `c/`. E3 08/12, E4 22/12.
 
 ## Actualización 22/10/2026: catálogo unido 1951-2025 y dashboard en vivo
-- `descargar_datos.py sismos_hist` baja los terremotos M>=4,5 de 1951-2009 (`datos/sismos_usgs_1951_2009.csv`, 176 544 filas).
-  La unión con `sismos_usgs.csv` está en `datos/sismos_usgs_completo.csv` (297 964 eventos con M>=4,5; sin commit, ~39 MB).
+- `descargar_datos.py sismos_hist` baja los terremotos M>=4,5 de 1951-2009 (176 544 filas). Su CSV y la unión `sismos_usgs_completo.csv`
+  se borraron (23/10/2026): los sustituye `sismos_usgs_M45_1951_2025.csv`; se regeneran con la tarea.
   `sismos_usgs.csv` sigue siendo el original (estaba abierto en Excel y no se sobrescribió).
 - Resultado de `problemas/2_Nuclear/data_extract.py` (eps 50 km, 3 vecinos, mediana < 5 km):
   solo 2010-2025: precisión 95,8 %, recall 91,0 %. Catálogo unido: precisión 52,7 %, recall 91,3 % (506 TP, 454 FP).
@@ -63,8 +63,8 @@ Inferencia en C (OpenMP, MMR) y benchmarks sin hacer: no hay `.c` en `c/`. E3 08
 - La API del USGS no devuelve algunas explosiones nucleares con `eventtype=nuclear explosion` (sí sin filtrar por tipo):
   faltaban p. ej. Corea del Norte 2006, 2009 y 2013, Pokhran y Chagai 1998, 33 de Semipalátinsk, 9 de Lop Nur, 6 de Polinesia y 5 de Novaya Zemlya.
 - `descargar_datos.py sismos_todos` baja M>=4.5 de 1951 a 2025 sin filtrar el tipo: `datos/sismos_usgs_M45_1951_2025.csv`
-  (298 198 filas, sin commit). Explosiones M>=4.5: 614 (antes 554). Terremotos: 297 584 (antes 297 583).
-- Los resultados y el dashboard actuales siguen usando `sismos_usgs_completo.csv` (554 explosiones) hasta regenerarlos con el nuevo.
+  (298 198 filas, en git). Explosiones M>=4.5: 614 (antes 554). Terremotos: 297 584 (antes 297 583).
+- El dashboard ya usa este catálogo (614 explosiones); `nuke_DBSCAN.py` sigue leyendo `sismos_usgs.csv` (2010-2025 + explosiones).
 - Cobertura frente a la lista oficial DOE/NV-209 (recuento aproximado: el PDF repite filas): Pacífico (Bikini, Enewetak, Johnston, Christmas) 0 de ~102,
   Amchitka 0 de 3, Nuevo México 0 de 3, Nevada en torno a la mitad. Las pruebas de Corea del Norte y de la URSS no están en esa lista (solo EE. UU.).
 
