@@ -13,6 +13,8 @@
 - sismos -> datos/sismos_usgs.csv: USGS catalogue: earthquakes M>=4.5 (2010-2025) plus ALL events typed
             "nuclear explosion" (1951-2017, mostly Nevada, Novaya Zemlya, Lop Nur, North Korea). Column `tipo`
             is the USGS label: use it only to validate an unsupervised detector, never to train it.
+- sismos_hist -> datos/sismos_usgs_1951_2009.csv: same USGS query for earthquakes M>=4.5 of 1951-2009 (coverage is
+            thinner before 1973), so quakes and explosions share the same years.
 - kepler -> datos/kepler10_curva_luz.csv: Kepler long-cadence light curve of Kepler-10 (all quarters,
             stitched and normalised) to detect transits as anomalies (lightkurve).
 """
@@ -78,6 +80,44 @@ def sismos(destino: Path) -> None:
     df.to_csv(destino, index=False)
 
 
+def sismos_hist(destino: Path) -> None:
+    """Terremotos M>=4.5 de 1951 a 2009 (mismas columnas que `sismos`), para solapar con las explosiones."""
+    import pandas as pd
+    base = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc&eventtype=earthquake&minmagnitude=4.5"
+    cols = ["time", "latitude", "longitude", "depth", "mag", "magType", "nst", "gap", "dmin", "rms",
+            "place", "type", "horizontalError", "depthError", "magError", "magNst", "status"]
+    partes = []
+    for anyo in range(1951, 2010):
+        partes.append(pd.read_csv(f"{base}&starttime={anyo}-01-01&endtime={anyo + 1}-01-01"))
+        print(f"  {anyo}: {len(partes[-1])} terremotos", flush=True)
+    pd.concat(partes, ignore_index=True)[cols].rename(columns={"type": "tipo"}).to_csv(destino, index=False)
+
+
+def sismos_todos(destino: Path) -> None:
+    """Catálogo M>=4.5 de 1951 a 2025 SIN filtrar por tipo en la consulta (se filtra después).
+    La API del USGS no devuelve algunas explosiones nucleares cuando se pide eventtype=nuclear explosion
+    (p. ej. Corea del Norte 2006, 2009 y 2013), pero sí cuando no se filtra."""
+    import pandas as pd
+    base = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc&minmagnitude=4.5"
+    cols = ["time", "latitude", "longitude", "depth", "mag", "magType", "nst", "gap", "dmin", "rms",
+            "place", "type", "horizontalError", "depthError", "magError", "magNst", "status"]
+    partes = []
+    for anyo in range(1951, 2026):
+        for intento in range(4):
+            try:
+                d = pd.read_csv(f"{base}&starttime={anyo}-01-01&endtime={anyo + 1}-01-01")
+                break
+            except Exception as e:
+                if intento == 3:
+                    raise
+                print(f"  {anyo}: reintento ({type(e).__name__})", flush=True)
+        partes.append(d)
+        print(f"  {anyo}: {len(d)} eventos", flush=True)
+    df = pd.concat(partes, ignore_index=True)[cols].rename(columns={"type": "tipo"})
+    print(df["tipo"].value_counts().to_dict())
+    df[df["tipo"].isin(["earthquake", "nuclear explosion"])].to_csv(destino, index=False)
+
+
 def kepler(destino: Path) -> None:
     import lightkurve as lk
     res = lk.search_lightcurve("Kepler-10", mission="Kepler", author="Kepler", exptime="long")
@@ -93,6 +133,8 @@ TAREAS = {
     "gaia": ("gaia_pleiades.csv", pleiades),
     "cercanas": ("gaia_50pc.csv", cercanas),
     "sismos": ("sismos_usgs.csv", sismos),
+    "sismos_hist": ("sismos_usgs_1951_2009.csv", sismos_hist),
+    "sismos_todos": ("sismos_usgs_M45_1951_2025.csv", sismos_todos),
     "kepler": ("kepler10_curva_luz.csv", kepler),
 }
 
