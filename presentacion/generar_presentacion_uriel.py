@@ -583,6 +583,21 @@ set_speaker_notes(s8,
 )
 
 # ==============================================================================
+# APLICAR FUENTE ARIAL EN TODA LA PRESENTACIÓN
+# ==============================================================================
+def aplicar_fuente_arial(presentation):
+    """Aplica estrictamente la fuente Arial a todos los textos, títulos y párrafos."""
+    for slide in presentation.slides:
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                for paragraph in shape.text_frame.paragraphs:
+                    paragraph.font.name = "Arial"
+                    for run in paragraph.runs:
+                        run.font.name = "Arial"
+
+aplicar_fuente_arial(prs)
+
+# ==============================================================================
 # GUARDAR PRESENTACIONES
 # ==============================================================================
 OUTPUT_DIR_1.parent.mkdir(parents=True, exist_ok=True)

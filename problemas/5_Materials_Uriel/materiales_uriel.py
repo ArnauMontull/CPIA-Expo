@@ -88,6 +88,9 @@ if n_ruido > 0:
 # ==============================================================================
 # 6. Visualización científica en 2D con Matplotlib
 # ==============================================================================
+plt.rcParams['font.sans-serif'] = 'Arial'
+plt.rcParams['font.family'] = 'sans-serif'
+
 plt.figure(figsize=(10, 6.5))
 
 paleta_colores = {

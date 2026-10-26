@@ -12,6 +12,9 @@ import numpy as np
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "docs" / "figuras"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+plt.rcParams['font.sans-serif'] = 'Arial'
+plt.rcParams['font.family'] = 'sans-serif'
+
 # ------------------------------------------------------------------------------
 # FIGURA 1: Esquema de Bandas Cuánticas y Fórmulas
 # ------------------------------------------------------------------------------

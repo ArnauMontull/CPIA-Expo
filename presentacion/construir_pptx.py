@@ -20,6 +20,7 @@ def texto(slide, x, y, w, h, lineas, tam=20, color=None, negrita=False):
     for i, linea in enumerate(lineas):
         p = caja.paragraphs[0] if i == 0 else caja.add_paragraph()
         p.text = linea
+        p.font.name = 'Arial'
         p.font.size, p.font.bold = Pt(tam), negrita
         if color:
             p.font.color.rgb = color
@@ -146,6 +147,17 @@ diapo('Validación física: Matriz de contingencia', [
 
 diapo('Conclusiones', pendiente='comparativa del equipo: qué algoritmo funcionó mejor y por qué')
 diapo('Preguntas', ['Código y documento de descripción entregados en Atenea'])
+
+def aplicar_fuente_arial(presentation):
+    for slide in presentation.slides:
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                for paragraph in shape.text_frame.paragraphs:
+                    paragraph.font.name = "Arial"
+                    for run in paragraph.runs:
+                        run.font.name = "Arial"
+
+aplicar_fuente_arial(prs)
 
 prs.save(AQUI / 'expo_cpia.pptx')
 print('guardado', AQUI / 'expo_cpia.pptx')
