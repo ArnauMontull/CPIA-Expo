@@ -40,15 +40,18 @@ ax.legend(loc='lower left', markerscale=4); ax.grid(alpha=.3)
 fig.tight_layout(); fig.savefig(OUT / 'catalogo.png', dpi=170); plt.close(fig)
 
 # 2. Profundidad: la pista fisica
-fig, ejes = plt.subplots(1, 2, figsize=(11, 3.8))
-for ax, (lo, hi, paso, titulo) in zip(ejes, [(-2, 60, 1, 'Todo el rango'), (-5, 15, 0.25, 'Ampliado cerca de la superficie')]):
-    bins = np.arange(lo, hi + paso, paso)
-    ax.hist(df[~expl].depth.clip(lo, hi), bins=bins, color='gray', alpha=.7, density=True, label='Terremotos')
-    ax.hist(df[expl].depth.clip(lo, hi), bins=bins, color='red', alpha=.7, density=True, label='Explosiones')
+# Mismo ancho de bin (0.5 km) y mismo eje y en los dos paneles: fraccion de cada clase en cada bin
+fig, ejes = plt.subplots(1, 2, figsize=(11, 3.8), sharey=True)
+terremotos, explosiones = df[~expl].depth, df[expl].depth
+for ax, (lo, hi, titulo) in zip(ejes, [(-5, 60, 'Todo el rango'), (-5, 15, 'Ampliado cerca de la superficie')]):
+    bins = np.arange(lo, hi + 0.5, 0.5)
+    ax.hist(terremotos, bins=bins, weights=np.ones(len(terremotos)) / len(terremotos), color='gray', alpha=.7, label='Terremotos')
+    ax.hist(explosiones, bins=bins, weights=np.ones(len(explosiones)) / len(explosiones), color='red', alpha=.7, label='Explosiones')
     ax.axvline(P['dmin'], color='purple', lw=1.5, label=f"Ventana [{P['dmin']}; {P['dmax']}) km")
     ax.axvline(P['dmax'], color='purple', lw=1.5)
-    ax.set(xlabel='Profundidad (km)', ylabel='Densidad', title=titulo, yscale='log')
+    ax.set(xlabel='Profundidad (km)', title=titulo, yscale='log', xlim=(lo, hi))
     ax.legend(loc='upper right', fontsize=8)
+ejes[0].set_ylabel('Fraccion de la clase por bin de 0,5 km')
 fig.tight_layout(); fig.savefig(OUT / 'profundidad.png', dpi=170); plt.close(fig)
 
 # 3. Como se detecta: zoom en Nevada, clusters y mediana de profundidad
