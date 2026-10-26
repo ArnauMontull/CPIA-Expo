@@ -1,7 +1,7 @@
 """problemas/5_Materials_Uriel/materiales_uriel.py
 
 Clasificación no supervisada de materiales eléctricos (Conductores, Semiconductores y Aislantes)
-mediante DBSCAN (Density-Based Spatial Clustering of Applications with Noise).
+mediante DBSCAN de scikit-learn (Density-Based Spatial Clustering of Applications with Noise).
 
 Parámetros fijados:
 - Epsilon (radio de vecindad): eps = 0.65
@@ -14,6 +14,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
 
 # ==============================================================================
 # 1. Cargar el dataset descargado en datos/
@@ -28,83 +31,33 @@ df = pd.read_csv(CSV_PATH)
 print(f"Dataset cargado con éxito ({len(df)} materiales).")
 
 # ==============================================================================
-# 2. Selección de características y estandarización (Z-Score)
+# 2. Selección de características y estandarización (StandardScaler de sklearn)
 # ==============================================================================
 # x1: log10(resistividad a 300 K) -> comprime más de 30 órdenes de magnitud
 # x2: coeficiente térmico alpha -> firma cuántica del material
 features = ["log_rho_300K", "alpha_coef"]
 X_raw = df[features].values
 
-# Estandarización obligatoria: Z = (X - μ) / σ
-media = np.mean(X_raw, axis=0)
-desv = np.std(X_raw, axis=0)
-X_scaled = (X_raw - media) / desv
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_raw)
 
 # ==============================================================================
-# 3. Aplicación de DBSCAN con eps = 0.65 y min_samples = 3
+# 3. Aplicación de DBSCAN (scikit-learn)
 # ==============================================================================
 EPS = 0.65
 MIN_SAMPLES = 3
 
-def ejecutar_dbscan(X, eps=0.65, min_samples=3):
-    """Algoritmo canónico de DBSCAN implementado desde cero con NumPy."""
-    N = len(X)
-    etiquetas = np.full(N, -1, dtype=int)
-    visitados = np.zeros(N, dtype=bool)
-    cluster_actual = 0
-    
-    # Matriz de distancias euclídeas
-    D = np.linalg.norm(X[:, None, :] - X[None, :, :], axis=-1)
-    
-    for i in range(N):
-        if visitados[i]:
-            continue
-        visitados[i] = True
-        
-        vecinos = np.where(D[i] <= eps)[0]
-        if len(vecinos) < min_samples:
-            etiquetas[i] = -1  # Ruido inicial
-        else:
-            etiquetas[i] = cluster_actual
-            cola = list(vecinos[vecinos != i])
-            while cola:
-                j = cola.pop(0)
-                if not visitados[j]:
-                    visitados[j] = True
-                    j_vecinos = np.where(D[j] <= eps)[0]
-                    if len(j_vecinos) >= min_samples:
-                        for v in j_vecinos:
-                            if v not in cola and etiquetas[v] == -1:
-                                cola.append(v)
-                if etiquetas[j] == -1:
-                    etiquetas[j] = cluster_actual
-            cluster_actual += 1
-    return etiquetas
-
-df["cluster"] = ejecutar_dbscan(X_scaled, eps=EPS, min_samples=MIN_SAMPLES)
+dbscan = DBSCAN(eps=EPS, min_samples=MIN_SAMPLES)
+df["cluster"] = dbscan.fit_predict(X_scaled)
 
 # ==============================================================================
-# 4. Cálculo del Silhouette Score
+# 4. Cálculo del Silhouette Score (scikit-learn)
 # ==============================================================================
-def calcular_silhouette(X, labels):
-    """Calcula el Silhouette Score sobre los puntos asignados a clusters válidos."""
-    mask = labels != -1
-    if len(set(labels[mask])) <= 1:
-        return None
-    D = np.linalg.norm(X[:, None, :] - X[None, :, :], axis=-1)
-    sils = []
-    for i in range(len(X)):
-        if labels[i] == -1:
-            continue
-        c_i = labels[i]
-        same_c = np.where((labels == c_i) & (np.arange(len(X)) != i))[0]
-        a_i = np.mean(D[i, same_c]) if len(same_c) > 0 else 0
-        other_clusters = set(labels) - {-1, c_i}
-        b_i = min(np.mean(D[i, labels == c_o]) for c_o in other_clusters)
-        sils.append((b_i - a_i) / max(a_i, b_i))
-    return float(np.mean(sils))
-
-score_sil = calcular_silhouette(X_scaled, df["cluster"].values)
+mask_validos = df["cluster"] != -1
+if len(set(df["cluster"][mask_validos])) > 1:
+    score_sil = silhouette_score(X_scaled[mask_validos], df["cluster"][mask_validos])
+else:
+    score_sil = None
 
 # ==============================================================================
 # 5. Métricas y análisis de resultados
@@ -131,7 +84,7 @@ if n_ruido > 0:
         print(f" - {r['material']:<30} | log10(ρ)={r['log_rho_300K']:>6.2f} | α={r['alpha_coef']:>8.5f} | Tipo: {r['clase_real']}")
 
 # ==============================================================================
-# 6. Visualización científica en 2D
+# 6. Visualización científica en 2D con Matplotlib
 # ==============================================================================
 plt.figure(figsize=(10, 6.5))
 
@@ -155,7 +108,7 @@ for cl in clusters_encontrados:
         label=f"{nombre_cl} (n={len(sub)})"
     )
 
-# Puntos de ruido (si los hubiera)
+# Puntos de ruido si existieran
 sub_ruido = df[df["cluster"] == -1]
 if len(sub_ruido) > 0:
     plt.scatter(
@@ -195,7 +148,7 @@ plt.grid(True, linestyle=":", alpha=0.6)
 plt.legend(loc="upper right", framealpha=0.9)
 plt.tight_layout()
 
-# Guardar figura en disco
+# Guardar figura en la carpeta del problema
 FIGURA_PATH = Path(__file__).resolve().parent / "clusters_materiales_dbscan.png"
 plt.savefig(FIGURA_PATH, dpi=300)
 print(f"\nGráfico guardado en: {FIGURA_PATH}")
