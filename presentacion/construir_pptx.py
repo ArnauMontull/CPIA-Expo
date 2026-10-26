@@ -65,7 +65,7 @@ diapo('Problema: ¿terremoto o explosión nuclear?', [
 diapo('Datos', [
     'Catálogo USGS, M ≥ 4,5, 1951-2025',
     '298 025 eventos; 614 etiquetados «nuclear explosion»',
-    'La etiqueta solo se usa para evaluar, nunca para entrenar'], 'profundidad.png', 6.8)
+    'La etiqueta solo se usa para evaluar, nunca para entrenar'], 'profundidad.png', 7.2)
 
 diapo('Cómo se detecta', [
     '1. DBSCAN con distancia haversine (esfera)',

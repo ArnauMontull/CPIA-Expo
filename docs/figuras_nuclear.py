@@ -40,12 +40,15 @@ ax.legend(loc='lower left', markerscale=4); ax.grid(alpha=.3)
 fig.tight_layout(); fig.savefig(OUT / 'catalogo.png', dpi=170); plt.close(fig)
 
 # 2. Profundidad: la pista fisica
-fig, ax = plt.subplots(figsize=(7, 3.8))
-bins = np.linspace(-2, 60, 63)
-ax.hist(df[~expl].depth.clip(-2, 60), bins=bins, color='gray', alpha=.7, density=True, label='Terremotos')
-ax.hist(df[expl].depth.clip(-2, 60), bins=bins, color='red', alpha=.7, density=True, label='Explosiones')
-ax.axvspan(P['dmin'], P['dmax'], color='purple', alpha=.25, label='Ventana [dmin, dmax)')
-ax.set(xlabel='Profundidad (km)', ylabel='Densidad'); ax.set_yscale('log'); ax.legend()
+fig, ejes = plt.subplots(1, 2, figsize=(11, 3.8))
+for ax, (lo, hi, paso, titulo) in zip(ejes, [(-2, 60, 1, 'Todo el rango'), (-5, 15, 0.25, 'Ampliado cerca de la superficie')]):
+    bins = np.arange(lo, hi + paso, paso)
+    ax.hist(df[~expl].depth.clip(lo, hi), bins=bins, color='gray', alpha=.7, density=True, label='Terremotos')
+    ax.hist(df[expl].depth.clip(lo, hi), bins=bins, color='red', alpha=.7, density=True, label='Explosiones')
+    ax.axvline(P['dmin'], color='purple', lw=1.5, label=f"Ventana [{P['dmin']}; {P['dmax']}) km")
+    ax.axvline(P['dmax'], color='purple', lw=1.5)
+    ax.set(xlabel='Profundidad (km)', ylabel='Densidad', title=titulo, yscale='log')
+    ax.legend(loc='upper right', fontsize=8)
 fig.tight_layout(); fig.savefig(OUT / 'profundidad.png', dpi=170); plt.close(fig)
 
 # 3. Como se detecta: zoom en Nevada, clusters y mediana de profundidad
