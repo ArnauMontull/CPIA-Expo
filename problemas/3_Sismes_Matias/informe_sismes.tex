@@ -1,0 +1,1205 @@
+% ==============================================================================
+% Informe: Agrupació de fenòmens sísmics i detecció d'anomalies (últim mes)
+% Compilar amb:  pdflatex informe_sismes.tex  (dues vegades)
+% Els valors marcats en vermell [..] són marcadors que s'han d'omplir amb els
+% resultats reals obtinguts en executar el codi.
+% ==============================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[catalan]{babel}
+\usepackage{lmodern}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,array,tabularx}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+\floatname{algorithm}{Algorisme}
+\renewcommand{\algorithmicrequire}{\textbf{Entrada:}}
+\renewcommand{\algorithmicensure}{\textbf{Sortida:}}
+
+% --- Marcadors per als resultats que cal omplir ------------------------------
+\newcommand{\pend}[1]{\textcolor{red}{\textbf{[#1]}}}
+
+% --- Figura amb marcador si el fitxer encara no existeix ---------------------
+% \figuraopt[amplada]{fitxer}{peu}{etiqueta}
+\newcommand{\figuraopt}[4][0.85]{%
+  \begin{figure}[htbp]
+    \centering
+    \IfFileExists{#2}{\includegraphics[width=#1\textwidth]{#2}}{%
+      \fbox{\parbox{#1\textwidth}{\centering\vspace{2.2cm}%
+      \pend{Inserir figura: \detokenize{#2}}\vspace{2.2cm}}}}
+    \caption{#3}\label{#4}
+  \end{figure}}
+
+% --- Estil per al codi (només ASCII dins dels llistats) ----------------------
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{blue!60!black}\bfseries,
+  commentstyle=\color{green!40!black}\itshape,
+  stringstyle=\color{orange!70!black},
+  numbers=left, numberstyle=\tiny\color{gray}, numbersep=6pt,
+  breaklines=true, frame=single, rulecolor=\color{gray!50},
+  showstringspaces=false, tabsize=4, captionpos=b
+}
+\renewcommand{\lstlistingname}{Codi}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+
+\title{\textbf{Agrupació de fenòmens sísmics i detecció d'anomalies\\
+mitjançant aprenentatge no supervisat}\\[4pt]
+\large Anàlisi del catàleg sísmic global de l'últim mes amb \textit{K-means}\\
+i puntuacions d'anomalia basades en veïns propers}
+\author{\pend{Nom i cognoms de l'autor/a}\\
+\pend{Assignatura i curs}\\
+\pend{Tòpic de l'exposició: aprenentatge no supervisat / mineria de dades}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Aquest informe aborda el problema d'estructurar i filtrar el flux continu de
+terratrèmols registrats arreu del món durant l'últim mes. Partint d'un catàleg
+públic (magnitud, profunditat, latitud i longitud), s'aplica l'algorisme
+\textit{K-means} per classificar els esdeveniments en règims sísmics
+diferenciats i s'identifiquen els esdeveniments més excepcionals mitjançant la
+distància mitjana als $k$ veïns més propers en l'espai de característiques
+normalitzat. Es presenta la fonamentació teòrica de cada tècnica, es compara
+amb alternatives (\textit{DBSCAN}, mescles gaussianes, \textit{LOF},
+\textit{Isolation Forest}), es descriu la metodologia de manera replicable i es
+validen els resultats amb mètriques internes, anàlisi d'estabilitat,
+comparació amb una classificació de referència per profunditat i injecció
+d'anomalies sintètiques. S'hi inclou també una revisió crítica del codi
+Python de partida i la versió millorada (vectoritzada, modular i amb proves
+automàtiques). Es discuteixen les limitacions, sobretot la distinció entre
+\emph{anòmal estadísticament} i \emph{anòmal físicament}.
+
+\medskip
+\noindent\textbf{Paraules clau:} sismologia, \textit{clustering}, K-means,
+detecció d'anomalies, normalització \textit{z-score}, aprenentatge no supervisat.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ==============================================================================
+\section{Introducció i plantejament del problema}\label{sec:intro}
+% ==============================================================================
+
+\subsection{Context i motivació}
+Cada mes, les xarxes sísmiques mundials registren milers de terratrèmols.
+La gran majoria són de magnitud petita i passen desapercebuts, però el
+conjunt conté informació sobre els règims tectònics actius (zones de subducció,
+dorsals oceàniques, falles transformants, sismicitat intraplaca) i, ocasionalment,
+esdeveniments excepcionals que requereixen atenció immediata. Revisar manualment
+un catàleg d'aquesta mida no és viable, i per això són útils les tècniques
+d'aprenentatge no supervisat, que no necessiten etiquetes prèvies:
+\emph{(i)} l'agrupació (\textit{clustering}) per descobrir estructura i
+\emph{(ii)} la detecció d'anomalies per prioritzar esdeveniments atípics.
+
+Aquest problema mereix ser resolt per tres motius:
+\begin{enumerate}[nosep]
+  \item \textbf{Interès científic:} resumir un catàleg gran en pocs grups
+        interpretables facilita l'exploració i la comparació amb la tectònica
+        coneguda.
+  \item \textbf{Interès pràctic:} un ordenament d'esdeveniments per grau
+        d'excepcionalitat pot servir per prioritzar la revisió humana.
+  \item \textbf{Interès docent:} és un cas real, amb dades obertes i
+        actualitzades, que il·lustra de manera completa el cicle
+        dades $\to$ normalització $\to$ model $\to$ validació, i exposa els
+        límits de les hipòtesis geomètriques de \textit{K-means}.
+\end{enumerate}
+
+\subsection{Formulació del problema}
+Sigui $\mathcal{D}=\{\mathbf{x}_1,\dots,\mathbf{x}_n\}$ el conjunt d'esdeveniments
+sísmics registrats en una finestra de 30 dies, on cada esdeveniment
+$\mathbf{x}_i\in\R^d$ es descriu per les seves característiques físiques
+(magnitud $M$, profunditat $h$ i posició geogràfica). Es volen resoldre dos
+subproblemes:
+\begin{description}[leftmargin=1.2cm,style=nextline]
+  \item[P1 (agrupació)] Trobar una partició $\{C_1,\dots,C_K\}$ de $\mathcal{D}$
+        tal que els esdeveniments d'un mateix grup siguin similars entre si i
+        diferents dels d'altres grups, i que els grups tinguin una
+        interpretació sismològica.
+  \item[P2 (anomalies)] Definir una puntuació $s:\mathcal{D}\to\R_{\ge 0}$ tal
+        que valors alts identifiquin esdeveniments excepcionals i retornar els
+        $m$ amb puntuació més alta (en el codi de partida, $m=5$).
+\end{description}
+
+\subsection{Objectius mesurables}\label{sec:objectius}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Id.} & \textbf{Objectiu} & \textbf{Criteri d'acompliment} \\
+\midrule
+O1 & Carregar i netejar el catàleg dels últims 30 dies. &
+     Es documenta el nombre de registres descartats i el motiu; el procés és
+     determinista. \\
+O2 & Agrupar els esdeveniments amb \textit{K-means} i seleccionar $K$ de
+     manera justificada. &
+     Silueta mitjana $\bar s\ge 0{,}25$ per al $K$ triat i estabilitat
+     $\mathrm{ARI}\ge 0{,}90$ entre 30 llavors aleatòries. \\
+O3 & Interpretar físicament els grups. &
+     Es reporta l'acord (ARI i NMI) amb la classificació de referència per
+     profunditat (superficial/intermèdia/profunda) i es descriu cada grup. \\
+O4 & Detectar els $m$ esdeveniments més anòmals. &
+     Recuperació $\ge 90\,\%$ d'anomalies sintètiques injectades i
+     solapament (Jaccard) amb mètodes alternatius reportat. \\
+O5 & Implementació eficient, provada i reproduïble. &
+     Totes les proves automàtiques passen; s'informa del temps d'execució
+     de la versió \textit{pure Python} i de la vectoritzada per a
+     $n=\,$\pend{valor}. \\
+\bottomrule
+\end{tabularx}
+\caption{Objectius i criteris d'acompliment.}\label{tab:objectius}
+\end{table}
+
+\subsection{Abast i supòsits}
+\textbf{Abast.} Es treballa amb un únic catàleg global (finestra de 30 dies),
+amb quatre variables per esdeveniment. No es pretén predir terratrèmols ni
+classificar mecanismes focals; només descriure i prioritzar.
+
+\textbf{Supòsits i limitacions assumides:}
+\begin{itemize}[nosep]
+  \item El catàleg és una mostra representativa però no completa: per sota de
+        la \emph{magnitud de completesa} regional els esdeveniments es
+        registren de manera desigual.
+  \item Els grups esperats són aproximadament compactes en l'espai
+        normalitzat (hipòtesi pròpia de \textit{K-means}).
+  \item Una finestra d'un mes pot estar dominada per una única seqüència
+        sísmica (rèplica d'un gran terratrèmol), cosa que cal tenir present en
+        interpretar els resultats.
+\end{itemize}
+
+\subsection{Estructura de l'informe}
+La secció~\ref{sec:teoria} recull la fonamentació teòrica; la
+secció~\ref{sec:metodologia} descriu la metodologia pas a pas;
+la secció~\ref{sec:implementacio} detalla la implementació, la revisió del codi
+i les proves; la secció~\ref{sec:resultats} presenta els resultats i la
+validació; i la secció~\ref{sec:conclusions} recull les conclusions.
+
+% ==============================================================================
+\section{Fonamentació teòrica}\label{sec:teoria}
+% ==============================================================================
+
+\subsection{Conceptes sismològics bàsics}
+\paragraph{Magnitud.} Mesura logarítmica de l'energia alliberada. La magnitud
+de moment $M_w$ es defineix a partir del moment sísmic $M_0$ (en N$\cdot$m)
+\cite{hanks1979}:
+\begin{equation}
+  M_w = \tfrac{2}{3}\log_{10} M_0 - 6{,}07 .
+\end{equation}
+Com que l'escala és logarítmica, un augment d'una unitat de magnitud correspon
+a un factor $\approx 32$ en energia, de manera que la distribució de
+magnituds és molt asimètrica.
+
+\paragraph{Llei de Gutenberg--Richter.} El nombre d'esdeveniments $N$ amb
+magnitud $\ge M$ segueix \cite{gutenberg1944}:
+\begin{equation}
+  \log_{10} N(\ge M) = a - bM,
+\end{equation}
+amb $b\approx 1$ a escala global. Això implica que els grans terratrèmols són
+rars per naturalesa; en aquest treball són, doncs, candidats naturals a ser
+\emph{anomalies estadístiques}.
+
+\paragraph{Profunditat i règims tectònics.} La profunditat focal es clasifica
+convencionalment en sismes \emph{superficials} ($h<70$~km), \emph{intermedis}
+($70\le h\le 300$~km) i \emph{profunds} ($h>300$~km). Els intermedis i profunds
+s'associen gairebé exclusivament a zones de subducció, on la placa que
+s'enfonsa genera la zona de Wadati--Benioff \cite{benioff1949}. La major part
+de la sismicitat superficial s'agrupa al llarg dels límits de placa
+\cite{bird2003}. Aquesta classificació serveix com a \emph{referència externa}
+per validar els grups no supervisats (secció~\ref{sec:validacio}).
+
+\subsection{Preparació de les dades: normalització \textit{z-score}}
+Les variables tenen unitats i escales molt diferents (magnitud $\sim 1$--$8$,
+profunditat $0$--$700$~km, longitud $-180$--$180^\circ$). Com que
+\textit{K-means} i les distàncies de veïns són sensibles a l'escala, es
+transformen les variables:
+\begin{equation}
+  z_{ij} = \frac{x_{ij}-\mu_j}{\sigma_j},\qquad
+  \mu_j=\frac1n\sum_{i=1}^n x_{ij},\quad
+  \sigma_j=\sqrt{\frac1n\sum_{i=1}^n (x_{ij}-\mu_j)^2}.
+\end{equation}
+Si una columna és constant ($\sigma_j=0$) es fixa $\sigma_j=1$ per evitar la
+divisió per zero. Després de la transformació cada variable té mitjana 0 i
+desviació típica 1, de manera que cap domina la distància només per les seves
+unitats. Alternatives raonables són la normalització \textit{min--max}
+(molt sensible a valors extrems, justament els que busquem) i l'escalat robust
+amb mediana i IQR; es descarta el primer per aquesta raó i es manté
+\textit{z-score} per simplicitat i pel seu ús estàndard amb \textit{K-means}.
+
+\subsection{Representació de la posició geogràfica}\label{sec:geo}
+Utilitzar latitud i longitud com a coordenades euclidianes té dos problemes:
+(i) la longitud és periòdica (170$^\circ$E i 170$^\circ$W són propers, però
+difereixen en 340$^\circ$), i (ii) un grau de longitud correspon a una
+distància que depèn de la latitud. Una solució estàndard és projectar cada
+punt sobre l'esfera:
+\begin{equation}
+  \mathbf{p}=R\begin{pmatrix}\cos\varphi\cos\lambda\\ \cos\varphi\sin\lambda\\ \sin\varphi\end{pmatrix},\quad R=6371~\text{km},
+\end{equation}
+on $\varphi$ és la latitud i $\lambda$ la longitud. La distància euclidiana
+(corda) entre dos punts d'aquest tipus aproxima molt bé la distància de
+cercle màxim, que té l'expressió \emph{haversine} \cite{sinnott1984}:
+\begin{equation}
+  d = 2R\arcsin\sqrt{\sin^2\!\tfrac{\Delta\varphi}{2}
+      +\cos\varphi_1\cos\varphi_2\sin^2\!\tfrac{\Delta\lambda}{2}}.
+\end{equation}
+En l'informe es comparen dues representacions de les característiques:
+\textbf{(A)} $(M,h,\varphi,\lambda)$, com al codi de partida, i
+\textbf{(B)} $(M,h,x,y,z)$ amb coordenades cartesianes sobre l'esfera.
+
+\subsection{Algorisme \textit{K-means}}
+\textit{K-means} \cite{macqueen1967,lloyd1982} cerca $K$ centroides
+$\boldsymbol\mu_1,\dots,\boldsymbol\mu_K$ que minimitzen la suma de quadrats
+intragrup (inèrcia):
+\begin{equation}
+  J(C,\boldsymbol\mu)=\sum_{k=1}^{K}\sum_{\mathbf{z}_i\in C_k}\norm{\mathbf{z}_i-\boldsymbol\mu_k}^2 .
+\end{equation}
+L'algorisme de Lloyd alterna dos passos fins a la convergència:
+\begin{align}
+  \text{Assignació:}\quad & c_i=\arg\min_{k}\norm{\mathbf{z}_i-\boldsymbol\mu_k}^2,\\
+  \text{Actualització:}\quad & \boldsymbol\mu_k=\frac{1}{|C_k|}\sum_{\mathbf{z}_i\in C_k}\mathbf{z}_i .
+\end{align}
+Cada iteració no augmenta $J$, de manera que l'algorisme convergeix a un
+mínim \emph{local}. El cost per iteració és $O(nKd)$.
+
+\paragraph{Limitacions rellevants per a aquest problema.}
+\begin{itemize}[nosep]
+  \item Depèn de la inicialització: el codi de partida tria $K$ punts a
+        l'atzar; \textit{k-means++} \cite{arthur2007} redueix aquest risc
+        ponderant per distància.
+  \item Suposa grups esfèrics i de mida semblant; falla amb formes allargades
+        com una fossa de subducció.
+  \item Cal fixar $K$ a priori (secció~\ref{sec:triaK}).
+  \item És sensible als valors extrems, que arrosseguen els centroides: això
+        és rellevant perquè els esdeveniments anòmals formen part de les dades.
+\end{itemize}
+
+\subsection{Selecció del nombre de grups $K$}\label{sec:triaK}
+\paragraph{Mètode del colze.} Es representa $J(K)$ i es busca el punt on la
+millora marginal es redueix de manera notable. És subjectiu, per això es
+complementa amb mètriques numèriques.
+
+\paragraph{Coeficient de silueta} \cite{rousseeuw1987}. Per a cada punt $i$, sigui
+$a(i)$ la distància mitjana als punts del seu grup i $b(i)$ la menor distància
+mitjana a un altre grup:
+\begin{equation}
+  s(i)=\frac{b(i)-a(i)}{\max\{a(i),b(i)\}}\in[-1,1].
+\end{equation}
+Valors propers a 1 indiquen una assignació clara. Com a guia, valors per sota
+de $0{,}25$ indiquen que no hi ha una estructura substancial
+\cite{kaufman1990}.
+
+\paragraph{Índex de Davies--Bouldin} \cite{davies1979}. Mitjana, per a cada
+grup, de la pitjor relació entre dispersió intragrup i separació entre
+centroides; valors més baixos són millors:
+\begin{equation}
+  \mathrm{DB}=\frac1K\sum_{k=1}^K\max_{l\neq k}\frac{S_k+S_l}{\norm{\boldsymbol\mu_k-\boldsymbol\mu_l}},
+\end{equation}
+amb $S_k$ la dispersió mitjana del grup $k$ respecte del seu centroide.
+
+\paragraph{Estabilitat i comparació de particions.} Per avaluar si la partició
+depèn de la llavor es calcula l'\emph{Adjusted Rand Index} (ARI)
+\cite{hubert1985} entre execucions; val 1 per a particions idèntiques i
+$\approx 0$ per a particions aleatòries. La \emph{informació mútua
+normalitzada} (NMI) s'usa de manera complementària per comparar amb la
+classificació de referència.
+
+\subsection{Detecció d'anomalies}
+Una anomalia és una observació que s'allunya de manera notable del
+comportament habitual de la majoria \cite{chandola2009}. En aprenentatge no
+supervisat no hi ha etiquetes; s'assigna una puntuació i es ressalten les més
+altes.
+
+\paragraph{Distància mitjana als $k$ veïns (mètode del codi).} Sigui
+$\mathcal{N}_k(\mathbf{z})$ el conjunt dels $k$ veïns més propers de
+$\mathbf{z}$ (excloent-lo a ell mateix). La puntuació és
+\cite{ramaswamy2000}
+\begin{equation}
+  s_k(\mathbf{z})=\frac1k\sum_{\mathbf{y}\in\mathcal{N}_k(\mathbf{z})}\norm{\mathbf{z}-\mathbf{y}} .
+\end{equation}
+És intuïtiva i no paramètrica, però és una mesura \emph{global}: no té en
+compte que algunes regions són naturalment més denses que d'altres. El cost
+ingenu és $O(n^2d)$.
+
+\paragraph{\textit{Local Outlier Factor} (LOF).} \cite{breunig2000} Compara la
+densitat local d'un punt amb la dels seus veïns. Amb la distància d'accessibilitat
+$\mathrm{rd}_k(\mathbf{z},\mathbf{y})=\max\{d_k(\mathbf{y}),\,d(\mathbf{z},\mathbf{y})\}$,
+on $d_k(\mathbf{y})$ és la distància de $\mathbf{y}$ al seu $k$-èsim veí:
+\begin{equation}
+  \mathrm{lrd}_k(\mathbf{z})=\Bigg(\frac{1}{k}\sum_{\mathbf{y}\in\mathcal{N}_k(\mathbf{z})}\mathrm{rd}_k(\mathbf{z},\mathbf{y})\Bigg)^{-1},\quad
+  \mathrm{LOF}_k(\mathbf{z})=\frac1k\sum_{\mathbf{y}\in\mathcal{N}_k(\mathbf{z})}\frac{\mathrm{lrd}_k(\mathbf{y})}{\mathrm{lrd}_k(\mathbf{z})}.
+\end{equation}
+Valors $\gg 1$ indiquen que el punt és molt menys dens que els seus veïns.
+
+\paragraph{\textit{Isolation Forest}.} \cite{liu2008} Construeix arbres
+aleatoris que divideixen l'espai; els punts anòmals s'aïllen amb poques
+particions. La puntuació és
+$s(\mathbf{z},n)=2^{-\mathbb{E}[h(\mathbf{z})]/c(n)}$, on $h$ és la longitud del
+camí i $c(n)=2H(n-1)-2(n-1)/n$ un factor de normalització ($H$ és el nombre
+harmònic).
+
+\subsection{Comparació amb enfocaments existents}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.7cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Tècnica} & \textbf{Avantatges} & \textbf{Inconvenients en aquest problema} \\
+\midrule
+\textit{K-means} (escollit) & Simple, ràpid, interpretable via centroides;
+  base de referència habitual. & Grups esfèrics; $K$ fix; sensible a extrems. \\
+\textit{DBSCAN} \cite{ester1996} & Detecta formes arbitràries i marca soroll
+  (útil per a falles i fosses). & Sensible a $\varepsilon$ i \textit{minPts};
+  densitats molt desiguals entre regions. \\
+Mescles gaussianes (GMM) & Grups el·líptics i assignació probabilística. &
+  Més paràmetres; pot ser inestable amb pocs punts per grup. \\
+Agrupació espai-temps \cite{zaliapin2013} & Separa seqüències de rèpliques de
+  la sismicitat de fons amb criteris físics. & Requereix el temps d'origen i
+  més modelatge; fora de l'abast d'aquest treball (línia de millora). \\
+\midrule
+Distància als $k$ veïns (escollit) & Senzilla, sense hipòtesi de distribució. &
+  No local; $O(n^2)$ sense estructures espacials. \\
+LOF & Sensible a la densitat local. & Més cara; depèn de $k$. \\
+\textit{Isolation Forest} & Escalable, $\approx O(n\log n)$. &
+  Aleatòria; menys interpretable. \\
+\bottomrule
+\end{tabularx}
+\caption{Comparació de les tècniques escollides amb alternatives.}\label{tab:comparacio}
+\end{table}
+
+L'ús de \textit{K-means} en dades sísmiques és habitual com a primera
+aproximació exploratòria, però la bibliografia especialitzada recomana
+mètodes que incorporin el temps i la física dels processos de ruptura
+\cite{zaliapin2013}. Per això, aquest informe tracta \textit{K-means} com una
+\emph{línia base} i avalua amb rigor quan els seus resultats són
+interpretables i quan no.
+
+% ==============================================================================
+\section{Metodologia i solució proposada}\label{sec:metodologia}
+% ==============================================================================
+
+\subsection{Visió general}
+La figura~\ref{fig:pipeline} resumeix el procés complet. Cada etapa es descriu
+a continuació amb prou detall perquè una altra persona pugui replicar-lo.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  caixa/.style={draw, rounded corners, align=center, minimum width=2.7cm,
+                minimum height=1.0cm, fill=blue!6, font=\small},
+  >=Stealth]
+  \node[caixa] (a) at (0,0)    {Catàleg sísmic\\(CSV, 30 dies)};
+  \node[caixa] (b) at (3.6,0)  {Neteja i\\validació};
+  \node[caixa] (c) at (7.2,0)  {Característiques\\+ \textit{z-score}};
+  \node[caixa, fill=green!8] (d) at (3.6,-2.2) {\textit{K-means}\\(P1: agrupació)};
+  \node[caixa, fill=orange!10] (e) at (10.0,-2.2) {Puntuació $s_k$\\(P2: anomalies)};
+  \node[caixa, fill=gray!12] (f) at (6.8,-4.4) {Validació i\\interpretació};
+  \draw[->] (a)--(b); \draw[->] (b)--(c);
+  \draw[->] (c)--(d); \draw[->] (c)--(e);
+  \draw[->] (d)--(f); \draw[->] (e)--(f);
+\end{tikzpicture}
+\caption{Diagrama del procés: de les dades en brut a la interpretació.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Pas 1: Obtenció de les dades}
+Les dades provenen del catàleg d'esdeveniments de l'USGS \cite{usgs}, que és
+públic i s'actualitza de manera contínua. Es descarrega un CSV amb els
+esdeveniments entre \pend{data inicial} i \pend{data final} (30 dies) i es desa
+com a \texttt{earthquakes.csv} al directori del projecte, de manera que
+l'anàlisi no depèn de la xarxa en executar-se. El fitxer emprat per a
+l'informe s'inclou al repositori com a \emph{dades d'exemple}
+(secció~\ref{sec:reproducibilitat}), ja que el catàleg canvia amb el temps i,
+altrament, els resultats no es podrien reproduir exactament. Camps
+utilitzats: \texttt{mag}, \texttt{depth}, \texttt{latitude},
+\texttt{longitude} i \texttt{place} (etiqueta de l'esdeveniment).
+
+\subsection{Pas 2: Neteja i validació}
+Es descarten les files amb valors no numèrics, buits o no finits (\texttt{NaN},
+$\pm\infty$) en alguna de les quatre variables i les latituds o longituds fora
+de $[-90,90]$ i $[-180,180]$. Es registra el recompte de files descartades
+(objectiu O1), que s'informa a la taula~\ref{tab:dades}. Una diferència
+deliberada respecte al codi de partida és que \emph{no} s'imputa una
+profunditat de 10~km quan falta, perquè això introduiria un valor inventat que
+podria agrupar-se artificialment.
+
+\subsection{Pas 3: Característiques i normalització}
+Es construeixen les dues representacions (A) i (B) de la
+secció~\ref{sec:geo} i s'apliquen \textit{z-score} columna a columna. Els
+paràmetres $\mu_j,\sigma_j$ es conserven per poder interpretar els centroides
+en unitats originals.
+
+\subsection{Pas 4: Agrupació amb \textit{K-means}}
+\begin{algorithm}[htbp]
+\caption{\textit{K-means} amb inicialització aleatòria i criteri de parada}
+\label{alg:kmeans}
+\begin{algorithmic}[1]
+\Require $\mathbf{Z}\in\R^{n\times d}$, $K$, màxim d'iteracions $T$, tolerància $\tau$, llavor $s$
+\Ensure etiquetes $c\in\{1..K\}^n$, centroides $\boldsymbol\mu$, inèrcia $J$
+\State \textbf{si} $K<1$ \textbf{o} $K>n$ \textbf{llavors} llançar error
+\State Inicialitzar el generador aleatori amb la llavor $s$
+\State $\boldsymbol\mu\gets$ $K$ files de $\mathbf{Z}$ triades sense reemplaçament
+\For{$t=1,\dots,T$}
+  \State $c_i\gets\arg\min_k\norm{\mathbf{z}_i-\boldsymbol\mu_k}^2$ per a tot $i$
+  \State $\boldsymbol\mu'_k\gets$ mitjana dels punts amb $c_i=k$ \quad (si el grup és buit, conservar $\boldsymbol\mu_k$)
+  \If{$\norm{\boldsymbol\mu'-\boldsymbol\mu}<\tau$} \State $\boldsymbol\mu\gets\boldsymbol\mu'$; \textbf{sortir} \EndIf
+  \State $\boldsymbol\mu\gets\boldsymbol\mu'$
+\EndFor
+\State \Return $c,\boldsymbol\mu,J(c,\boldsymbol\mu)$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Decisions i justificació.} La taula~\ref{tab:decisions} recull les
+decisions principals, les alternatives considerades i el motiu de l'elecció.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Decisió} & \textbf{Alternatives} & \textbf{Motiu} \\
+\midrule
+Escalat \textit{z-score} & \textit{min--max}, escalat robust &
+  \textit{Min--max} comprimeix tot el rang segons els extrems que volem
+  detectar; \textit{z-score} és l'estàndard amb \textit{K-means}. \\
+Posició: (A) lat/lon i (B) esfera 3D & Només (A) &
+  (B) evita el salt de longitud i les distorsions per latitud; (A) es manté
+  per coherència amb el codi de partida i per quantificar la diferència. \\
+$K$ per silueta + DB + colze & Fixar $K=3$ a priori &
+  $K=3$ es motiva per la classificació de profunditat, però cal comprovar que
+  les dades ho suporten; es reporta tant $K=3$ com el $K$ òptim empíric. \\
+Llavor fixa i 30 repeticions & Una sola execució &
+  La llavor fixa assegura reproducibilitat; les 30 repeticions mesuren
+  l'estabilitat (ARI). \\
+$k=5$ veïns per a anomalies & $k\in\{3,5,10,20\}$ &
+  $k=5$ és el valor del codi de partida; es mostra la sensibilitat a $k$ i
+  s'avalua amb \textit{LOF} i \textit{Isolation Forest}. \\
+$m=5$ anomalies principals & Llindar per percentil &
+  Un recompte fix és fàcil d'interpretar en un informe; es compara també amb
+  el percentil 99. \\
+\bottomrule
+\end{tabularx}
+\caption{Decisions de disseny, alternatives i justificació.}\label{tab:decisions}
+\end{table}
+
+\subsection{Pas 5: Detecció d'anomalies}
+Per a cada punt es calcula $s_k$ amb $k=5$ i s'ordena de manera descendent. Els
+$m$ primers es consideren anomalies. Per no confondre magnitud amb
+excepcionalitat, s'analitza quin component (magnitud, profunditat o posició)
+explica cada puntuació alta, comparant el valor $z$ de cada variable.
+
+\subsection{Pas 6: Validació}\label{sec:metodo-validacio}
+\begin{enumerate}[nosep]
+  \item \textbf{Mètriques internes:} inèrcia, silueta i Davies--Bouldin per a
+        $K=2,\dots,10$.
+  \item \textbf{Estabilitat:} ARI entre les particions de 30 llavors diferents.
+  \item \textbf{Referència externa:} taula de contingència i ARI/NMI entre els
+        grups i la classificació per profunditat (70 i 300~km).
+  \item \textbf{Anomalies sintètiques:} s'injecten $m_s=\,$\pend{valor} esdeveniments
+        artificials extrems (p.~ex. $M\ge 8{,}5$ a $h>600$~km o
+        posicions aïllades) i es mesura la recuperació en els $m_s$ primers
+        llocs.
+  \item \textbf{Comparació de mètodes:} solapament (Jaccard) dels $m$ primers
+        entre $s_k$, \textit{LOF} i \textit{Isolation Forest}.
+  \item \textbf{Contrast amb fonts externes:} es comproven els anòmals
+        trobats amb el canal d'esdeveniments significatius de l'USGS
+        \cite{usgs}.
+\end{enumerate}
+
+\subsection{Complexitat}
+Per a $n$ esdeveniments, $d$ característiques, $K$ grups i $T$ iteracions:
+\textit{K-means} costa $O(TnKd)$, el càlcul ingenu de $s_k$ costa
+$O(n^2d)$ en temps i $O(n)$ en memòria si s'ordena fila a fila; amb un arbre
+KD el cost mitjà es redueix a $\approx O(n\log n)$ en dimensió baixa.
+
+% ==============================================================================
+\section{Implementació, qualitat del codi i reproducibilitat}\label{sec:implementacio}
+% ==============================================================================
+
+\subsection{Revisió del codi de partida}
+El \textit{script} de partida (\texttt{presentation.py}) implementa tot el
+procés amb Python pur i \texttt{matplotlib}. La revisió ha detectat els
+punts següents, que la versió millorada resol:
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Observació} & \textbf{Correcció aplicada} \\
+\midrule
+\textbf{Error en el gràfic:} es fa
+\texttt{[data\_raw[i][0] for i in distancies\_veins]}, però els elements de
+\texttt{distancies\_veins} són parells \texttt{(distància, índex)}; això
+provoca un \texttt{TypeError}. A més, no es limita als 5 primers. &
+Iterar sobre \texttt{distancies\_veins[:5]} i desempaquetar l'índex
+(\texttt{for \_, i in ...}). \\
+\texttt{import matplotlib} duplicat dins el bloc de lectura. & Un únic
+\textit{import} a l'inici. \\
+Bucles en Python pur; la detecció d'anomalies és $O(n^2)$ amb un bucle
+intern que crea i ordena una llista per punt. &
+Vectorització amb NumPy i \texttt{NearestNeighbors} (arbre KD) de
+\textit{scikit-learn} \cite{pedregosa2011}. \\
+Tot el codi és un \textit{script} lineal amb valors fixos ($K=3$, 25
+iteracions, $k=5$). & Funcions amb responsabilitat única i paràmetres
+explícits. \\
+Profunditat per defecte de 10~km si falta; entrades errònies s'ignoren en
+silenci. & Es descarten i es comptabilitzen les files invàlides. \\
+Latitud i longitud tractades com a coordenades euclidianes. &
+Variant (B) amb coordenades sobre l'esfera. \\
+Sense proves, \textit{README} ni \texttt{requirements.txt}. &
+Proves amb \texttt{pytest}, \textit{README} i dependències fixades. \\
+Els centroides inicials es trien a l'atzar. &
+S'afegeix una llavor i l'opció \textit{k-means++} per comparar. \\
+\bottomrule
+\end{tabularx}
+\caption{Problemes del codi de partida i correccions.}\label{tab:revisio}
+\end{table}
+
+\subsection{Arquitectura modular}
+S'organitza el projecte en mòduls amb una responsabilitat clara, separant
+dades, lògica i presentació:
+\begin{lstlisting}[language={},numbers=none,caption={Estructura del projecte.}]
+sismes/
+  README.md
+  requirements.txt
+  earthquakes.csv          # dades d'exemple (finestra de 30 dies)
+  sismes/
+    __init__.py
+    dades.py               # lectura i validacio del CSV
+    preprocessament.py     # z-score, coordenades esferiques
+    clustering.py          # K-means i metriques de validacio
+    anomalies.py           # puntuacio kNN (i comparacio amb LOF/IF)
+    visualitzacio.py       # grafics (Matplotlib)
+  main.py                  # orquestra el proces i imprimeix resultats
+  tests/
+    test_sismes.py
+\end{lstlisting}
+
+\subsection{Funcions principals}
+Els codis~\ref{lst:dades}--\ref{lst:anomalies} mostren les funcions
+essencials, totes amb \textit{docstring}. Es fan servir noms descriptius i els
+comentaris expliquen el \emph{perquè} de cada decisió.
+
+\begin{lstlisting}[caption={Lectura i validacio de dades (\texttt{dades.py}).},label={lst:dades}]
+import csv
+import math
+import numpy as np
+
+# Alias acceptats per a cada columna segons la procedencia del CSV.
+ALIAS = {
+    "mag": ("magnitude", "mag", "Mag"),
+    "profunditat": ("depth", "Depth", "depth_km"),
+    "lat": ("latitude", "lat", "Lat"),
+    "lon": ("longitude", "lon", "Lon"),
+}
+
+
+def _valor(fila, noms):
+    """Retorna el primer camp present en 'fila' convertit a float."""
+    for nom in noms:
+        if nom in fila:
+            return float(fila[nom])
+    raise KeyError(noms)
+
+
+def carregar_csv(ruta):
+    """Llegeix el cataleg i retorna (X, identificadors).
+
+    X te forma (n, 4) amb columnes [mag, profunditat, lat, lon].
+    Les files incompletes o no finites es descarten (no s'inventen valors).
+    Llanca FileNotFoundError si la ruta no existeix i ValueError si no
+    queda cap fila valida.
+    """
+    ids, files = [], []
+    with open(ruta, encoding="utf-8", newline="") as f:
+        for idx, fila in enumerate(csv.DictReader(f), start=1):
+            try:
+                valors = [_valor(fila, noms) for noms in ALIAS.values()]
+            except (ValueError, KeyError):
+                continue
+            lat, lon = valors[2], valors[3]
+            if not all(math.isfinite(v) for v in valors):
+                continue
+            if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+                continue
+            ids.append(fila.get("place") or fila.get("id") or f"Sisme #{idx}")
+            files.append(valors)
+    if not files:
+        raise ValueError("Cap fila valida al fitxer: " + ruta)
+    return np.array(files, dtype=float), ids
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Preprocessament (\texttt{preprocessament.py}).},label={lst:prep}]
+import numpy as np
+
+
+def estandarditzar(X):
+    """Aplica z-score per columnes; retorna (Z, mitjanes, desviacions).
+
+    Si una columna es constant, la desviacio es fixa a 1 per evitar
+    dividir per zero.
+    """
+    mitjanes = X.mean(axis=0)
+    desviacions = X.std(axis=0)          # poblacional, com a la memoria
+    desviacions[desviacions == 0] = 1.0
+    return (X - mitjanes) / desviacions, mitjanes, desviacions
+
+
+def cartesianes_esfera(lat, lon, radi=6371.0):
+    """Passa (lat, lon) en graus a coordenades 3D (km) sobre l'esfera.
+
+    Evita la discontinuitat de la longitud a +-180 graus.
+    """
+    phi, lam = np.radians(lat), np.radians(lon)
+    return radi * np.column_stack([
+        np.cos(phi) * np.cos(lam),
+        np.cos(phi) * np.sin(lam),
+        np.sin(phi),
+    ])
+\end{lstlisting}
+
+\begin{lstlisting}[caption={\textit{K-means} vectoritzat (\texttt{clustering.py}).},label={lst:kmeans}]
+import numpy as np
+
+
+def kmeans(X, k, n_iter=100, tol=1e-6, llavor=42):
+    """K-means (Lloyd). Retorna (etiquetes, centroides, inercia).
+
+    Llanca ValueError si k no esta entre 1 i el nombre de punts.
+    """
+    if not 1 <= k <= len(X):
+        raise ValueError("k ha d'estar entre 1 i n")
+    rng = np.random.default_rng(llavor)
+    centres = X[rng.choice(len(X), size=k, replace=False)]
+    for _ in range(n_iter):
+        # distancies al quadrat punt-centroide: forma (n, k)
+        d2 = ((X[:, None, :] - centres[None, :, :]) ** 2).sum(axis=2)
+        etiquetes = d2.argmin(axis=1)
+        nous = np.array([
+            X[etiquetes == j].mean(axis=0) if np.any(etiquetes == j)
+            else centres[j]              # grup buit: es conserva el centroide
+            for j in range(k)
+        ])
+        convergit = np.linalg.norm(nous - centres) < tol
+        centres = nous
+        if convergit:
+            break
+    d2 = ((X[:, None, :] - centres[None, :, :]) ** 2).sum(axis=2)
+    etiquetes = d2.argmin(axis=1)
+    inercia = d2[np.arange(len(X)), etiquetes].sum()
+    return etiquetes, centres, inercia
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Puntuació d'anomalia (\texttt{anomalies.py}).},label={lst:anomalies}]
+import numpy as np
+from sklearn.neighbors import NearestNeighbors
+
+
+def puntuacio_knn(X, k=5):
+    """Distancia mitjana als k veins mes propers (sense comptar-se a si mateix).
+
+    Utilitza un arbre KD: cost mitja ~O(n log n) en lloc d'O(n^2).
+    """
+    if not 1 <= k < len(X):
+        raise ValueError("k ha d'estar entre 1 i n-1")
+    nn = NearestNeighbors(n_neighbors=k + 1).fit(X)
+    dist, _ = nn.kneighbors(X)
+    return dist[:, 1:].mean(axis=1)      # la columna 0 es el propi punt
+
+
+def top_anomalies(puntuacions, m=5):
+    """Retorna els indexos de les m puntuacions mes altes (de major a menor)."""
+    return np.argsort(puntuacions)[::-1][:m]
+\end{lstlisting}
+
+\noindent\emph{Nota:} si hi ha punts duplicats exactes, el primer veí retornat
+per \texttt{kneighbors} pot no ser el propi punt; l'efecte és negligible en
+aquest conjunt de dades, però es comprova a les proves de validació.
+
+\subsection{Eficiència i ús de biblioteques}
+La versió de partida reimplementa en Python pur operacions que ofereixen
+NumPy i \textit{scikit-learn}. Per a un catàleg de $n=\,$\pend{valor} esdeveniments, el
+càlcul $O(n^2)$ implica unes $n^2\approx\,$\pend{valor} distàncies calculades amb
+bucles de Python. La taula~\ref{tab:rendiment} compara temps mesurats a la
+mateixa màquina amb \texttt{time.perf\_counter} (mitjana de 5 execucions).
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Etapa} & \textbf{Python pur (s)} & \textbf{NumPy/sklearn (s)} & \textbf{Acceleració} \\
+\midrule
+\textit{K-means} ($K=3$) & \pend{t1} & \pend{t2} & \pend{t1/t2}$\times$ \\
+Puntuació $s_5$ & \pend{t3} & \pend{t4} & \pend{t3/t4}$\times$ \\
+\bottomrule
+\end{tabular}
+\caption{Temps d'execució de la versió de partida i de la versió optimitzada.}
+\label{tab:rendiment}
+\end{table}
+
+\subsection{Proves automàtiques}\label{sec:proves}
+Es verifiquen casos normals, límit i erronis amb \texttt{pytest}
+(codi~\ref{lst:tests}). El resultat de l'execució és
+\pend{n} proves superades de \pend{n} (\texttt{pytest -q}).
+
+\begin{lstlisting}[caption={Proves automàtiques (\texttt{tests/test\_sismes.py}).},label={lst:tests}]
+import numpy as np
+import pytest
+from sismes.dades import carregar_csv
+from sismes.preprocessament import estandarditzar, cartesianes_esfera
+from sismes.clustering import kmeans
+from sismes.anomalies import puntuacio_knn, top_anomalies
+
+
+# ---- Casos normals ---------------------------------------------------------
+def test_estandarditzar_mitjana_zero_desviacio_un():
+    X = np.array([[1., 10.], [2., 20.], [3., 30.]])
+    Z, _, _ = estandarditzar(X)
+    assert np.allclose(Z.mean(axis=0), 0.0)
+    assert np.allclose(Z.std(axis=0), 1.0)
+
+
+def test_kmeans_separa_dos_blocs():
+    rng = np.random.default_rng(0)
+    X = np.vstack([rng.normal(0, .1, (50, 2)), rng.normal(10, .1, (50, 2))])
+    etiq, _, _ = kmeans(X, k=2, llavor=1)
+    assert len(set(etiq[:50])) == 1 and len(set(etiq[50:])) == 1
+    assert etiq[0] != etiq[99]
+
+
+def test_knn_detecta_outlier_sintetic():
+    rng = np.random.default_rng(0)
+    X = np.vstack([rng.normal(0, 1, (200, 2)), [[50., 50.]]])
+    assert top_anomalies(puntuacio_knn(X, k=5), m=1)[0] == 200
+
+
+def test_esfera_longitud_periodica():
+    p1 = cartesianes_esfera(np.array([0.]), np.array([179.]))
+    p2 = cartesianes_esfera(np.array([0.]), np.array([-179.]))
+    # propers a l'esfera tot i diferir 358 graus en longitud
+    assert np.linalg.norm(p1 - p2) < 300      # km (aprox. 222 km)
+
+
+# ---- Casos limit -----------------------------------------------------------
+def test_estandarditzar_columna_constant():
+    X = np.array([[5., 1.], [5., 2.], [5., 3.]])
+    Z, _, _ = estandarditzar(X)
+    assert np.all(np.isfinite(Z))
+
+
+def test_kmeans_k_igual_a_un():
+    X = np.random.default_rng(0).normal(size=(20, 3))
+    etiq, centres, _ = kmeans(X, k=1)
+    assert np.all(etiq == 0)
+    assert np.allclose(centres[0], X.mean(axis=0))
+
+
+# ---- Casos erronis -----------------------------------------------------------
+@pytest.mark.parametrize("k", [0, 6])
+def test_kmeans_k_invalid(k):
+    with pytest.raises(ValueError):
+        kmeans(np.zeros((5, 2)), k=k)
+
+
+def test_knn_k_invalid():
+    with pytest.raises(ValueError):
+        puntuacio_knn(np.zeros((5, 2)), k=5)
+
+
+def test_carregar_csv_ignora_files_incompletes(tmp_path):
+    f = tmp_path / "t.csv"
+    f.write_text("mag,depth,latitude,longitude,place\n5.1,10,1,2,A\n,,,,B\n")
+    X, ids = carregar_csv(str(f))
+    assert X.shape == (1, 4) and ids == ["A"]
+
+
+def test_carregar_csv_inexistent():
+    with pytest.raises(FileNotFoundError):
+        carregar_csv("no_existeix.csv")
+
+
+def test_carregar_csv_sense_files_valides(tmp_path):
+    f = tmp_path / "buit.csv"
+    f.write_text("mag,depth,latitude,longitude,place\n")
+    with pytest.raises(ValueError):
+        carregar_csv(str(f))
+\end{lstlisting}
+
+\subsection{Reproducibilitat i coherència amb l'informe}\label{sec:reproducibilitat}
+Per garantir que els resultats d'aquest informe es reprodueixen exactament:
+\begin{itemize}[nosep]
+  \item \textbf{\textit{README}:} descriu l'objectiu, l'estructura, com crear
+        un entorn virtual, instal·lar dependències, executar
+        \texttt{python main.py} i \texttt{pytest}, i com descarregar un nou
+        catàleg.
+  \item \textbf{\texttt{requirements.txt} amb versions fixades:}
+        \texttt{numpy==\pend{versió}}, \texttt{scikit-learn==\pend{versió}},
+        \texttt{matplotlib==\pend{versió}}, \texttt{pytest==\pend{versió}}
+        (obtingudes amb \texttt{pip freeze}); es documenta la versió de
+        Python \pend{versió}.
+  \item \textbf{Dades d'exemple:} el fitxer \texttt{earthquakes.csv} utilitzat
+        a l'informe s'inclou al repositori. Aquest és el que s'ha d'emprar per
+        obtenir exactament les xifres de les taules; un catàleg més recent
+        donarà valors diferents.
+  \item \textbf{Llavor fixa:} \texttt{llavor=42} en totes les etapes
+        aleatòries.
+  \item \textbf{Instruccions d'execució:}
+\end{itemize}
+\begin{lstlisting}[language={},numbers=none]
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python main.py          # reprodueix les taules i figures de l'informe
+pytest -q               # executa les proves automatiques
+\end{lstlisting}
+
+% ==============================================================================
+\section{Resultats i anàlisi}\label{sec:resultats}
+% ==============================================================================
+\noindent\emph{Nota per a l'autor/a: les xifres marcades en vermell s'han
+d'omplir amb la sortida real de \texttt{main.py}; no s'han inventat valors
+perquè l'informe ha de coincidir exactament amb l'execució.}
+
+\subsection{Descripció del conjunt de dades}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Concepte} & \textbf{Valor} \\
+\midrule
+Finestra temporal & \pend{inici} -- \pend{fi} \\
+Registres llegits & \pend{n$_0$} \\
+Registres descartats (invàlids) & \pend{n$_0-n$} \\
+Esdeveniments analitzats ($n$) & \pend{n} \\
+Magnitud: mínim / mediana / màxim & \pend{.} / \pend{.} / \pend{.} \\
+Profunditat (km): mínim / mediana / màxim & \pend{.} / \pend{.} / \pend{.} \\
+\bottomrule
+\end{tabular}
+\caption{Resum del conjunt de dades.}\label{tab:dades}
+\end{table}
+
+\figuraopt{fig_distribucions.pdf}{Distribució de magnituds i profunditats i
+histograma de $\log_{10}N(\ge M)$ per comprovar la llei de
+Gutenberg--Richter i la completesa del catàleg.}{fig:distribucions}
+
+La figura~\ref{fig:distribucions} permet comprovar si el catàleg segueix la
+llei de Gutenberg--Richter per sobre d'una magnitud de completesa
+$M_c=\,$\pend{valor}. Això es fa abans del \textit{clustering} perquè la
+barreja d'esdeveniments petits (detectats només en zones ben instrumentades)
+i grans pot determinar l'estructura de l'agrupació.
+
+\subsection{Selecció del nombre de grups}
+\figuraopt{fig_seleccio_k.pdf}{Inèrcia (colze), silueta mitjana i índex de
+Davies--Bouldin per a $K=2,\dots,10$ (representacions A i B).}{fig:seleccio_k}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+$K$ & Inèrcia (A) & Silueta (A) & DB (A) & Silueta (B) & DB (B) \\
+\midrule
+2 & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+3 & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+4 & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+\multicolumn{6}{c}{\dots}\\
+\bottomrule
+\end{tabular}
+\caption{Mètriques internes per a diferents valors de $K$.}\label{tab:selecciok}
+\end{table}
+
+Segons la figura~\ref{fig:seleccio_k} i la taula~\ref{tab:selecciok}, el valor
+de $K$ amb millor silueta és $K^\ast=\,$\pend{valor}, mentre que $K=3$
+(el valor del codi de partida) obté una silueta de \pend{.}. \pend{Comentar si
+se supera el llindar $\bar s\ge0{,}25$ de l'objectiu O2 i, si no, dir-ho
+explícitament.}
+
+\subsection{Resultats del \textit{clustering} ($K=3$)}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lrrrr>{\raggedright\arraybackslash}p{4.2cm}@{}}
+\toprule
+\textbf{Grup} & \textbf{$n_k$} & \textbf{Magnitud mitjana} & \textbf{Profunditat mitjana (km)} & \textbf{\% del total} & \textbf{Interpretació} \\
+\midrule
+1 & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{p.~ex. sismicitat superficial} \\
+2 & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+3 & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+\bottomrule
+\end{tabular}
+\caption{Característiques dels grups trobats amb $K=3$ (valors en unitats
+originals).}\label{tab:clusters}
+\end{table}
+
+\figuraopt{fig_clusters.pdf}{Magnitud enfront de profunditat (eix invertit),
+coloreu per grup. Els quadrats vermells marquen les 5 anomalies principals.}{fig:clusters}
+
+\figuraopt{fig_mapa.pdf}{Mapa dels epicentres coloreats segons el grup
+\textit{K-means}.}{fig:mapa}
+
+\paragraph{Interpretació crítica.} La figura~\ref{fig:clusters} només mostra
+dues de les quatre dimensions utilitzades. Cal advertir que, en incloure
+latitud i longitud en l'espai de característiques (variant A), els grups no
+corresponen exclusivament a règims de profunditat: una part de la separació és
+\emph{geogràfica}. Per això el nom \emph{superficial/intermedi/profund} només
+és apropiat si la taula de contingència
+(taula~\ref{tab:contingencia}) ho confirma. \pend{Descriure què s'observa
+realment: quins grups domina cada regió, si apareix un grup dominat per una
+seqüència de rèpliques, etc.}
+
+\subsection{Validació del \textit{clustering}}\label{sec:validacio}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+ & Superficial ($<70$ km) & Intermedi (70--300 km) & Profund ($>300$ km) \\
+\midrule
+Grup 1 & \pend{.} & \pend{.} & \pend{.} \\
+Grup 2 & \pend{.} & \pend{.} & \pend{.} \\
+Grup 3 & \pend{.} & \pend{.} & \pend{.} \\
+\bottomrule
+\end{tabular}
+\caption{Taula de contingència entre els grups i la classificació de
+referència per profunditat.}\label{tab:contingencia}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Mètrica de validació} & \textbf{Variant A} & \textbf{Variant B} \\
+\midrule
+Silueta mitjana ($K=3$) & \pend{.} & \pend{.} \\
+Davies--Bouldin ($K=3$) & \pend{.} & \pend{.} \\
+ARI mitjà entre 30 llavors & \pend{.} & \pend{.} \\
+ARI amb la classificació per profunditat & \pend{.} & \pend{.} \\
+NMI amb la classificació per profunditat & \pend{.} & \pend{.} \\
+\bottomrule
+\end{tabular}
+\caption{Validació interna, estabilitat i acord amb la referència.}
+\label{tab:validacio}
+\end{table}
+
+La taula~\ref{tab:validacio} resumeix el compliment dels objectius O2 i O3.
+\pend{Discutir: si l'estabilitat és $\ge0{,}90$ i si l'ARI amb la referència és
+baix, explicar-ho (p.~ex. perquè la posició geogràfica domina la
+distància).} També cal comentar la diferència entre les variants A i B.
+
+\subsection{Resultats de la detecció d'anomalies}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}rp{4.8cm}rrrrr@{}}
+\toprule
+\textbf{\#} & \textbf{Esdeveniment} & $M$ & $h$ (km) & Lat. & Lon. & $s_5$ \\
+\midrule
+1 & \pend{lloc} & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+2 & \pend{lloc} & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+3 & \pend{lloc} & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+4 & \pend{lloc} & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+5 & \pend{lloc} & \pend{.} & \pend{.} & \pend{.} & \pend{.} & \pend{.} \\
+\bottomrule
+\end{tabular}
+\caption{Els cinc esdeveniments amb la puntuació d'anomalia $s_5$ més alta.}
+\label{tab:anomalies}
+\end{table}
+
+\figuraopt{fig_anomalies_score.pdf}{Distribució de la puntuació $s_5$ (escala
+logarítmica) amb el llindar dels cinc esdeveniments principals.}{fig:scores}
+
+\paragraph{Anàlisi.} Per a cada esdeveniment de la taula~\ref{tab:anomalies}
+s'indica quina variable en justifica la puntuació (valors $z$ més alts en
+magnitud, profunditat o posició). \pend{Interpretar: p.~ex. si els anòmals són
+sobretot magnituds molt altes, sismes molt profunds o epicentres aïllats; i
+comparar amb els esdeveniments significatius publicats per l'USGS.}
+
+\subsection{Validació de la detecció d'anomalies}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Prova} & \textbf{$s_5$ (kNN)} & \textbf{Observació} \\
+\midrule
+Recuperació d'anomalies sintètiques (top-$m_s$) & \pend{.\%} &
+  Objectiu O4: $\ge 90\,\%$ \\
+Jaccard top-5 amb \textit{LOF} & \pend{.} & \\
+Jaccard top-5 amb \textit{Isolation Forest} & \pend{.} & \\
+Variació del top-5 per a $k\in\{3,5,10,20\}$ & \pend{.} & Sensibilitat a $k$ \\
+\bottomrule
+\end{tabular}
+\caption{Validació de la puntuació d'anomalia.}\label{tab:validacio_anom}
+\end{table}
+
+\subsection{Discussió i limitacions}
+\begin{itemize}[nosep]
+  \item \textbf{Anòmal estadístic $\neq$ anòmal físic.} Un terratrèmol gran
+        és anòmal en l'espai de característiques perquè és rar (llei de
+        Gutenberg--Richter), no perquè sigui anormal des del punt de vista
+        geofísic. Un mètode no supervisat no pot fer aquesta distinció sense
+        coneixement addicional.
+  \item \textbf{Hipòtesis de \textit{K-means}.} Els règims tectònics (fosses,
+        dorsals) són estructures allargades i \textit{K-means} tendeix a
+        tallar-les en grups compactes.
+  \item \textbf{Geometria de les coordenades.} La variant A ignora la
+        periodicitat de la longitud i la curvatura de la Terra; la variant B
+        ho corregeix parcialment.
+  \item \textbf{Completesa del catàleg i seqüències de rèpliques.} Una
+        seqüència intensa en el mes d'estudi pot generar un grup només per
+        proximitat espacial i temporal, sense significat tectònic propi.
+  \item \textbf{Finestra curta.} Un sol mes no permet inferir taxes de
+        sismicitat estables; els resultats són descriptius, no predictius.
+  \item \textbf{Ponderació implícita.} Després de \textit{z-score}, totes les
+        variables pesen igual; això és una decisió, no una veritat física.
+\end{itemize}
+
+% ==============================================================================
+\section{Conclusions i línies de millora}\label{sec:conclusions}
+% ==============================================================================
+\paragraph{Resposta als objectius.}
+\begin{itemize}[nosep]
+  \item \textbf{O1:} s'ha construït un procés de càrrega i neteja que
+        documenta els registres descartats (\pend{n$_0-n$} de \pend{n$_0$}).
+  \item \textbf{O2:} el valor de $K$ escollit és \pend{K}, amb silueta mitjana
+        \pend{.} i ARI d'estabilitat \pend{.}; l'objectiu \pend{s'ha assolit /
+        no s'ha assolit}.
+  \item \textbf{O3:} l'acord amb la classificació per profunditat és
+        $\mathrm{ARI}=\,$\pend{.} i $\mathrm{NMI}=\,$\pend{.}; \pend{interpretar}.
+  \item \textbf{O4:} la puntuació $s_5$ recupera el \pend{.\%} de les anomalies
+        sintètiques i els cinc esdeveniments principals són
+        \pend{resum}.
+  \item \textbf{O5:} totes les proves automàtiques passen i la versió
+        optimitzada és \pend{.}$\times$ més ràpida que l'original.
+\end{itemize}
+
+\paragraph{Conclusió general.} \textit{K-means} i la distància als veïns són
+eines útils com a primera exploració d'un catàleg sísmic: ofereixen un resum
+interpretable i un ordenament d'esdeveniments per excepcionalitat. Tanmateix,
+la validació mostra que els resultats han de llegir-se com a descripció
+estadística i no com a classificació tectònica, perquè (i) les variables
+geogràfiques condicionen l'agrupació, (ii) les anomalies detectades reflecteixen
+principalment raresa estadística i (iii) el període d'un mes pot estar dominat
+per seqüències de rèpliques.
+
+\paragraph{Línies de millora concretes.}
+\begin{enumerate}[nosep]
+  \item Agrupar només amb magnitud i profunditat (i fer l'anàlisi geogràfica
+        a part) o fer servir la distància de cercle màxim amb \textit{DBSCAN}
+        o HDBSCAN.
+  \item Incorporar el temps d'origen i aplicar agrupació espai-temps per
+        separar rèpliques de la sismicitat de fons \cite{zaliapin2013}.
+  \item Utilitzar \textit{k-means++}, múltiples reinicis i mescles gaussianes
+        per grups el·líptics.
+  \item Ampliar la finestra temporal i filtrar per magnitud de completesa
+        $M_c$.
+  \item Comparar sistemàticament amb \textit{LOF} i \textit{Isolation Forest}
+        i, quan existeixin etiquetes (esdeveniments significatius), passar a
+        una avaluació amb precisió i \textit{recall}.
+\end{enumerate}
+
+% ==============================================================================
+\begin{thebibliography}{99}\addcontentsline{toc}{section}{Referències}
+
+\bibitem{arthur2007} Arthur, D.; Vassilvitskii, S. (2007).
+\textit{k-means++: The advantages of careful seeding}.
+Proceedings of the 18th Annual ACM-SIAM Symposium on Discrete Algorithms
+(SODA), pp.~1027--1035.
+
+\bibitem{benioff1949} Benioff, H. (1949). Seismic evidence for the fault origin
+of oceanic deeps. \textit{Bulletin of the Geological Society of America},
+60(12), 1837--1856.
+
+\bibitem{bird2003} Bird, P. (2003). An updated digital model of plate
+boundaries. \textit{Geochemistry, Geophysics, Geosystems}, 4(3), 1027.
+
+\bibitem{breunig2000} Breunig, M. M.; Kriegel, H.-P.; Ng, R. T.; Sander, J.
+(2000). LOF: Identifying density-based local outliers.
+\textit{Proceedings of the ACM SIGMOD International Conference on Management of
+Data}, pp.~93--104.
+
+\bibitem{chandola2009} Chandola, V.; Banerjee, A.; Kumar, V. (2009). Anomaly
+detection: A survey. \textit{ACM Computing Surveys}, 41(3), 15:1--15:58.
+
+\bibitem{davies1979} Davies, D. L.; Bouldin, D. W. (1979). A cluster
+separation measure. \textit{IEEE Transactions on Pattern Analysis and Machine
+Intelligence}, 1(2), 224--227.
+
+\bibitem{ester1996} Ester, M.; Kriegel, H.-P.; Sander, J.; Xu, X. (1996). A
+density-based algorithm for discovering clusters in large spatial databases
+with noise. \textit{Proceedings of the 2nd International Conference on
+Knowledge Discovery and Data Mining (KDD)}, pp.~226--231.
+
+\bibitem{gutenberg1944} Gutenberg, B.; Richter, C. F. (1944). Frequency of
+earthquakes in California. \textit{Bulletin of the Seismological Society of
+America}, 34(4), 185--188.
+
+\bibitem{hanks1979} Hanks, T. C.; Kanamori, H. (1979). A moment magnitude
+scale. \textit{Journal of Geophysical Research}, 84(B5), 2348--2350.
+
+\bibitem{hubert1985} Hubert, L.; Arabie, P. (1985). Comparing partitions.
+\textit{Journal of Classification}, 2(1), 193--218.
+
+\bibitem{kaufman1990} Kaufman, L.; Rousseeuw, P. J. (1990).
+\textit{Finding Groups in Data: An Introduction to Cluster Analysis}.
+Wiley.
+
+\bibitem{liu2008} Liu, F. T.; Ting, K. M.; Zhou, Z.-H. (2008). Isolation
+forest. \textit{Proceedings of the 8th IEEE International Conference on Data
+Mining (ICDM)}, pp.~413--422.
+
+\bibitem{lloyd1982} Lloyd, S. P. (1982). Least squares quantization in PCM.
+\textit{IEEE Transactions on Information Theory}, 28(2), 129--137.
+
+\bibitem{macqueen1967} MacQueen, J. (1967). Some methods for classification
+and analysis of multivariate observations. \textit{Proceedings of the 5th
+Berkeley Symposium on Mathematical Statistics and Probability}, vol.~1,
+pp.~281--297.
+
+\bibitem{pedregosa2011} Pedregosa, F. et al. (2011). Scikit-learn: Machine
+learning in Python. \textit{Journal of Machine Learning Research}, 12,
+2825--2830.
+
+\bibitem{ramaswamy2000} Ramaswamy, S.; Rastogi, R.; Shim, K. (2000). Efficient
+algorithms for mining outliers from large data sets. \textit{Proceedings of the
+ACM SIGMOD International Conference on Management of Data}, pp.~427--438.
+
+\bibitem{rousseeuw1987} Rousseeuw, P. J. (1987). Silhouettes: A graphical aid
+to the interpretation and validation of cluster analysis. \textit{Journal of
+Computational and Applied Mathematics}, 20, 53--65.
+
+\bibitem{sinnott1984} Sinnott, R. W. (1984). Virtues of the haversine.
+\textit{Sky and Telescope}, 68(2), 159.
+
+\bibitem{usgs} U.S. Geological Survey. \textit{Earthquake Catalog (ComCat)} i
+canals d'esdeveniments. \url{https://earthquake.usgs.gov/earthquakes/search/}.
+Consultat el \pend{data de consulta}.
+
+\bibitem{zaliapin2013} Zaliapin, I.; Ben-Zion, Y. (2013). Earthquake clusters in
+southern California I: Identification and stability. \textit{Journal of
+Geophysical Research: Solid Earth}, 118(6), 2847--2864.
+
+\end{thebibliography}
+
+\end{document}

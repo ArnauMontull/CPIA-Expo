@@ -152,8 +152,8 @@ Isolation Forest, y cómo evaluar un clustering sin etiquetas (silhouette y mét
 Integrante & Problema & Algoritmo principal & Fichero \\
 \midrule
 Arnau Montull & Detección de explosiones nucleares entre sismos (catálogo USGS) & DBSCAN (haversine) & \texttt{nukeDBSCAN\_arnau.py} \\
-Matías & \pendiente{título del problema} & \pendiente{algoritmo} & \pendiente{fichero} \\
-Martí & \pendiente{título del problema} & \pendiente{algoritmo} & \pendiente{fichero} \\
+Matías & Agrupación de sismos del último mes y detección de anomalías & K-Means ($K=3$) y $k$-vecinos más próximos & \texttt{presentation\_matias.py}, \texttt{validacio.py} \\
+Martí & Transcriptómica (RNA-seq): módulos de genes co-expresados y muestras anómalas & Clustering jerárquico, K-Means, DBSCAN, Isolation Forest & \pendiente{fichero \texttt{.py} (aún sin código)} \\
 Uriel & \pendiente{título del problema} & \pendiente{algoritmo} & \pendiente{fichero} \\
 \bottomrule
 \end{tabularx}
@@ -161,8 +161,30 @@ Uriel & \pendiente{título del problema} & \pendiente{algoritmo} & \pendiente{fi
 \end{table}
 
 \section{Fundamentos comunes}
-\pendiente{resumen común del equipo: K-Means, DBSCAN, jerárquico, GMM, Isolation Forest, silhouette y codo (una o dos páginas).}
-\comentarios[5cm]
+Resumen de los conceptos que usan los problemas. La explicación completa de K-Means (en catalán) está en
+\texttt{docs/teoria/fonaments\_de\_clustering\_i\_kmeans.tex}.
+
+\paragraph{Aprendizaje no supervisado y clustering.} Se busca estructura en datos sin etiquetas. Cada algoritmo
+necesita una medida de similitud (distancia euclídea, haversine, correlación\ldots) y la elección condiciona el resultado.
+
+\paragraph{K-Means.} Divide los datos en $K$ grupos minimizando la suma de distancias cuadráticas de cada punto al centroide
+de su grupo, $J=\sum_{k=1}^{K}\sum_{x\in C_k}\lVert x-\mu_k\rVert^2$. Se resuelve con el algoritmo de Lloyd (asignar cada punto
+al centroide más cercano y recalcular centroides, hasta converger), inicializado con $K$-means++. Es un clustering \emph{duro}, supone grupos
+compactos y de tamaño parecido, y hay que fijar $K$.
+
+\paragraph{Cómo elegir $K$ sin etiquetas.} Método del codo (la inercia deja de bajar de forma apreciable), coeficiente de
+silueta, $s=(b-a)/\max(a,b)$, con $a$ la distancia media a los puntos de su grupo y $b$ la distancia media al grupo vecino más
+próximo, e índice de Davies--Bouldin.
+
+\paragraph{DBSCAN.} Agrupa por densidad: un punto es \emph{central} si tiene al menos $v_{\min}$ puntos (él incluido) a
+distancia $\le\varepsilon$; los grupos son las componentes conexas de puntos centrales y los puntos que no alcanza ninguno
+quedan como ruido ($-1$). No necesita fijar el número de grupos y encuentra formas arbitrarias.
+
+\paragraph{Clustering jerárquico, mezclas gaussianas e Isolation Forest.} El jerárquico construye un dendrograma según
+el tipo de enlace (simple, medio, Ward) y se corta a una altura. Las mezclas gaussianas (\texttt{GaussianMixture}) dan una asignación
+blanda por probabilidad. Isolation Forest puntúa como anómalos los puntos que se aíslan con pocos cortes aleatorios.
+\pendiente{el equipo revisa y amplía este resumen con lo que se exponga.}
+\comentarios[4cm]
 
 % ==========================================
 \section{Problema de Arnau Montull: detección de explosiones nucleares con DBSCAN}
@@ -191,6 +213,26 @@ puede elegir el catálogo reducido \texttt{sismos\_usgs.csv} (554 explosiones, m
 \includegraphics[width=0.92\textwidth]{figuras/catalogo.png}
 \caption{Catálogo completo: las explosiones (rojo) se concentran en unos pocos polígonos de ensayo.}
 \end{figure}
+
+\subsection{Fundamentación teórica}
+DBSCAN \cite{ester1996} define los grupos por densidad. Dado $\varepsilon$ y $v_{\min}$, un punto es central si su
+vecindad de radio $\varepsilon$ contiene al menos $v_{\min}$ puntos; dos puntos centrales a distancia $\le\varepsilon$
+pertenecen al mismo grupo (alcanzabilidad por densidad) y los puntos sin vecindad suficiente que no alcanza ningún punto
+central son ruido. Con $v_{\min}=1$ todo punto es central y los grupos son las componentes conexas del grafo que une
+los sismos a menos de $\varepsilon$; es equivalente al clustering jerárquico de enlace simple cortado a la altura $\varepsilon$.
+
+Los epicentros están sobre la esfera, así que la distancia correcta es la ortodrómica. La fórmula de \emph{haversine}
+\cite{sinnott1984},
+\[
+d = 2R\arcsin\sqrt{\sin^2\!\tfrac{\Delta\varphi}{2}+\cos\varphi_1\cos\varphi_2\sin^2\!\tfrac{\Delta\lambda}{2}},\qquad R=6371\ \text{km},
+\]
+es numéricamente estable para distancias pequeñas y está implementada en \texttt{sklearn.cluster.DBSCAN}
+\cite{pedregosa2011} (\texttt{metric='haversine'}, con $\varepsilon$ expresado en radianes, $\varepsilon_{\mathrm{rad}}=\varepsilon_{\mathrm{km}}/R$).
+Aquí el clustering solo agrupa por posición; el criterio físico (profundidad) es el que etiqueta cada grupo.
+
+Como las clases están muy desbalanceadas (614 explosiones frente a casi 300\,000 terremotos), la exactitud no sirve: un
+detector que nunca marcase nada tendría un 99,8\,\% de aciertos. Se usan la precisión $P=\mathrm{TP}/(\mathrm{TP}+\mathrm{FP})$, el
+recall $R=\mathrm{TP}/(\mathrm{TP}+\mathrm{FN})$ y su media armónica, $F_1=2PR/(P+R)=2\,\mathrm{TP}/(2\,\mathrm{TP}+\mathrm{FP}+\mathrm{FN})$.
 
 \subsection{Método: cómo se detecta}
 \begin{enumerate}
@@ -272,6 +314,16 @@ recall 95,3\,\% y $F_1=0{,}947$.
 \end{itemize}
 \comentarios[5cm]
 
+\subsection{Conclusiones}
+\begin{itemize}
+  \item Un clustering espacial sin etiquetas, combinado con la profundidad mediana de cada grupo, recupera el 95\,\% de las
+        explosiones del catálogo ($F_1=0{,}947$) con 36 falsos positivos entre casi 300\,000 sismos.
+  \item La señal útil es doble y física: repetición en los mismos polígonos de ensayo y profundidad casi nula.
+  \item Líneas de mejora: validar con parámetros elegidos en un subconjunto y evaluados en otro (hoy solo hay la
+        comprobación cruzada entre catálogos); añadir la magnitud y la forma de onda como variables; y usar la lista oficial
+        DOE/NV-209 \cite{doe2015} en lugar de la etiqueta USGS para las pruebas de Nevada.
+\end{itemize}
+
 \subsection{Cómo reproducirlo}
 \begin{enumerate}
   \item Crear el entorno: \texttt{python -m venv .venv} e instalar \texttt{requirements.txt}
@@ -290,14 +342,66 @@ recall 95,3\,\% y $F_1=0{,}947$.
 \lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeDBSCAN\_arnau.py}}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
 
 % ==========================================
-\section{Problema de Matías}
+\section{Problema de Matías: agrupación de sismos y detección de anomalías}
 % ==========================================
-\pendiente{descripción detallada para reproducir el experimento: datos, método, parámetros, resultados, código.}
-\comentarios[8cm]
+Material en \texttt{problemas/3\_Sismes\_Matias/} (README, código, datos e informe propio en catalán,
+\texttt{informe\_sismes.tex}). Lo que sigue resume su \texttt{README.md} y su código; \emph{no he ejecutado su código ni he
+comprobado sus resultados}.
 
-\section{Problema de Martí}
-\pendiente{descripción detallada para reproducir el experimento: datos, método, parámetros, resultados, código.}
-\comentarios[8cm]
+\paragraph{Objetivo.} Segmentar los sismos globales del último mes con K-Means ($K=3$) según magnitud, profundidad,
+latitud y longitud, para identificar patrones de subducción y actividad en los bordes de placa, y detectar eventos
+excepcionales (alta magnitud o profundidad inusual) como anomalías.
+
+\paragraph{Datos.} \texttt{earthquakes.csv}: 10\,174 eventos del catálogo USGS con cabecera estándar (\texttt{time, latitude,
+longitude, depth, mag, \ldots}); el primero es del 15/10/2026.
+
+\paragraph{Método.}
+\begin{enumerate}
+  \item Carga, reordenación de columnas y filtrado de registros incompletos o inválidos.
+  \item Normalización $z$-score de las cuatro variables (media 0, desviación 1).
+  \item K-Means con $K=3$.
+  \item Anomalías: distancia euclídea media a los $k=5$ vecinos más próximos en el espacio normalizado; son anómalos
+        los puntos más aislados.
+\end{enumerate}
+
+\paragraph{Validación.} Método del codo (WCSS), coeficiente de silueta y \emph{Adjusted Rand Index} (ARI) entre
+inicializaciones distintas para medir la estabilidad; \texttt{validacio.py} también genera el mapa geográfico.
+
+\paragraph{Reproducir.} \texttt{pip install -r requirements.txt} (pandas, numpy, scikit-learn, matplotlib), después
+\texttt{python presentation\_matias.py} y \texttt{python validacio.py}. Hay versiones \texttt{*\_PANDAS.py} de ambos scripts.
+Nota: el README nombra \texttt{problema\_matias.py}, que no existe en la carpeta, y los ficheros no siguen el formato
+\texttt{<nemotécnico>\_<estudiante>.py} que pide el enunciado.
+
+\pendiente{Matías: resultados (valor de $K$ elegido, silueta, ARI, anomalías encontradas) y su conclusión.}
+\comentarios[6cm]
+
+\section{Problema de Martí: transcriptómica (RNA-seq)}
+Material en \texttt{problemas/4\_RNAseq\_Marti/} (documento \texttt{EXPO CPIA - Clustering.docx}). Es por ahora un
+\emph{plan}, sin código.
+
+\paragraph{Objetivo.} Identificar módulos de genes co-expresados y detectar muestras anómalas en datos de RNA-seq con
+aprendizaje no supervisado. La secuenciación mide la expresión de miles de genes a la vez y no hay etiquetas, porque no
+se sabe de antemano qué genes funcionan juntos: es un problema de alta dimensionalidad.
+
+\paragraph{Datos propuestos.} \texttt{scanpy.datasets.pbmc3k()} (2\,700 células sanguíneas humanas) o el conjunto UCI
+\emph{Gene Expression Cancer RNA-Seq} de Kaggle (801 muestras de pacientes con distintos tipos de cáncer, en CSV).
+
+\paragraph{Método previsto.}
+\begin{itemize}
+  \item Preprocesado: normalizar y aplicar logaritmo (los recuentos son asimétricos y dependen de la profundidad de secuenciación).
+  \item Distancia: correlación en vez de euclídea, porque importa el patrón de expresión y no el valor absoluto.
+  \item Clustering jerárquico con dendrograma: enlaces simple, medio y Ward, y cómo se corta el árbol.
+  \item Validación sin etiquetas: silueta y codo para elegir $k$.
+  \item Comparación con K-Means y DBSCAN.
+  \item Isolation Forest para las muestras problemáticas.
+  \item Conclusiones y limitaciones: maldición de la dimensionalidad, sensibilidad al preprocesado, datos sintéticos frente a reales.
+\end{itemize}
+\pendiente{Martí: código \texttt{.py}, resultados y figuras.}
+\comentarios[6cm]
+
+\section{Problema de Uriel}
+\pendiente{Uriel: título, datos, método, parámetros, resultados y código.}
+\comentarios[6cm]
 
 \section{Problema de Uriel}
 \pendiente{descripción detallada para reproducir el experimento: datos, método, parámetros, resultados, código.}
@@ -306,5 +410,17 @@ recall 95,3\,\% y $F_1=0{,}947$.
 \section{Conclusiones del equipo}
 \pendiente{comparativa de los cuatro problemas, qué algoritmo funcionó mejor y por qué.}
 \comentarios[4cm]
+
+\begin{thebibliography}{9}
+\bibitem{ester1996} Ester, M., Kriegel, H.-P., Sander, J., \& Xu, X. (1996). A density-based algorithm for discovering
+clusters in large spatial databases with noise. \textit{Proc. 2nd Int. Conf. on Knowledge Discovery and Data Mining (KDD-96)}, 226--231.
+\bibitem{pedregosa2011} Pedregosa, F., et al. (2011). Scikit-learn: Machine learning in Python. \textit{Journal of Machine
+Learning Research}, 12, 2825--2830.
+\bibitem{sinnott1984} Sinnott, R. W. (1984). Virtues of the haversine. \textit{Sky \& Telescope}, 68(2), 159.
+\bibitem{usgs} U.S. Geological Survey. \textit{ANSS Comprehensive Earthquake Catalog (ComCat)}.
+\url{https://earthquake.usgs.gov/data/comcat/}
+\bibitem{doe2015} U.S. Department of Energy, Nevada Operations Office (2015). \textit{United States Nuclear Tests, July 1945
+through September 1992}, DOE/NV-209 Rev. 16. \url{https://www.osti.gov/biblio/1351809}
+\end{thebibliography}
 
 \end{document}

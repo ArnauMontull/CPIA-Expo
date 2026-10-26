@@ -20,10 +20,13 @@ detección de anomalías.
 ## Reparto
 | Problema | Responsable | Fichero |
 |---|---|---|
-| (por decidir) | Matías | `problemas/<nemotecnico>_matias.py` |
-| (por decidir) | Martí | `problemas/<nemotecnico>_marti.py` |
+| Sismos del último mes: K-Means y anomalías | Matías | `problemas/3_Sismes_Matias/` |
+| Transcriptómica RNA-seq (plan, sin código aún) | Martí | `problemas/4_RNAseq_Marti/` |
 | (por decidir) | Uriel | `problemas/<nemotecnico>_uriel.py` |
-| (por decidir) | Arnau | `problemas/<nemotecnico>_arnau.py` |
+| Explosiones nucleares entre sismos: DBSCAN | Arnau | `problemas/2_Nuclear/nukeDBSCAN_arnau.py` |
+
+Documento de descripción: `docs/descripcion_problemas.tex` (plantilla de `perfil/plantillas/informe_upc`).
+Rúbrica del informe y del código: `docs/rubrica_informe_y_codigo.pdf`. Teoría de K-Means: `docs/teoria/`.
 
 ## Entregables
 1. **Presentación** (`presentacion/`), preferiblemente `.pptx`, en catalán, castellano o inglés.

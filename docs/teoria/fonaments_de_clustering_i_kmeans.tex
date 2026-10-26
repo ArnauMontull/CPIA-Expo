@@ -1,0 +1,266 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[catalan]{babel}
+\usepackage{lmodern}
+
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black,
+    citecolor=blue!60!black
+}
+
+\floatname{algorithm}{Algorisme}
+\renewcommand{\algorithmicrequire}{\textbf{Entrada:}}
+\renewcommand{\algorithmicensure}{\textbf{Sortida:}}
+
+\title{\textbf{Fonaments de Machine Learning, Aprenentatge No Supervisat i Agrupament amb $K$-means}\\
+\large Una explicació teòrica, formal i aplicada}
+\author{Memòria Tècnica i Apunts Teòrics}
+\date{22 d'octubre de 2026}
+
+\begin{document}
+
+\maketitle
+
+
+% ==============================================================================
+\section{Introducció al Machine Learning}
+% ==============================================================================
+
+El **Machine Learning (ML)** o aprenentatge automàtic és una subdisciplina de la intel·ligència artificial enfocada en el desenvolupament d'algorismes i models estadístics que permeten als sistemes computacionals millorar el seu rendiment en una tasca determinada a partir de l'experiència i l'observació de dades, sense ser explícitament programats per a cada regla de negoci.
+
+\subsection{Programació Tradicional vs. Machine Learning}
+En el paradigma de la **programació tradicional**, un desenvolupador humà analitza un problema, dissenya un conjunt de regles lògiques explicites (algorismes) i les codifica en un llenguatge de programació. Aquestes regles s'apliquen sobre unes dades d'entrada per produir una sortida o resultat esperat. Aquest enfocament és extremadament eficaç quan les regles són clares, deterministes i d'abast reduït, però esdevé inviable quan la complexitat del problema augmenta exponencialment.
+
+Per contra, en el **Machine Learning**, el flux de treball s'inverteix: es subministren al sistema grans volums de dades d'observació juntament amb (en el cas supervisat) les respostes o resultats desitjats. L'algorisme s'encarrega d'analitzar aquestes dades per identificar patrons complexos, correlacions no líneals i estructures subjacents, generant automàticament un model matemàtic que actua com el conjunt de regles inferides.
+
+\[
+\text{Programació Tradicional: } \text{Dades} + \text{Regles / Lògica explicitada} \longrightarrow \text{Respostes}
+\]
+\[
+\text{Machine Learning: } \text{Dades} + \text{Exemples / Respostes observades} \longrightarrow \text{Patrons / Model inferit}
+\]
+
+Aquest procés d'ajust es coneix com a \textit{entrenament}. Durant l'entrenament, el model optimitza els seus paràmetres interns per minimitzar una funció d'error o pèrdua. Un cop entrenat, el model és capaç de realitzar generalitzacions, és a dir, d'emetre prediccions precises sobre dades totalment noves i no vistes prèviament.
+
+\subsection{Aplicacions Quotidianes i Impacte Industrial}
+El Machine Learning s'ha convertit en el motor fonamental de la transformació digital en múltiples indústries gràcies a la seva capacitat per processar volums massius de dades no estructurades:
+\begin{itemize}
+    \item **Assistents de Veu i Tractament del Llenguatge Natural (NLP):** Sistemes capaços de processar el senyal d'àudio, transcriure'l a text, interpretar la intenció semàntica de l'usuari i generar respostes coherents en temps real.
+    \item **Sistemes de Recomanació:** Plataformes de comerç electrònic i de contingut en línia analitzen l'historial de navegació, compres i preferències d'incomptables usuaris per predir quin producte o contingut augmentarà l'interès individual.
+    \item **Visió per Computador i Vehicles Autònoms:** Processament de seqüències de vídeo i dades de sensors (LiDAR, radar) per detectar peons, senyals de trànsit i vehicles, permetent la navegació autònoma segura.
+    \item **Diagnòstic Mèdic d'Imatge:** Models capaços d'analitzar radiografies, ressonàncies magnètiques o tomografies per detectar lesions o tumors en fases primerenques amb una precisió comparable o superior a la d'especialistes humans.
+\end{itemize}
+
+% ==============================================================================
+\section{Aprenentatge Supervisat i No Supervisat}
+% ==============================================================================
+
+Dins del Machine Learning, els algorismes es taxonomitzen principalment segons la naturalesa del senyal de retroalimentació o el tipus de dades utilitzades durant la fase d'aprenentatge.
+
+\begin{figure}[h!]
+\centering
+\small
+\begin{tabular}{@{}p{3.5cm}p{5.8cm}p{5.8cm}@{}}
+\toprule
+\textbf{Característica} & \textbf{Aprenentatge Supervisat} & \textbf{Aprenentatge No Supervisat} \\
+\midrule
+\textbf{Estructura de dades} & Parells d'entrada-sortida $\{(x_i, y_i)\}_{i=1}^n$ & Punts d'observació sense etiqueta $\{x_i\}_{i=1}^n$ \\
+\textbf{Objectiu principal} & Aprendre una funció de mapeig $f: X \to Y$ & Descobrir l'estructura, distribució o patrons ocults \\
+\textbf{Feedback / Guia} & Directe (supervisió mitjançant l'error $y_i - \hat{y}_i$) & Inexistent (exploració autònoma de la distribució) \\
+\textbf{Tasques típiques} & Classificació (binària/multiclasse) i Regressió & Agrupament (\textit{clustering}), Reducció de la dimensió \\
+\textbf{Mètriques d'avaluació} & Precisió, F1-score, Error Quadràtic Mitjà (MSE) & Inèrcia, Coeficient de Silueta, Índex Davies-Bouldin \\
+\bottomrule
+\end{tabular}
+\caption{Comparativa detallada entre l'aprenentatge supervisat i el no supervisat.}
+\end{figure}
+
+\subsection{La Intuïció i Mecanisme de l'Aprenentatge No Supervisat}
+En l'**aprenentatge supervisat**, l'algorisme disposa d'un "mestre" o "supervisor" que li proporciona les etiquetes correctes $y_i$ per a cada mostra $x_i$. El model compara la seva predicció $\hat{y}_i$ amb el valor real $y_i$, calcula l'error i ajusta els seus paràmetres.
+
+En canvi, en l'**aprenentatge no supervisat**, les dades no tenen cap etiqueta assignada prèviament. L'algorisme rep un conjunt de dades $\{\mathbf{x}_1, \mathbf{x}_2, \dots, \mathbf{x}_n\}$ en un espai $d$-dimensional i el seu objectiu és modelar la distribució subjacent o les relacions espacials entre les mostres. Com a analogia, si a un nen se li lliura una col·lecció d'objectes diversos sense cap nom ni instrucció, de manera natural els agruparà per característiques compartides com la mida, la textura, la forma o el color. L'aprenentatge no supervisat busca realitzar aquesta mateixa tasca d'organització estructural de manera formal i matemàtica.
+
+\subsection{Utilitat i Aplicacions en el Món Real}
+Atès que en el món real la majoria de les dades generades diàriament no estan etiquetades (ja que l'etiquetatge humà és un procés lent, car i propens a errors), l'aprenentatge no supervisat té un valor estratègic fonamental:
+\begin{itemize}
+    \item **Segmentació de Clients i Comportament:** Les empreses agrupen la seva base de clients segons patrons de despesa, freqüència de compra i navegació per dissenyar campanyes de màrqueting altament personalitzades.
+    \item **Detecció d'Anomalies i Frau:** En identificar la "normalitat" estructural d'un conjunt de dades (ex. transaccions bancàries o tràfics de xarxa), qualsevol mostra que quedi fora dels grups principals o en zones de baixa densitat s'etiqueta immediatament com a possible frau o atac informàtic.
+    \item **Reducció de la Dimensionalitat:** Tècniques com PCA (Anàlisi de Components Principals) o t-SNE comprimeixen milers de característiques en 2 o 3 dimensions sense perdre la variància essencial, permetent la visualització de dades altament complexes.
+\end{itemize}
+
+
+% ==============================================================================
+\section{Introducció al Clustering (Agrupament No Supervisat)}
+% ==============================================================================
+
+Dins de l'Àmbit del **Machine Learning (ML)**, els algorismes es dividixen en dues grans famílies: aquells que aprenen amb un "supervisor" o mestre (aprenentatge supervisat) i aquells que exploren les dades de manera autònoma (aprenentatge no supervisat).
+
+El **Clustering** o agrupament és la tasca no supervisada per excel·lència. L'objectiu principal és organitzar un conjunt d'observacions desestructurades en grups o *clusters*, de manera que els punts que pertanyen al mateix grup siguin molt similars entre si (**màxima homogeneïtat intragrup**) i els punts que pertanyen a grups diferents siguin el més distants possible (**màxima separabilitat intergrup**).
+
+\subsection{Fonaments Matemàtics de la Similitud}
+Perquè una màquina pugui agrupar dades, necessita quantificar formalment què vol dir que dues mostres siguin "similars" o "properes". Donats dos vectors de característiques $\mathbf{x}_i, \mathbf{x}_j \in \mathbb{R}^d$:
+
+\begin{itemize}
+    \item **Distància Euclidiana ($L_2$):** La mètrica espacial més comuna per a espais continus:
+    \[
+    d_2(\mathbf{x}_i, \mathbf{x}_j) = \sqrt{\sum_{l=1}^{d} (x_{il} - x_{jl})^2} = \lVert \mathbf{x}_i - \mathbf{x}_j \rVert_2
+    \]
+    \item **Distància de Manhattan ($L_1$):**
+    \[
+    d_1(\mathbf{x}_i, \mathbf{x}_j) = \sum_{l=1}^{d} |x_{il} - x_{jl}|
+    \]
+    \item **Similitud del Cosenus:** Molt utilitzada en tractament del text, mesura l'angle entre dos vectors independentment de la seva magnitud:
+    \[
+    \text{Similitud}(\mathbf{x}_i, \mathbf{x}_j) = \frac{\mathbf{x}_i \cdot \mathbf{x}_j}{\lVert \mathbf{x}_i \rVert \lVert \mathbf{x}_j \rVert}
+    \]
+\end{itemize}
+
+\subsection{Paradigmes de Clustering}
+Segons com s'estableixin les fronteres entre els grups, trobem dos grans enfocaments:
+
+\subsubsection{Clustering Dur (\textit{Hard Clustering})}
+Cada mostra $\mathbf{x}_i$ s'assigna de forma determinista i única a un sol grup $C_k$. Matemàticament, es defineix la matriu de pertinença binària $W \in \{0, 1\}^{n \times K}$:
+\[
+w_{ik} = \begin{cases} 1 & \text{si } \mathbf{x}_i \in C_k \\ 0 & \text{si } \mathbf{x}_i \notin C_k \end{cases} \quad \text{amb la restricció} \quad \sum_{k=1}^{K} w_{ik} = 1 \quad \forall i
+\]
+L'algorisme $K$-means n'és el representant més popular.
+
+\subsubsection{Clustering Tou o Difús (\textit{Soft / Fuzzy Clustering})}
+Cada mostra $\mathbf{x}_i$ té un grau de pertinença o probabilitat $w_{ik} \in [0, 1]$ de pertànyer a cadascun dels $K$ grups:
+\[
+0 \le w_{ik} \le 1 \quad \text{i} \quad \sum_{k=1}^{K} w_{ik} = 1 \quad \forall i
+\]
+Això permet modelar punts ambigus que es troben a la frontera entre dos o més grups. Exemples d'això són el *Fuzzy C-Means* (FCM) i els *Gaussian Mixture Models* (GMM).
+
+% ==============================================================================
+\section{L'Algorisme $K$-means al Detall}
+% ==============================================================================
+
+El $K$-means és un algorisme de *hard clustering* basat en prototypes o centroids.
+
+\subsection{Formulació Matemàtica de la Funció d'Objectiu}
+Donat un conjunt de $n$ punts d'observació $\mathbf{X} = \{\mathbf{x}_1, \mathbf{x}_2, \dots, \mathbf{x}_n\}$ on cada $\mathbf{x}_i \in \mathbb{R}^d$, i fixat un nombre de grups $K \le n$, el $K$-means busca partitioned les observacions en $K$ grups $C = \{C_1, C_2, \dots, C_K\}$ de manera que es minimitzi la **Suma de Quadrats Dins del Grup** (WCSS - *Within-Cluster Sum of Squares*), també coneguda com a **Inèrcia**:
+
+\begin{equation}
+J(C, \boldsymbol{\mu}) = \sum_{k=1}^{K} \sum_{\mathbf{x}_i \in C_k} \lVert \mathbf{x}_i - \boldsymbol{\mu}_k \rVert^2
+\end{equation}
+
+on $\boldsymbol{\mu}_k \in \mathbb{R}^d$ és el **centroid** (el centre geomètric o mitjana) del grup $C_k$:
+
+\begin{equation}
+\boldsymbol{\mu}_k = \frac{1}{|C_k|} \sum_{\mathbf{x}_i \in C_k} \mathbf{x}_i
+\end{equation}
+
+\subsection{L'Algorisme de Lloyd (Pas a Pas)}
+Trobar el mínim global exactament d'aquesta funció d'objectiu $J$ és un problema **NP-dur**. Per tant, l'algorisme utilitza una tècnica heurística iterativa anomenada **Algorisme de Lloyd**, que realitza una optimització per descens alternat en dos passos:
+
+\begin{algorithm}[H]
+\caption{Algorisme de Lloyd per a $K$-means}
+\begin{algorithmic}[1]
+\Require Dades $\mathbf{X} \in \mathbb{R}^{n \times d}$, nombre de grups $K$, nombre màxim d'iteracions $I_{\max}$
+\Ensure Centroids final $\{\boldsymbol{\mu}_1, \dots, \boldsymbol{\mu}_K\}$ i assignacions de grup $c^{(1)}, \dots, c^{(n)}$
+\State **Pas 0 (Inicialització):** Triar $K$ centroids inicials $\{\boldsymbol{\mu}_1^{(0)}, \dots, \boldsymbol{\mu}_K^{(0)}\}$.
+\State $t \leftarrow 0$
+\Repeat
+    \State $t \leftarrow t + 1$
+    \State \textbf{Pas 1 (Assignació / Expectation):} Assignar cada punt $\mathbf{x}_i$ al centroid més proper segons la distància euclidiana quadràtica:
+    \[
+    c^{(i)} \leftarrow \arg\min_{k \in \{1, \dots, K\}} \lVert \mathbf{x}_i - \boldsymbol{\mu}_k^{(t-1)} \rVert^2
+    \]
+    \State \textbf{Pas 2 (Actualització / Maximization):} Recalcular la posició del centroid de cada grup $C_k$ fent la mitjana de tots els punts que se li han assignat:
+    \[
+    \boldsymbol{\mu}_k^{(t)} \leftarrow \frac{1}{|C_k^{(t)}|} \sum_{i: c^{(i)} = k} \mathbf{x}_i
+    \]
+\Until{cap punt canviï de grup, els centroids no es moguin ($\boldsymbol{\mu}^{(t)} = \boldsymbol{\mu}^{(t-1)}$) o $t = I_{\max}$.}
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Demostració de Convergència Finita}
+Una de les propietats més importants de l'algorisme de Lloyd és que **sempre convergeix en un nombre finit de passos**.
+
+\begin{proof}
+\begin{enumerate}
+    \item **I. Nombre finit d'estats:** Un conjunt de $n$ punts es pot dividir en $K$ grups d'un nombre finit de formes diferents (concretament, el nombre de particions possibles ve donat pels nombres de Stirling de segon tipus $S(n, K) \le K^n$).
+    \item **II. Disminució monòtona de la inèrcia:** 
+    \begin{itemize}
+        \item En el **pas d'assignació**, fixats els centroids $\boldsymbol{\mu}_k$, reassignar cada punt al seu centroid més proper només pot reduir o mantenir igual la distància quadràtica individual $\lVert \mathbf{x}_i - \boldsymbol{\mu}_k \rVert^2$. Per tant, $J(C^{(t)}, \boldsymbol{\mu}^{(t-1)}) \le J(C^{(t-1)}, \boldsymbol{\mu}^{(t-1)})$.
+        \item En el **pas d'actualització**, la mitjana de la mostra és el minimitzador matemàtic de la suma de distàncies quadràtiques d'un conjunt de punts. Recalcular $\boldsymbol{\mu}_k$ com la mitjana de $C_k$ redueix o manté igual la inèrcia de cada grup. Per tant, $J(C^{(t)}, \boldsymbol{\mu}^{(t)}) \le J(C^{(t)}, \boldsymbol{\mu}^{(t-1)})$.
+    \end{itemize}
+    \item **III. Absència de cicles:** Com que la funció $J$ és estrictament decreixent a cada iteració no nul·la i el nombre de particions és finit, l'algorisme no pot entrar en un bucle infinit i ha de convergir necessàriament a un mínim local.
+\end{enumerate}
+\end{proof}
+
+% ==============================================================================
+\section{Tria de Centroids Inicials: $K$-means++}
+% ==============================================================================
+
+Una de les grans debilitats de la inicialització totalment aleatòria és que l'algorisme pot caure fàcilment en **mínims locals dolents** si dos centroids s'inicialitzen molt a prop de l'un de l'altre. Per solucionar-ho, Arthur i Vassilvitskii (2007) van proposar l'algorisme **$K$-means++**:
+
+\subsection{Algorisme d'Inicialització de $K$-means++}
+\begin{enumerate}
+    \item Triar el primer centroid $\boldsymbol{\mu}_1$ uniformement a l'atzar d'entre tots els punts de dades $\mathbf{X}$.
+    \item Per a cada punt de dades $\mathbf{x}_i$, calcular la distància al centroid més proper dels que ja han estat triats:
+    \[
+    D(\mathbf{x}_i) = \min_{j \in \{1, \dots, m\}} \lVert \mathbf{x}_i - \boldsymbol{\mu}_j \rVert
+    \]
+    \item Triar el següent centroid $\boldsymbol{\mu}_{m+1}$ seleccionant un punt $\mathbf{x}_i \in \mathbf{X}$ amb una probabilitat proporcional al quadrat de la seva distància:
+    \[
+    P(\mathbf{x}_i) = \frac{D(\mathbf{x}_i)^2}{\sum_{j=1}^{n} D(\mathbf{x}_j)^2}
+    \]
+    \item Repetir els passos 2 i 3 fins a tenir exactament $K$ centroids inicials.
+\end{enumerate}
+Aquest enfocament garanteix teòricament que els centroids estiguin geogràficament molt ben repartits per tot l'espai de dades des del primer moment, accelerant la convergència i millorant dràsticament la qualitat de la solució final.
+
+% ==============================================================================
+\section{Com Triar la $K$ Òptima?}
+% ==============================================================================
+
+Atès que $K$ és un hiperparàmetre que s'ha de fixar *a priori*, en la pràctica s'utilitzen diverses tècniques de validació interna per trobar el nombre natural de grups:
+
+\subsection{1. El Mètode del Colze (\textit{Elbow Method})}
+Es calcula la Inèrcia ($J$) per a un rang de valors de $K$ (ex. $K = 1, 2, \dots, 10$). A mesura que $K$ augmenta, la inèrcia sempre disminueix (arribant a $0$ quan $K=n$). El valor òptim de $K$ es troba en el "colze" de la corba: el punt on el ritme de caiguda de la inèrcia canvia bruscament de pendent, indicant que afegir més grups ja no aporta millores substancials.
+
+\subsection{2. El Coeficient de Silueta (\textit{Silhouette Score})}
+Aquesta mètrica avalua la qualitat de l'agrupament analitzant la cohesió de cada punt dins del seu propi grup en comparació amb la seva separació respecte al grup més proper. Per a una mostra $i$:
+\[
+s(i) = \frac{b(i) - a(i)}{\max(a(i), b(i))}
+\]
+on:
+\begin{itemize}[nosep]
+    \item $a(i)$ és la distància mitjana entre la mostra $i$ i tots els altres punts del **seu mateix grup**.
+    \item $b(i)$ és la distància mitjana entre la mostra $i$ i els punts del **grup veí més proper**.
+\end{itemize}
+El valor de $s(i)$ està contingut en l'interval $[-1, 1]$:
+\begin{itemize}[nosep]
+    \item $s(i) \approx +1$: La mostra està molt ben agrupada i ben separada dels altres grups.
+    \item $s(i) \approx 0$: La mostra es troba a la frontera entre dos grups.
+    \item $s(i) < 0$: La mostra probablement ha estat assignada al grup equivocat.
+\end{itemize}
+
+\subsection{3. Índex de Davies-Bouldin}
+Avalua la raó entre la dispersió intragrup i la distància intergrup. Valors més baixos de l'índex indiquen una millor qualitat global de l'agrupament.
+
+% ==============================================================================
+\section{Limitacions de $K$-means}
+% ==============================================================================
+
+Tot i la seva alta eficiència computacional ($O(n \cdot K \cdot d \cdot t)$ on $t$ és el nombre d'iteracions), el $K$-means té tres grans restriccions teòriques:
+
+\begin{enumerate}
+    \item **Assumpció de Formes Esfèriques:** L'ús de la distància euclidiana fa que les fronteres entre grups siguin sempre hiperplans (diagrames de Voronoi). Si els grups tenen formes complexes (cercles concentrics, formes allargades o entrellaçades), $K$-means fallarà totalment.
+    \item **Sensibilitat als Valors Anòmals (\textit{Outliers}):** Com que calcula la mitjana aritmètica per actualitzar els centroids, un sol punt anòmal molt allunyat pot arrossegar la posició d'un centroid i distorsionar el grup.
+    \item **Dependència de l'Escala de les Variables:** Si una variable té valors en un rang de milers (ex. ingressos) i una altra en un rang de 0 a 1 (ex. edat normalitzada), la distància euclidiana estarà dominada gairebé en la seva totalitat per la primera variable. És **imprescindible** estandarditzar o normalitzar les dades abans d'executar l'algorisme.
+\end{enumerate}
+
+\end{document}
