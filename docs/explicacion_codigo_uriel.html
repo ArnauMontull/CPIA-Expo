@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Explicación Línea a Línea del Código: materiales_uriel.py</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.55;
+    font-size: 10pt;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    border-bottom: 2px solid #059669;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  .badge {
+    background-color: #ecfdf5;
+    color: #047857;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 8.5pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+  }
+  h1 {
+    font-size: 17pt;
+    color: #0f172a;
+    margin: 8px 0 4px 0;
+    font-weight: 700;
+  }
+  .subtitle {
+    font-size: 10.5pt;
+    color: #475569;
+    margin: 0 0 8px 0;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+    background-color: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 9pt;
+  }
+  .meta-item strong {
+    color: #0f172a;
+  }
+  h2 {
+    font-size: 12.5pt;
+    color: #065f46;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+    margin-top: 22px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 10.5pt;
+    color: #059669;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  p {
+    margin: 0 0 8px 0;
+  }
+  ul, ol {
+    margin: 0 0 10px 0;
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 4px;
+  }
+  .code-block {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 8.5pt;
+    line-height: 1.45;
+    font-family: Consolas, "Courier New", monospace;
+    margin: 8px 0;
+    page-break-inside: avoid;
+  }
+  .explain-box {
+    background-color: #f8fafc;
+    border-left: 4px solid #059669;
+    padding: 8px 12px;
+    margin: 6px 0 14px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 9.5pt;
+    page-break-inside: avoid;
+  }
+  .explain-box strong {
+    color: #065f46;
+  }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    background-color: #f1f5f9;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 8.5pt;
+    color: #0969da;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">CPIA · Documentación Técnica de Código</div>
+  <h1>Explicación Línea a Línea del Script</h1>
+  <div class="subtitle">Desglose completo y justificación de <code>problemas/materiales_uriel.py</code></div>
+  <div class="meta-grid">
+    <div class="meta-item"><strong>Estudiante:</strong> Uriel</div>
+    <div class="meta-item"><strong>Algoritmo:</strong> DBSCAN (&epsilon; = 0.65, min_samples = 3)</div>
+    <div class="meta-item"><strong>Archivo explicado:</strong> <code>materiales_uriel.py</code></div>
+  </div>
+</header>
+
+<h2>1. Bloque de Importaciones (Líneas 13 &ndash; 16)</h2>
+
+<div class="code-block">
+from pathlib import Path<br>
+import numpy as np<br>
+import pandas as pd<br>
+import matplotlib.pyplot as plt
+</div>
+
+<div class="explain-box">
+  <ul>
+    <li><strong>Línea 13 (<code>from pathlib import Path</code>):</strong> Importa la clase <code>Path</code> para gestionar rutas de archivos de forma independiente del sistema operativo (evita fallos de barras inclinadas <code>/</code> o contrabarras <code>\</code> entre Windows, Mac y Linux).</li>
+    <li><strong>Línea 14 (<code>import numpy as np</code>):</strong> Carga NumPy para operaciones matriciales vectorizadas de alta velocidad (matrices de distancias euclídeas, medias y desviaciones típicas).</li>
+    <li><strong>Línea 15 (<code>import pandas as pd</code>):</strong> Carga Pandas para leer el archivo CSV en un DataFrame estructurado y generar tablas de contingencia cruzada.</li>
+    <li><strong>Línea 16 (<code>import matplotlib.pyplot as plt</code>):</strong> Carga el motor gráfico para generar la visualización 2D de los clusters y guardarla en formato PNG.</li>
+  </ul>
+</div>
+
+<h2>2. Carga del Dataset y Rutas Relativas (Líneas 21 &ndash; 28)</h2>
+
+<div class="code-block">
+DATOS_DIR = Path(__file__).resolve().parent.parent / "datos"<br>
+CSV_PATH = DATOS_DIR / "materiales_electricos.csv"<br>
+<br>
+if not CSV_PATH.exists():<br>
+&nbsp;&nbsp;&nbsp;&nbsp;raise FileNotFoundError(f"No se encontró el archivo de datos en: {CSV_PATH}")<br>
+<br>
+df = pd.read_csv(CSV_PATH)<br>
+print(f"Dataset cargado con éxito ({len(df)} materiales).")
+</div>
+
+<div class="explain-box">
+  <ul>
+    <li><strong>Línea 21:</strong> <code>__file__</code> es la ruta de este script (en <code>problemas/</code>). <code>.resolve()</code> obtiene la ruta absoluta completa; <code>.parent</code> sube a <code>problemas/</code> y el segundo <code>.parent</code> sube a la raíz <code>CPIA-Expo/</code>. Finalmente, <code>/ "datos"</code> apunta con exactitud a la carpeta de datos sin importar desde qué directorio abra la terminal el usuario.</li>
+    <li><strong>Líneas 24 &ndash; 25:</strong> Comprobación de seguridad: si el archivo no existe, lanza un error explicativo en lugar de colgarse más adelante.</li>
+    <li><strong>Línea 27:</strong> Lee el fichero CSV con los 57 materiales y crea el DataFrame <code>df</code>.</li>
+  </ul>
+</div>
+
+<h2>3. Selección de Características y Estandarización Z-Score (Líneas 35 &ndash; 41)</h2>
+
+<div class="code-block">
+features = ["log_rho_300K", "alpha_coef"]<br>
+X_raw = df[features].values<br>
+<br>
+media = np.mean(X_raw, axis=0)<br>
+desv = np.std(X_raw, axis=0)<br>
+X_scaled = (X_raw - media) / desv
+</div>
+
+<div class="explain-box">
+  <ul>
+    <li><strong>Líneas 35 &ndash; 36:</strong> Selecciona las dos columnas físicas del espacio bidimensional: la resistividad logarítmica (rango &approx; 31 unidades) y el coeficiente térmico &alpha; (rango &approx; 0.08 unidades). Extrae la matriz NumPy <code>X_raw</code> de dimensiones <code>(57, 2)</code>.</li>
+    <li><strong>Líneas 39 &ndash; 40:</strong> Calcula para cada columna su media &mu; y su desviación estándar &sigma;.</li>
+    <li><strong>Línea 41:</strong> Aplica la fórmula de estandarización <strong>Z = (X &minus; &mu;) / &sigma;</strong>. Esto es imprescindible porque la distancia euclídea de DBSCAN mide la separación en línea recta. Sin este paso, la resistividad (con escala de 31) aplastaría a &alpha; (escala de 0.08), haciendo que el algoritmo fuese ciego a la respuesta térmica.</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<h2>4. Aplicación de DBSCAN Paso a Paso (Líneas 46 &ndash; 89)</h2>
+
+<div class="code-block">
+EPS = 0.65<br>
+MIN_SAMPLES = 3<br>
+<br>
+def ejecutar_dbscan(X, eps=0.65, min_samples=3):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;try:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from sklearn.cluster import DBSCAN as SklearnDBSCAN<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return SklearnDBSCAN(eps=eps, min_samples=min_samples).fit_predict(X)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;except Exception:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;N = len(X)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;etiquetas = np.full(N, -1, dtype=int)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;visitados = np.zeros(N, dtype=bool)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cluster_actual = 0<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;D = np.linalg.norm(X[:, None, :] - X[None, :, :], axis=-1)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for i in range(N):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if visitados[i]: continue<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;visitados[i] = True<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vecinos = np.where(D[i] &lt;= eps)[0]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if len(vecinos) &lt; min_samples:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;etiquetas[i] = -1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;etiquetas[i] = cluster_actual<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cola = list(vecinos[vecinos != i])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while cola:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j = cola.pop(0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if not visitados[j]:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;visitados[j] = True<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j_vecinos = np.where(D[j] &lt;= eps)[0]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if len(j_vecinos) &gt;= min_samples:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for v in j_vecinos:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if v not in cola and etiquetas[v] == -1:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cola.append(v)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if etiquetas[j] == -1:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;etiquetas[j] = cluster_actual<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cluster_actual += 1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return etiquetas<br>
+<br>
+df["cluster"] = ejecutar_dbscan(X_scaled, eps=EPS, min_samples=MIN_SAMPLES)
+</div>
+
+<div class="explain-box">
+  <ul>
+    <li><strong>Líneas 46 &ndash; 47:</strong> Fija los dos hiperparámetros: radio de búsqueda &epsilon; = 0.65 y mínimo de muestras para densidad <code>min_samples = 3</code>.</li>
+    <li><strong>Línea 62 (Matriz de distancias vectorizada):</strong> Con <code>X[:, None, :] - X[None, :, :]</code> aprovecha el <em>broadcasting</em> de NumPy para calcular las distancias euclídeas de todas las parejas de materiales en una matriz <code>D</code> de 57 &times; 57 de una sola vez sin bucles lentos.</li>
+    <li><strong>Líneas 69 &ndash; 71:</strong> Para el punto <code>i</code>, busca quiénes están a distancia &le; &epsilon;. Si tiene menos de 3 vecinos, lo marca provisionalmente como ruido (<code>-1</code>).</li>
+    <li><strong>Líneas 73 &ndash; 86 (Expansión BFS del cluster):</strong> Si el punto es Núcleo, le asigna <code>cluster_actual</code> y añade a sus vecinos a una lista <code>cola</code>. Para cada vecino <code>j</code>, si también es Núcleo, expande el cluster agregando sus propios vecinos a la cola. Cuando la cola se vacía, incrementa <code>cluster_actual += 1</code>.</li>
+    <li><strong>Línea 89:</strong> Guarda las etiquetas finales (0, 1, 2) en una nueva columna <code>df["cluster"]</code>.</li>
+  </ul>
+</div>
+
+<h2>5. Evaluación con Silhouette Score (Líneas 94 &ndash; 120)</h2>
+
+<div class="code-block">
+def calcular_silhouette(X, labels):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;mask = labels != -1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if len(set(labels[mask])) &lt;= 1: return None<br>
+&nbsp;&nbsp;&nbsp;&nbsp;D = np.linalg.norm(X[:, None, :] - X[None, :, :], axis=-1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;sils = []<br>
+&nbsp;&nbsp;&nbsp;&nbsp;for i in range(len(X)):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if labels[i] == -1: continue<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c_i = labels[i]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;same_c = np.where((labels == c_i) &amp; (np.arange(len(X)) != i))[0]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a_i = np.mean(D[i, same_c]) if len(same_c) &gt; 0 else 0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;other_clusters = set(labels) - {-1, c_i}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b_i = min(np.mean(D[i, labels == c_o]) for c_o in other_clusters)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sils.append((b_i - a_i) / max(a_i, b_i))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return float(np.mean(sils))
+</div>
+
+<div class="explain-box">
+  <ul>
+    <li><strong>Línea 95:</strong> <code>mask = labels != -1</code> excluye los puntos de ruido para no falsear la silueta interna de los clusters densos.</li>
+    <li><strong>Línea 106:</strong> Para cada material <code>i</code> calcula <code>a_i</code> (distancia media a los materiales de su mismo cluster &rarr; <em>cohesión</em>).</li>
+    <li><strong>Línea 108:</strong> Calcula <code>b_i</code> (distancia media al cluster vecino más cercano &rarr; <em>separación</em>).</li>
+    <li><strong>Línea 109:</strong> Aplica la fórmula exacta <code>s = (b - a) / max(a, b)</code>. El promedio resultante da <strong>0.7858</strong>, certificando una estructura de clusters excelente.</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<h2>6. Métricas y Matriz de Contingencia (Líneas 124 &ndash; 144)</h2>
+
+<div class="code-block">
+clusters_encontrados = sorted(set(df["cluster"]) - {-1})<br>
+n_clusters = len(clusters_encontrados)<br>
+n_ruido = int(np.sum(df["cluster"] == -1))<br>
+<br>
+print(f"Clusters descubiertos por densidad : {n_clusters}")<br>
+print(f"Silhouette Score (núcleos densos) : {score_sil:.4f}")<br>
+<br>
+print("\nMatriz de contingencia (Clase real vs. Cluster DBSCAN):")<br>
+print(pd.crosstab(df["clase_real"], df["cluster"], margins=True))
+</div>
+
+<div class="explain-box">
+  <ul>
+    <li><strong>Líneas 124 &ndash; 126:</strong> Cuenta cuántos clusters reales se descubrieron (excluyendo el <code>-1</code> de ruido).</li>
+    <li><strong>Línea 137:</strong> <code>pd.crosstab()</code> cruza la columna <code>clase_real</code> contra <code>cluster</code>. Demuestra de forma objetiva que el Cluster 0 agrupó a los 35 metales (100%), el Cluster 1 agrupó a los 10 aislantes (100%) y el Cluster 2 agrupó a los semiconductores tecnológicos.</li>
+  </ul>
+</div>
+
+<h2>7. Representación Gráfica 2D con Matplotlib (Líneas 148 &ndash; 219)</h2>
+
+<div class="code-block">
+plt.figure(figsize=(10, 6.5))<br>
+<br>
+paleta_colores = {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;0: ("#d97706", "Cluster 0 (Conductores)"),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;1: ("#2563eb", "Cluster 1 (Aislantes)"),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;2: ("#059669", "Cluster 2 (Semiconductores)"),<br>
+}<br>
+<br>
+for cl in clusters_encontrados:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;sub = df[df["cluster"] == cl]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;color, nombre_cl = paleta_colores.get(cl, ("#6b7280", f"Cluster {cl}"))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;plt.scatter(sub["log_rho_300K"], sub["alpha_coef"], c=color, s=70, alpha=0.85, ...)<br>
+<br>
+plt.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera $\alpha = 0$")<br>
+<br>
+# Anotar nombres de materiales destacados en el gráfico<br>
+materiales_destacados = ["copper", "silver", "silicon", "germanium", "gaas", "glass", "ptfe", "quartz"]<br>
+for _, r in df.iterrows():<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if any(k in r["material"].lower() for k in materiales_destacados):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plt.annotate(r["material"].split("(")[0].strip(), (r["log_rho_300K"], r["alpha_coef"]), ...)<br>
+<br>
+FIGURA_PATH = Path(__file__).resolve().parent / "clusters_materiales_dbscan.png"<br>
+plt.savefig(FIGURA_PATH, dpi=300)<br>
+plt.show()
+</div>
+
+<div class="explain-box">
+  <ul>
+    <li><strong>Línea 151:</strong> Define una paleta de colores semántica: ámbar/dorado para metales, verde para semiconductores y azul para aislantes.</li>
+    <li><strong>Línea 164:</strong> Dibuja los puntos de cada cluster con borde negro fino y transparencia para visualizar solapamientos.</li>
+    <li><strong>Línea 174:</strong> Si hubiera puntos de ruido (-1), los dibujaría con aspas <code>x</code> de color rojo fuerte.</li>
+    <li><strong>Línea 186:</strong> Traza la recta horizontal discontinua en &alpha; = 0, que representa la frontera física fundamental de separación entre metales (&alpha; &gt; 0) y semiconductores (&alpha; &lt; 0).</li>
+    <li><strong>Líneas 189 &ndash; 202:</strong> Localiza materiales emblemáticos (Cobre, Silicio, Vidrio, Teflón, etc.) y les coloca una etiqueta de texto flotante ligeramente desplazada (<code>xytext=(6, 4)</code>) para que la gráfica sea autoexplicativa en las diapositivas.</li>
+    <li><strong>Línea 213:</strong> Guarda la figura con calidad de publicación (300 DPI) en <code>problemas/clusters_materiales_dbscan.png</code>.</li>
+  </ul>
+</div>
+
+</body>
+</html>

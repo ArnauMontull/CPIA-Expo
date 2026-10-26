@@ -22,7 +22,7 @@ detección de anomalías.
 |---|---|---|
 | Sismos del último mes: K-Means y anomalías | Matías | `problemas/3_Sismes_Matias/` |
 | Transcriptómica RNA-seq (plan, sin código aún) | Martí | `problemas/4_RNAseq_Marti/` |
-| (por decidir) | Uriel | `problemas/<nemotecnico>_uriel.py` |
+| Clasificación de materiales conductores, semiconductores y aislantes (DBSCAN) | Uriel | `problemas/materiales_uriel.py` |
 | Explosiones nucleares entre sismos: DBSCAN | Arnau | `problemas/2_Nuclear/nukeDBSCAN_arnau.py` |
 
 Documento de descripción: `docs/descripcion_problemas.tex` (plantilla de `perfil/plantillas/informe_upc`).

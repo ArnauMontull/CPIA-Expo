@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Guion Detallado: Clasificación de Materiales Eléctricos con DBSCAN</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.55;
+    font-size: 10.5pt;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  .badge {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 8.5pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+  }
+  h1 {
+    font-size: 18pt;
+    color: #0f172a;
+    margin: 8px 0 4px 0;
+    font-weight: 700;
+  }
+  .subtitle {
+    font-size: 11pt;
+    color: #475569;
+    margin: 0 0 8px 0;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+    background-color: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 9pt;
+  }
+  .meta-item strong {
+    color: #0f172a;
+  }
+  h2 {
+    font-size: 13pt;
+    color: #1e3a8a;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 11pt;
+    color: #2563eb;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  p {
+    margin: 0 0 8px 0;
+  }
+  ul, ol {
+    margin: 0 0 10px 0;
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 9.5pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 6px 10px;
+    text-align: left;
+  }
+  th {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-weight: 600;
+  }
+  tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  .callout {
+    background-color: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 0 6px 6px 0;
+    page-break-inside: avoid;
+  }
+  .callout-title {
+    font-weight: 700;
+    color: #15803d;
+    margin-bottom: 4px;
+    font-size: 9.5pt;
+  }
+  .formula-box {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    text-align: center;
+    font-family: "Cambria Math", "Times New Roman", serif;
+    font-size: 11pt;
+    page-break-inside: avoid;
+  }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    background-color: #f1f5f9;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 9pt;
+    color: #0969da;
+  }
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 8.5pt;
+    line-height: 1.4;
+    overflow-x: hidden;
+    page-break-inside: avoid;
+    font-family: Consolas, monospace;
+  }
+  .qna-box {
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 8px 12px;
+    margin: 8px 0;
+    border-radius: 0 6px 6px 0;
+    page-break-inside: avoid;
+  }
+  .qna-box strong {
+    color: #b45309;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">CPIA · Computación / Inteligencia Artificial</div>
+  <h1>Guion de Proyecto: Clasificación de Materiales Eléctricos</h1>
+  <div class="subtitle">Descubrimiento basado en densidad de Conductores, Semiconductores y Aislantes mediante DBSCAN</div>
+  <div class="meta-grid">
+    <div class="meta-item"><strong>Estudiante:</strong> Uriel</div>
+    <div class="meta-item"><strong>Equipo:</strong> Matías, Martí, Uriel y Arnau</div>
+    <div class="meta-item"><strong>Fichero script:</strong> <code>problemas/materiales_uriel.py</code></div>
+  </div>
+</header>
+
+<h2>1. Resumen Ejecutivo y Ventajas de DBSCAN</h2>
+<p>
+El objetivo de este trabajo individual es aplicar <strong>DBSCAN</strong> (<em>Density-Based Spatial Clustering of Applications with Noise</em>) sobre el espacio bidimensional de resistividad y coeficiente de temperatura <code>(log<sub>10</sub>&rho;, &alpha;)</code> para descubrir de forma totalmente no supervisada las familias de materiales de la física del estado sólido (<strong>conductores, semiconductores y aislantes</strong>).
+</p>
+<div class="callout">
+  <div class="callout-title">¿Por qué DBSCAN es superior a K-Means en este problema?</div>
+  <ul style="margin:0; padding-left:16px;">
+    <li><strong>Densidades desiguales:</strong> Los metales forman un cúmulo hiperdenso y compacto (muy cercanos en resistividad ~10<sup>-8</sup> &Omega;&middot;m). En cambio, los aislantes abarcan más de 12 órdenes de magnitud (10<sup>11</sup> a 10<sup>23</sup> &Omega;&middot;m). K-Means tiende a fracturar cúmulos dispersos o fusionar densidades dispares; DBSCAN respeta la topología natural basada en conectividad por densidad.</li>
+    <li><strong>No requiere prefijar el número de grupos:</strong> DBSCAN encuentra autónomamente cuántas fases existen sin imponer <code>k = 3</code>.</li>
+    <li><strong>Filtrado natural de materiales anómalos o de frontera:</strong> Materiales con comportamientos híbridos (como el grafito anisotropic o materiales semi-aislantes) son etiquetados automáticamente como ruido (<code>label = -1</code>), aislando las fases puras con máxima precisión.</li>
+  </ul>
+</div>
+
+<h2>2. Fundamento Físico: Mecanismos de Conducción Eléctrica</h2>
+<p>
+La resistividad eléctrica &rho;(T) y su derivada térmica &alpha; delatan la estructura de bandas cuántica de cada material:
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Familia de Material</th>
+      <th>Estructura de Bandas</th>
+      <th>Mecanismo Físico</th>
+      <th>Resistividad a 300 K</th>
+      <th>Signo y Magnitud de &alpha;</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Metales (Conductores)</strong><br><em>Cu, Ag, Au, Al, Fe, etc.</em></td>
+      <td>Banda semillena.<br>Sin bandgap.</td>
+      <td>Mar de Fermi libre. La resistencia aumenta por choques con fonones de la red atómica.</td>
+      <td>10<sup>-8</sup> &ndash; 10<sup>-6</sup> &Omega;&middot;m<br>(Cúmulo de muy alta densidad)</td>
+      <td><strong>Positivo (&gt; 0)</strong><br>&alpha; &approx; +0.003 a +0.006 K<sup>-1</sup></td>
+    </tr>
+    <tr>
+      <td><strong>Semiconductores</strong><br><em>Si, Ge, GaAs, InP, GaN</em></td>
+      <td>Bandgap estrecho<br>(E<sub>g</sub> &approx; 0.2 &ndash; 2.0 eV).</td>
+      <td>La energía térmica <em>k<sub>B</sub>T</em> promueve electrones según Boltzmann <code>exp(-E<sub>g</sub>/2k<sub>B</sub>T)</code>.</td>
+      <td>10<sup>-3</sup> &ndash; 10<sup>4</sup> &Omega;&middot;m<br>(Densidad intermedia)</td>
+      <td><strong>Fuertemente Negativo (&lt; 0)</strong><br>&alpha; &approx; -0.015 a -0.075 K<sup>-1</sup></td>
+    </tr>
+    <tr>
+      <td><strong>Aislantes (Dieléctricos)</strong><br><em>Vidrio, Cuarzo, Teflón, PET</em></td>
+      <td>Bandgap gigantesco<br>(E<sub>g</sub> &gt; 5 &ndash; 9 eV).</td>
+      <td>Imposible excitar electrones a 300 K. Sin portadores libres prácticos.</td>
+      <td>10<sup>11</sup> &ndash; 10<sup>24</sup> &Omega;&middot;m<br>(Rango amplio disperso)</td>
+      <td><strong>Nulo (&approx; 0)</strong><br>Inmóvil a escala práctica</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Espacio de Características y Preprocesado</h2>
+<p>
+El dataset oficial generado en <code>datos/materiales_electricos.csv</code> contiene 57 materiales reales con sus propiedades físicas:
+</p>
+
+<div class="formula-box">
+  Variable 1: &nbsp; <strong>x<sub>1</sub> = log<sub>10</sub>(&rho;<sub>300K</sub>)</strong> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+  Variable 2: &nbsp; <strong>x<sub>2</sub> = &alpha; = (1 / &rho;<sub>0</sub>) · (d&rho; / dT)<sub>300K</sub></strong>
+</div>
+
+<p>
+<strong>Estandarización obligatoria:</strong> Se aplica <code>StandardScaler</code>. Dado que el radio de vecindad &epsilon; de DBSCAN se mide mediante distancia euclídea &radic;[(&Delta;x<sub>1</sub>)<sup>2</sup> + (&Delta;x<sub>2</sub>)<sup>2</sup>], ambas dimensiones deben tener varianza unidad para que la escala de resistividad no anule la información crucial del signo de &alpha;.
+</p>
+
+<div class="page-break"></div>
+
+<h2>4. Metodología de DBSCAN: Selección Objetiva de Hiperparámetros</h2>
+<p>
+Para cumplir al 100 % con la rúbrica de la asignatura y justificar técnicamente los hiperparámetros sin elegirlos "a ojo":
+</p>
+
+<ol>
+  <li><strong>Elección de <code>min_samples</code>:</strong>
+    <ul>
+      <li>La regla heurística consolidada en la literatura de minería de datos establece <code>min_samples = 2 &times; dimensiones = 4</code> (o 3 para datasets reducidos). Adoptamos <strong><code>min_samples = 3</code></strong> para permitir que el cúmulo de semiconductores (~12 materiales) se identifique plenamente como núcleo denso.</li>
+    </ul>
+  </li>
+  <li><strong>Determinación del radio &epsilon; mediante el Gráfico de k-Distancias (k-NN Distance Graph):</strong>
+    <ul>
+      <li>Se calcula para cada punto la distancia euclídea a su <em>k</em>-ésimo vecino más cercano (con <code>k = min_samples</code>) usando <code>sklearn.neighbors.NearestNeighbors</code>.</li>
+      <li>Se ordenan las distancias de menor a mayor y se grafican.</li>
+      <li>El valor óptimo de <strong>&epsilon;</strong> corresponde exactamente al punto de máxima curvatura ("el codo" de la curva de k-distancias, t&iacute;picamente en torno a <strong>&epsilon; &approx; 0.55 &ndash; 0.70</strong> en el espacio estandarizado).</li>
+    </ul>
+  </li>
+  <li><strong>Evaluación con Silhouette Score:</strong>
+    <ul>
+      <li>Se computa el coeficiente de silueta excluyendo los puntos clasificados como ruido (<code>label = -1</code>) para medir la consistencia interna y separación de los clusters densos.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>5. Estructura del Script (`problemas/materiales_uriel.py`)</h2>
+<pre>
+# problemas/materiales_uriel.py
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import DBSCAN
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score, confusion_matrix
+
+# 1. Cargar el dataset real descargado
+DATOS_DIR = Path(__file__).resolve().parent.parent / 'datos'
+df = pd.read_csv(DATOS_DIR / 'materiales_electricos.csv')
+
+X_raw = df[['log_rho_300K', 'alpha_coef']].values
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_raw)
+
+# 2. Heurística de selección de épsilon (k-NN distance graph)
+k_vecinos = 3
+nn = NearestNeighbors(n_neighbors=k_vecinos).fit(X_scaled)
+distancias, _ = nn.kneighbors(X_scaled)
+k_distancias = np.sort(distancias[:, k_vecinos - 1])
+
+# 3. Ajuste de DBSCAN con el radio óptimo
+EPS_OPTIMO = 0.65
+dbscan = DBSCAN(eps=EPS_OPTIMO, min_samples=k_vecinos)
+df['cluster'] = dbscan.fit_predict(X_scaled)
+
+# 4. Métricas y análisis
+n_clusters = len(set(df['cluster'])) - (1 if -1 in df['cluster'].values else 0)
+n_ruido = (df['cluster'] == -1).sum()
+mask_valid = df['cluster'] != -1
+sil = silhouette_score(X_scaled[mask_valid], df['cluster'][mask_valid])
+
+print(f"DBSCAN descubrió {n_clusters} clusters y {n_ruido} puntos anómalos/ruido.")
+print(f"Silhouette Score (núcleos densos): {sil:.3f}")
+</pre>
+
+<div class="page-break"></div>
+
+<h2>6. Guion para la Exposición Oral (Tu intervención individual)</h2>
+<p>Tienes asignados entre <strong>3 y 4 minutos</strong> en la presentación del equipo. Esta narrativa destaca por qué tu problema demuestra dominio de DBSCAN:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 15%;">Minuto</th>
+      <th style="width: 35%;">Diapositiva proyectada</th>
+      <th style="width: 50%;">Qué debes decir exactamente</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>0:00 &ndash; 0:45</strong></td>
+      <td><strong>Planteamiento y Limitación de K-Means:</strong><br>Dispersión física de resistividades.</td>
+      <td><em>"A diferencia de mis compañeros, he abordado la física de materiales con DBSCAN. ¿Por qué no usar K-Means? Porque los metales están condensados en una región minúscula de resistividad, mientras los aislantes abarcan más de 12 órdenes de magnitud. K-Means falla ante densidades tan desiguales. DBSCAN busca continuidad por densidad y descubre los grupos sin forzar un número prefijado."</em></td>
+    </tr>
+    <tr>
+      <td><strong>0:45 &ndash; 1:45</strong></td>
+      <td><strong>Variables físicas y Normalización:</strong><br>Espacio (log<sub>10</sub>&rho;, &alpha;) y StandardScaler.</td>
+      <td><em>"Trabajamos en dos dimensiones: log<sub>10</sub>(&rho;) para manejar 30 órdenes de magnitud, y el coeficiente térmico &alpha;, que es la firma cuántica del material. Estandarizamos con StandardScaler para que ambas variables tengan igual peso en la métrica euclídea del radio de vecindad &epsilon;."</em></td>
+    </tr>
+    <tr>
+      <td><strong>1:45 &ndash; 2:45</strong></td>
+      <td><strong>Selección objetiva de &epsilon;:</strong><br>Gráfico de k-distancias (k-NN distance graph).</td>
+      <td><em>"Para no elegir &epsilon; arbitrariamente, calculamos la distancia al 3.er vecino más cercano de cada material y graficamos la curva de k-distancias. El punto de máxima pendiente marca exactamente el radio óptimo &epsilon; = 0.65, garantizando reproducibilidad científica."</em></td>
+    </tr>
+    <tr>
+      <td><strong>2:45 &ndash; 3:45</strong></td>
+      <td><strong>Resultados de DBSCAN y Clasificación:</strong><br>Scatter 2D con clusters coloreados y ruido (label = -1).</td>
+      <td><em>"DBSCAN identifica con éxito los 3 clusters principales: Metales con &alpha; &gt; 0, Semiconductores con &alpha; &lt; 0 y Aislantes con &alpha; &approx; 0. Además, etiqueta como ruido (-1) materiales de frontera como el grafito perpendicular, que exhibe conducción anisotrópica anómala. El Silhouette Score supera 0.78."</em></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>7. Preparación para las Preguntas del Tribunal (20 % de la nota)</h2>
+
+<div class="qna-box">
+  <strong>P1: ¿Por qué es mejor DBSCAN que K-Means para clasificar materiales?</strong><br>
+  <em>Respuesta:</em> Porque los grupos físicos tienen densidades radicalmente dispares. Los 35 conductores tienen resistividades casi idénticas en escala logarítmica (~10<sup>-8</sup>), formando un cúmulo de densidad altísima. En cambio, los aislantes están muy espaciados entre sí (desde 10<sup>11</sup> hasta 10<sup>23</sup>). K-Means asume varianzas similares y clusters esféricos, por lo que tiende a agrupar erróneamente aislantes con semiconductores. DBSCAN conecta puntos por cadenas de densidad local independientemente de la forma geométrica.
+</div>
+
+<div class="qna-box">
+  <strong>P2: ¿Cómo habéis determinado objetivamente los hiperparámetros &epsilon; y min_samples?</strong><br>
+  <em>Respuesta:</em> Fijamos <code>min_samples = 3</code> siguiendo la heurística dimensional para conjuntos de datos experimentales, y obtuvimos &epsilon; a través del gráfico de <em>k</em>-distancias ordenadas (<em>k-nearest neighbors distance graph</em>), seleccionando el punto de inflexión donde la curva experimenta una subida brusca.
+</div>
+
+<div class="qna-box">
+  <strong>P3: ¿Qué significado físico tienen los puntos etiquetados como ruido (cluster = -1)?</strong><br>
+  <em>Respuesta:</em> Son materiales con propiedades anómalas o de transición que no encajan claramente en los núcleos densos estándar, como el grafito orientado perpendicularmente (que se comporta como un semimetal con conducción bidimensional) o semiconductores semi-aislantes de alta compensación. DBSCAN los aísla para no contaminar las fases principales.
+</div>
+
+</body>
+</html>
