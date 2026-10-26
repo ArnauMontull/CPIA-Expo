@@ -131,7 +131,7 @@
   </div>
 </header>
 
-<h2>1. Bloque de Importaciones (Líneas 13 &ndash; 19)</h2>
+<h2>1. Bloque de Importaciones (Líneas 13 &ndash; 18)</h2>
 
 <div class="code-block">
 from pathlib import Path<br>
@@ -139,21 +139,20 @@ import numpy as np<br>
 import pandas as pd<br>
 import matplotlib.pyplot as plt<br>
 from sklearn.cluster import DBSCAN<br>
-from sklearn.preprocessing import StandardScaler<br>
 from sklearn.metrics import silhouette_score
 </div>
 
 <div class="explain-box">
   <ul>
     <li><strong>Línea 13 (<code>Path</code>):</strong> Gestión de rutas multiplataforma (evita incompatibilidades de barras entre Windows y Linux/Mac).</li>
-    <li><strong>Línea 14 (<code>numpy</code>):</strong> Manipulación de matrices y cálculos numéricos vectorizados.</li>
+    <li><strong>Línea 14 (<code>numpy</code>):</strong> Manipulación de matrices y operaciones vectorizadas, incluyendo el cálculo manual de la media y la desviación típica para el escalado.</li>
     <li><strong>Línea 15 (<code>pandas</code>):</strong> Carga del CSV en DataFrame y cálculo de matrices de contingencia cruzada.</li>
     <li><strong>Línea 16 (<code>matplotlib.pyplot</code>):</strong> Motor gráfico para la visualización 2D de clusters y exportación de imágenes.</li>
-    <li><strong>Líneas 17 &ndash; 19 (<code>scikit-learn</code>):</strong> Importa directamente la clase oficial <code>DBSCAN</code>, el estandarizador <code>StandardScaler</code> y la métrica de validación <code>silhouette_score</code> de la librería de Machine Learning de referencia.</li>
+    <li><strong>Líneas 17 &ndash; 18 (<code>scikit-learn</code>):</strong> Importa directamente la clase oficial <code>DBSCAN</code> y la métrica de validación <code>silhouette_score</code> de la librería de Machine Learning de referencia.</li>
   </ul>
 </div>
 
-<h2>2. Carga del Dataset y Rutas Relativas (Líneas 24 &ndash; 31)</h2>
+<h2>2. Carga del Dataset y Rutas Relativas (Líneas 23 &ndash; 30)</h2>
 
 <div class="code-block">
 DATOS_DIR = Path(__file__).resolve().parents[2] / "datos"<br>
@@ -168,32 +167,34 @@ print(f"Dataset cargado con éxito ({len(df)} materiales).")
 
 <div class="explain-box">
   <ul>
-    <li><strong>Línea 24:</strong> <code>Path(__file__).resolve().parents[2] / "datos"</code> accede a la raíz del repositorio y entra en <code>datos/</code>. Al estar el script dentro de <code>problemas/5_Materials_Uriel/</code>, el índice <code>parents[2]</code> sube exactamente los dos niveles requeridos hasta la raíz.</li>
-    <li><strong>Líneas 27 &ndash; 28:</strong> Control de errores: si el CSV no existe, avisa con claridad al usuario.</li>
-    <li><strong>Línea 30:</strong> Carga los 57 materiales reales en el DataFrame <code>df</code>.</li>
+    <li><strong>Línea 23:</strong> <code>Path(__file__).resolve().parents[2] / "datos"</code> accede a la raíz del repositorio y entra en <code>datos/</code>. Al estar el script dentro de <code>problemas/5_Materials_Uriel/</code>, el índice <code>parents[2]</code> sube exactamente los dos niveles requeridos hasta la raíz.</li>
+    <li><strong>Líneas 26 &ndash; 27:</strong> Control de errores: si el CSV no existe, avisa con claridad al usuario.</li>
+    <li><strong>Línea 29:</strong> Carga los 57 materiales reales en el DataFrame <code>df</code>.</li>
   </ul>
 </div>
 
-<h2>3. Selección de Características y StandardScaler (Líneas 38 &ndash; 43)</h2>
+<h2>3. Selección de Características y Estandarización Manual Z-Score (Líneas 37 &ndash; 44)</h2>
 
 <div class="code-block">
 features = ["log_rho_300K", "alpha_coef"]<br>
 X_raw = df[features].values<br>
 <br>
-scaler = StandardScaler()<br>
-X_scaled = scaler.fit_transform(X_raw)
+# Estandarización manual: Z = (X - μ) / σ<br>
+media = np.mean(X_raw, axis=0)<br>
+desv = np.std(X_raw, axis=0)<br>
+X_scaled = (X_raw - media) / desv
 </div>
 
 <div class="explain-box">
   <ul>
-    <li><strong>Líneas 38 &ndash; 39:</strong> Extrae la matriz numérica con las dos dimensiones físicas: la resistividad logarítmica (escala &approx; 31 órdenes) y el coeficiente térmico &alpha; (escala &approx; 0.08).</li>
-    <li><strong>Líneas 41 &ndash; 42:</strong> <code>StandardScaler()</code> aplica de forma canónica la transformación <strong>Z = (X &minus; &mu;) / &sigma;</strong>. Esto asegura que ambas variables tengan media 0 y varianza 1, permitiendo que la distancia euclídea del radio &epsilon; pondere por igual la magnitud de la resistencia y el signo del coeficiente térmico.</li>
+    <li><strong>Líneas 37 &ndash; 38:</strong> Extrae la matriz numérica con las dos dimensiones físicas: la resistividad logarítmica (rango &approx; 31 órdenes de magnitud) y el coeficiente térmico &alpha; (rango &approx; 0.08).</li>
+    <li><strong>Líneas 42 &ndash; 44 (Estandarización Manual):</strong> Se calcula explícitamente la media <strong>&mu;</strong> con <code>np.mean(X_raw, axis=0)</code> y la desviación típica <strong>&sigma;</strong> con <code>np.std(X_raw, axis=0)</code> para cada columna, aplicando la fórmula de estandarización <strong>Z = (X &minus; &mu;) / &sigma;</strong>. Esto asegura que ambas variables tengan media 0 y varianza 1, evitando que la escala de resistividad opaque la variación del coeficiente térmico en el cálculo de distancias de DBSCAN.</li>
   </ul>
 </div>
 
 <div class="page-break"></div>
 
-<h2>4. Aplicación de DBSCAN de scikit-learn (Líneas 48 &ndash; 53)</h2>
+<h2>4. Aplicación de DBSCAN de scikit-learn (Líneas 49 &ndash; 53)</h2>
 
 <div class="code-block">
 EPS = 0.65<br>
@@ -205,9 +206,9 @@ df["cluster"] = dbscan.fit_predict(X_scaled)
 
 <div class="explain-box">
   <ul>
-    <li><strong>Líneas 48 &ndash; 49:</strong> Fija los dos hiperparámetros de DBSCAN: el radio de vecindad <code>eps = 0.65</code> y el umbral de densidad <code>min_samples = 3</code>.</li>
-    <li><strong>Línea 51:</strong> Instancia el modelo <code>DBSCAN</code> de scikit-learn.</li>
-    <li><strong>Línea 52:</strong> <code>.fit_predict(X_scaled)</code> ejecuta el algoritmo en un solo paso:
+    <li><strong>Líneas 49 &ndash; 50:</strong> Fija los dos hiperparámetros de DBSCAN: el radio de vecindad <code>eps = 0.65</code> y el umbral de densidad <code>min_samples = 3</code>.</li>
+    <li><strong>Línea 52:</strong> Instancia el modelo <code>DBSCAN</code> de scikit-learn.</li>
+    <li><strong>Línea 53:</strong> <code>.fit_predict(X_scaled)</code> ejecuta el algoritmo en un solo paso:
       <ol>
         <li>Construye el árbol espacial de vecinos de cada punto.</li>
         <li>Identifica los puntos núcleo (los que tienen &ge; 3 vecinos dentro de un radio euclídeo de 0.65).</li>
@@ -218,7 +219,7 @@ df["cluster"] = dbscan.fit_predict(X_scaled)
   </ul>
 </div>
 
-<h2>5. Evaluación con Silhouette Score de scikit-learn (Líneas 58 &ndash; 63)</h2>
+<h2>5. Evaluación con Silhouette Score de scikit-learn (Líneas 58 &ndash; 62)</h2>
 
 <div class="code-block">
 mask_validos = df["cluster"] != -1<br>
@@ -235,7 +236,7 @@ else:<br>
   </ul>
 </div>
 
-<h2>6. Métricas y Matriz de Contingencia (Líneas 68 &ndash; 88)</h2>
+<h2>6. Métricas y Matriz de Contingencia (Líneas 67 &ndash; 86)</h2>
 
 <div class="code-block">
 clusters_encontrados = sorted(set(df["cluster"]) - {-1})<br>
@@ -251,14 +252,14 @@ print(pd.crosstab(df["clase_real"], df["cluster"], margins=True))
 
 <div class="explain-box">
   <ul>
-    <li><strong>Líneas 68 &ndash; 70:</strong> Calcula el número de clusters reales descubiertos y la cantidad de puntos de ruido.</li>
-    <li><strong>Línea 78:</strong> <code>pd.crosstab(df["clase_real"], df["cluster"])</code> genera la matriz de contingencia que valida el clustering no supervisado frente a la física real: los 35 metales se asignan íntegramente al Cluster 0, los 10 aislantes al Cluster 1 y los semiconductores tecnológicos al Cluster 2.</li>
+    <li><strong>Líneas 67 &ndash; 69:</strong> Calcula el número de clusters reales descubiertos y la cantidad de puntos de ruido.</li>
+    <li><strong>Línea 80:</strong> <code>pd.crosstab(df["clase_real"], df["cluster"])</code> genera la matriz de contingencia que valida el clustering no supervisado frente a la física real: los 35 metales se asignan íntegramente al Cluster 0, los 10 aislantes al Cluster 1 y los semiconductores tecnológicos al Cluster 2.</li>
   </ul>
 </div>
 
 <div class="page-break"></div>
 
-<h2>7. Visualización Científica con Matplotlib (Líneas 93 &ndash; 165)</h2>
+<h2>7. Visualización Científica con Matplotlib (Líneas 91 &ndash; 161)</h2>
 
 <div class="code-block">
 plt.figure(figsize=(10, 6.5))<br>

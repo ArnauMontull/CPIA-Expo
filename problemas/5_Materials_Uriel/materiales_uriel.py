@@ -15,7 +15,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score
 
 # ==============================================================================
@@ -31,15 +30,18 @@ df = pd.read_csv(CSV_PATH)
 print(f"Dataset cargado con éxito ({len(df)} materiales).")
 
 # ==============================================================================
-# 2. Selección de características y estandarización (StandardScaler de sklearn)
+# 2. Selección de características y estandarización manual (Z-Score)
 # ==============================================================================
 # x1: log10(resistividad a 300 K) -> comprime más de 30 órdenes de magnitud
 # x2: coeficiente térmico alpha -> firma cuántica del material
 features = ["log_rho_300K", "alpha_coef"]
 X_raw = df[features].values
 
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X_raw)
+# Estandarización manual: Z = (X - μ) / σ
+# Garantiza media = 0 y desviación típica = 1 en cada dimensión
+media = np.mean(X_raw, axis=0)
+desv = np.std(X_raw, axis=0)
+X_scaled = (X_raw - media) / desv
 
 # ==============================================================================
 # 3. Aplicación de DBSCAN (scikit-learn)
