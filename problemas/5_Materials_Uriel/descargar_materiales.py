@@ -8,6 +8,10 @@ import urllib.request
 from pathlib import Path
 import math
 
+# ==============================================================================
+#CODIGO HECHO con GEMINI
+# ==============================================================================
+
 # Asegurar codificación utf-8 en Windows
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')

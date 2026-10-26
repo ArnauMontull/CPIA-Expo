@@ -1,4 +1,4 @@
-# Genera presentacion/expo_cpia.pptx: parte de Arnau completa y diapositivas con hueco para los demas
+# Genera presentacion/expo_cpia.pptx: parte de Arnau y Uriel completas y diapositivas con hueco para los demas
 from pathlib import Path
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -94,9 +94,44 @@ diapo('Limitaciones (preguntas probables)', [
     'FP: terremotos muy superficiales y explosiones de minas; algunas pruebas oficiales figuran como earthquake',
     'No usamos año ni número de estaciones: delatarían la época, no la física'])
 
-# --- Huecos para los demas ---
-for nombre in ('Matías', 'Martí', 'Uriel'):
+# --- Huecos para Matías y Martí ---
+for nombre in ('Matías', 'Martí'):
     diapo(f'Problema de {nombre}', pendiente='título, datos, método, resultado, figuras')
+
+# --- Parte de Uriel: Clasificación de Materiales Eléctricos con DBSCAN ---
+diapo('Problema: Clasificación de materiales eléctricos', [
+    '¿Se pueden descubrir las fases de la materia sin etiquetas?',
+    'Espacio de características físicas: (log₁₀(ρ₃₀₀K), α)',
+    'La resistividad abarca más de 30 órdenes de magnitud (10⁻⁸ a 10²² Ω·m)',
+    'El coeficiente térmico α delata la estructura cuántica de bandas'],
+    notas='Uriel presenta el problema: la resistividad macroscópica y su derivada térmica frente a temperatura identifican si un material es conductor, semiconductor o aislante.')
+
+diapo('Física cuántica y por qué DBSCAN', [
+    'Metales (banda semillena): α > 0 por choques con fonones (mar de Fermi)',
+    'Semiconductores (gap moderado): α < 0 por activación térmica de Boltzmann',
+    'Aislantes (gap enorme > 5 eV): α ≈ 0 y resistividad extrema (> 10¹¹ Ω·m)',
+    '¿Por qué DBSCAN?: K-Means asume grupos esféricos e isodensos; DBSCAN respeta densidades desiguales (metales densos vs aislantes dispersos)'])
+
+diapo('Metodología: Escala y parámetros', [
+    'Estandarización manual Z-score: Z = (X - μ) / σ vectorialmente con NumPy',
+    'Imprescindible: equipara el rango de log₁₀ρ (~31) con el de α (~0,08)',
+    'DBSCAN con scikit-learn: eps = 0,65, min_samples = 3 (dimensión d = 2)',
+    'Determinación objetiva de eps mediante codo k-NN y silueta'],
+    notas='Explicación de la estandarización Z manual con NumPy y la justificación matemática de los hiperparámetros.')
+
+diapo('Resultado: DBSCAN en 57 materiales', [
+    '3 clusters puros descubiertos por densidad: 0 ruido',
+    'Cluster 0 (ámbar): 35 metales conductores (Cu, Ag, Au, Al...)',
+    'Cluster 1 (azul): 10 aislantes dieléctricos (vidrio, teflón, cuarzo...)',
+    'Cluster 2 (verde): 10 semiconductores (Si, Ge, GaAs, InP...)',
+    'Silhouette Score: 0,7858 (separación inter-cluster sobresaliente)'], 'clusters_materiales_dbscan.png', 7.2,
+    notas='El gráfico muestra la clara separación; la línea discontinua de alfa = 0 separa el régimen de fonones del de activación térmica.')
+
+diapo('Validación y defensa', [
+    'Matriz de contingencia: 100 % de pureza en conductores y aislantes',
+    '2 semimetales clasificados en el cluster 0 por su resistividad cuasi-metálica',
+    'eps < 0,4 fragmenta los aislantes en ruido; eps > 1,0 funde semiconductores con metales',
+    'Usar conductividad lineal σ colapsaría el 99 % de los puntos en el origen: log₁₀ρ es obligatoria'])
 
 diapo('Conclusiones', pendiente='comparativa del equipo: qué algoritmo funcionó mejor y por qué')
 diapo('Preguntas', ['Código y documento de descripción entregados en Atenea'])
