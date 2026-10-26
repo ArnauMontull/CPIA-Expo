@@ -99,39 +99,50 @@ for nombre in ('Matías', 'Martí'):
     diapo(f'Problema de {nombre}', pendiente='título, datos, método, resultado, figuras')
 
 # --- Parte de Uriel: Clasificación de Materiales Eléctricos con DBSCAN ---
-diapo('Problema: Clasificación de materiales eléctricos', [
-    '¿Se pueden descubrir las fases de la materia sin etiquetas?',
-    'Espacio de características físicas: (log₁₀(ρ₃₀₀K), α)',
-    'La resistividad abarca más de 30 órdenes de magnitud (10⁻⁸ a 10²² Ω·m)',
-    'El coeficiente térmico α delata la estructura cuántica de bandas'],
-    notas='Uriel presenta el problema: la resistividad macroscópica y su derivada térmica frente a temperatura identifican si un material es conductor, semiconductor o aislante.')
+diapo('Problema: 3 familias y firmas térmicas', [
+    'Conducción según la estructura cuántica de bandas',
+    'Variación térmica: ρ(T) = ρ₀ · [1 + α·(T - T₀)]',
+    'Coeficiente térmico: α = (1 / ρ₀) · (dρ / dT)₃₀₀K',
+    'Metales (α > 0) · Semiconductores (α < 0) · Aislantes (α ≈ 0)'],
+    'esquema_bandas_materiales.png', 7.2,
+    notas='Estructura de bandas y variación térmica: el signo y magnitud de alfa delatan la física microscópica.')
 
-diapo('Física cuántica y por qué DBSCAN', [
-    'Metales (banda semillena): α > 0 por choques con fonones (mar de Fermi)',
-    'Semiconductores (gap moderado): α < 0 por activación térmica de Boltzmann',
-    'Aislantes (gap enorme > 5 eV): α ≈ 0 y resistividad extrema (> 10¹¹ Ω·m)',
-    '¿Por qué DBSCAN?: K-Means asume grupos esféricos e isodensos; DBSCAN respeta densidades desiguales (metales densos vs aislantes dispersos)'])
+diapo('Dataset y espacio (log₁₀ρ, α)', [
+    '57 materiales reales recopilados experimentalmente',
+    '30 órdenes de magnitud en resistividad (10⁻⁸ a 10²² Ω·m)',
+    'Escala lineal colapsa en el origen; log₁₀(ρ) separa las fases',
+    'Clustering no supervisado: descubrir las clases sin etiquetas'],
+    'distribucion_escala_rho.png', 7.2,
+    notas='Comparativa de escala: la compresión logarítmica es imprescindible para que los metales y aislantes coexistan.')
 
-diapo('Metodología: Escala y parámetros', [
-    'Estandarización manual Z-score: Z = (X - μ) / σ vectorialmente con NumPy',
-    'Imprescindible: equipara el rango de log₁₀ρ (~31) con el de α (~0,08)',
-    'DBSCAN con scikit-learn: eps = 0,65, min_samples = 3 (dimensión d = 2)',
-    'Determinación objetiva de eps mediante codo k-NN y silueta'],
-    notas='Explicación de la estandarización Z manual con NumPy y la justificación matemática de los hiperparámetros.')
+diapo('¿Por qué DBSCAN frente a K-Means?', [
+    '✖ K-Means: asume esfericidad, fractura aislantes y no aísla ruido',
+    '✔ DBSCAN: conecta por densidad local y tolera densidades desiguales',
+    'Metales hiperdensos vs aislantes extendidos en 12 órdenes',
+    'DBSCAN detecta anomalías de forma nativa (etiqueta -1)'],
+    'comparativa_kmeans_dbscan.png', 7.2,
+    notas='K-Means asume varianzas similares y falla; DBSCAN conecta por densidad y respeta la dispersión natural.')
+
+diapo('Metodología: Fórmulas y parámetros', [
+    'Estandarización manual Z-Score con NumPy: Z = (X - μ) / σ',
+    'Vecindad: N_ε(p) = { q | d(p, q) ≤ ε }',
+    'Núcleo (Core Point): |N_ε(p)| ≥ min_samples',
+    'Parámetros fijados: ε = 0,65 (codo k-NN) y min_samples = 3 (d = 2)'])
 
 diapo('Resultado: DBSCAN en 57 materiales', [
     '3 clusters puros descubiertos por densidad: 0 ruido',
-    'Cluster 0 (ámbar): 35 metales conductores (Cu, Ag, Au, Al...)',
-    'Cluster 1 (azul): 10 aislantes dieléctricos (vidrio, teflón, cuarzo...)',
-    'Cluster 2 (verde): 10 semiconductores (Si, Ge, GaAs, InP...)',
-    'Silhouette Score: 0,7858 (separación inter-cluster sobresaliente)'], 'clusters_materiales_dbscan.png', 7.2,
-    notas='El gráfico muestra la clara separación; la línea discontinua de alfa = 0 separa el régimen de fonones del de activación térmica.')
+    'Cluster 0 (ámbar): 35 metales conductores (Cu, Ag, Au...)',
+    'Cluster 1 (azul): 10 aislantes dieléctricos (vidrio, teflón...)',
+    'Cluster 2 (verde): 10 semiconductores (Si, Ge, GaAs...)',
+    'Frontera α = 0: fonones vs activación térmica'],
+    'clusters_materiales_dbscan.png', 7.2,
+    notas='Resultado gráfico: el plano 2D muestra la separación nítida de las tres clases.')
 
-diapo('Validación y defensa', [
-    'Matriz de contingencia: 100 % de pureza en conductores y aislantes',
-    '2 semimetales clasificados en el cluster 0 por su resistividad cuasi-metálica',
-    'eps < 0,4 fragmenta los aislantes en ruido; eps > 1,0 funde semiconductores con metales',
-    'Usar conductividad lineal σ colapsaría el 99 % de los puntos en el origen: log₁₀ρ es obligatoria'])
+diapo('Validación física: Matriz de contingencia', [
+    'Conductores: 35 de 35 (100 % pureza en Cluster 0)',
+    'Aislantes: 10 de 10 (100 % pureza en Cluster 1)',
+    'Semiconductores: 10 de 12 (83,3 % pureza en Cluster 2; 2 semimetales en cluster 0)',
+    'Silhouette Score complementario: 0,7858 (alta cohesión interna)'])
 
 diapo('Conclusiones', pendiente='comparativa del equipo: qué algoritmo funcionó mejor y por qué')
 diapo('Preguntas', ['Código y documento de descripción entregados en Atenea'])
