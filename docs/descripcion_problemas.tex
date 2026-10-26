@@ -191,8 +191,10 @@ blanda por probabilidad. Isolation Forest puntúa como anómalos los puntos que 
 % ==========================================
 
 \subsection{Planteamiento y originalidad}
-Los sismógrafos registran por igual terremotos y explosiones nucleares. Preguntamos si, \emph{sin usar la etiqueta},
-un algoritmo de clustering puede señalar las explosiones solo con la posición y la profundidad del evento. La idea
+Los sismógrafos registran por igual terremotos y explosiones nucleares. Preguntamos si un clustering que no
+mira la etiqueta puede señalar las explosiones solo con la posición y la profundidad del evento. El agrupamiento
+(DBSCAN) es no supervisado; los hiperparámetros y la ventana de profundidad se afinan después contra la etiqueta
+(enfoque híbrido, ver las limitaciones). La idea
 física es doble: las pruebas nucleares se repiten en los mismos polígonos de ensayo (Nevada, Semipalátinsk, Novaya
 Zemlya, Lop Nor, Mururoa\ldots), por lo que forman agrupaciones espaciales muy compactas, y ocurren casi en la
 superficie, mientras que los terremotos tectónicos tienen profundidad mediana de unos 22 km.
@@ -261,18 +263,12 @@ los clusters sospechosos por profundidad; círculos rojos: explosiones reales (e
 \end{figure}
 
 \subsection{Elección de parámetros}
-Se barre $\varepsilon$ de 1 a 201 km tomando cada vez un 10\,\% aleatorio de los sismos (con
-\texttt{random\_state} fijo, reproducible) y se cuentan FP y FN. Para escoger $(\varepsilon, v_{\min}, d_{\min},
-d_{\max})$ se usa \texttt{nuke\_optimizar.py}, que maximiza la medida $F_1 = 2\,\mathrm{TP}/(2\,\mathrm{TP}+\mathrm{FP}+\mathrm{FN})$.
+Para escoger $(\varepsilon, v_{\min}, d_{\min},
+d_{\max})$ se usa \texttt{nuke\_optimizar.py}, que maximiza la medida $F_1 = 2\,\mathrm{TP}/(2\,\mathrm{TP}+\mathrm{FP}+\mathrm{FN})$
+sobre todo el catálogo (es un ajuste con etiquetas).
 Como DBSCAN es lo lento y solo depende de $\varepsilon$ y $v_{\min}$, se ejecuta una vez por pareja y las ventanas de
 profundidad se prueban sobre los clusters ya calculados (77 ejecuciones de DBSCAN en lugar de unas 32\,000). No se usa
 Newton ni descenso por gradiente porque el resultado salta a trompicones y $v_{\min}$ es entero.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.7\textwidth]{figuras/barrido_eps.png}
-\caption{Barrido de $\varepsilon$ con el 10\,\% de los datos (parámetros óptimos del catálogo grande).}
-\end{figure}
 
 \begin{table}[H]
 \centering
@@ -286,6 +282,44 @@ Pequeño (2010--2025) & 554 & 10 & 1 & $-4$ & 0,1 & 6 & 14 \\
 \end{tabular}
 \caption{Parámetros óptimos por $F_1$ de cada catálogo.}
 \end{table}
+
+\subsection{Validación de $\varepsilon$ y estabilidad (\texttt{nukeval.py})}
+Siguiendo el esquema de validación del temario (silueta, codo y estabilidad), \texttt{nukeval.py} evalúa $\varepsilon$
+con $v_{\min}=1$ y la ventana de profundidad óptima. Para cada $\varepsilon$ cuenta los clusters, calcula la silueta con
+distancia haversine sobre una muestra de 2\,000 sismos (sin etiquetas) y los FP y FN (con etiquetas).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$\varepsilon$ (km) & Clusters & Silueta & FP & FN \\
+\midrule
+5 & 111\,103 & $0{,}00$ & 104 & 19 \\
+10 & 44\,791 & $-0{,}15$ & 61 & 16 \\
+25 & 11\,037 & $-0{,}34$ & 36 & 29 \\
+40 & 5\,683 & $-0{,}43$ & 34 & 31 \\
+50 & 4\,205 & $-0{,}50$ & 12 & 261 \\
+100 & 1\,781 & $-0{,}56$ & 6 & 270 \\
+\bottomrule
+\end{tabular}
+\caption{Validación de $\varepsilon$ en el catálogo grande (extracto; \texttt{nukeval.py} imprime 10 valores).}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figuras/nukeval_eps.png}
+\caption{Clusters, silueta y distancia al 4.º vecino (codo clásico de DBSCAN) frente a $\varepsilon$.}
+\end{figure}
+
+\begin{itemize}
+  \item \textbf{La silueta no elige $\varepsilon$:} es negativa y decrece al aumentar $\varepsilon$. Con distancia por
+        densidad, DBSCAN une cadenas alargadas de sismos y la silueta (que premia grupos compactos) lo penaliza. Tampoco el
+        gráfico de distancias al 4.º vecino muestra un codo claro entre 20 y 30 km.
+  \item \textbf{Lo que sí limita $\varepsilon$ es la profundidad:} los FN pasan de 31 a 261 entre 40 y 50 km, porque los
+        grupos de explosiones se funden con terremotos más profundos y la mediana deja de ser superficial.
+  \item \textbf{Estabilidad:} el ARI entre el clustering de todo el catálogo y el de una muestra aleatoria del 50\,\% (5
+        semillas, $\varepsilon=25$ km) vale entre $0{,}52$ y $0{,}62$: moderado, porque al quitar sismos se rompen cadenas de DBSCAN.
+\end{itemize}
 
 \subsection{Resultados}
 Con el catálogo grande y los parámetros óptimos: 585 aciertos, 36 FP y 29 FN, es decir, precisión 94,2\,\%,
@@ -302,6 +336,9 @@ recall 95,3\,\% y $F_1=0{,}947$.
   \item \textbf{Con $v_{\min}=1$ no hay ruido:} cada sismo aislado forma su propio cluster. DBSCAN actúa aquí como un
         agrupador por proximidad encadenada, y la selección real la hace el filtro de profundidad. Con $v_{\min}=3$ el
         resultado empeora ($F_1=0{,}928$; FN = 69), porque muchas pruebas aisladas se perderían como «ruido».
+  \item \textbf{Enfoque híbrido, no puramente no supervisado:} DBSCAN agrupa sin etiquetas, pero $\varepsilon$, $v_{\min}$ y la
+        ventana de profundidad se eligen maximizando el $F_1$ contra la etiqueta, porque la silueta y el codo no
+        reproducen ese $\varepsilon$ (ver la validación). La regla «las explosiones son superficiales» es conocimiento físico previo.
   \item \textbf{Sobreajuste:} los parámetros se eligen y se evalúan con los mismos datos. Comprobación cruzada
         entre catálogos: los parámetros del catálogo pequeño aplicados al grande dan $F_1=0{,}855$ (189 FP: aparecen
         terremotos superficiales de 1951--2009 que el catálogo pequeño no contiene); los del grande aplicados al
@@ -329,17 +366,20 @@ recall 95,3\,\% y $F_1=0{,}947$.
   \item Crear el entorno: \texttt{python -m venv .venv} e instalar \texttt{requirements.txt}
         (numpy, pandas, matplotlib, scikit-learn, plotly).
   \item Opcional: \texttt{python descargar\_datos.py sismos\_hist} regenera los CSV desde el USGS.
-  \item \texttt{python problemas/2\_Nuclear/nukeDBSCAN\_arnau.py} (se puede lanzar desde cualquier carpeta). Imprime el
-        barrido, muestra la gráfica de errores, imprime FP y FN del run óptimo y escribe \texttt{globo.html}
-        (globo interactivo con 4 vistas, funciona sin internet).
+  \item \texttt{python problemas/2\_Nuclear/nukeDBSCAN\_arnau.py} (se puede lanzar desde cualquier carpeta). Imprime FP y FN
+        del run óptimo y escribe \texttt{globo.html} (globo interactivo con 4 vistas, funciona sin internet).
   \item Cambiar \texttt{CATALOGO} al principio del fichero para usar el catálogo pequeño.
   \item \texttt{python problemas/2\_Nuclear/nuke\_optimizar.py} reproduce la búsqueda de parámetros óptimos
         (unos 2 min el catálogo pequeño, unos 5 min el grande).
+  \item \texttt{python problemas/2\_Nuclear/nukeval.py} reproduce la validación de $\varepsilon$ y la estabilidad
+        (unos 4 min) y guarda \texttt{nukeval\_eps.png} y \texttt{nukeval\_mapa.png}.
   \item Las figuras de este documento: \texttt{python docs/figuras\_nuclear.py}.
 \end{enumerate}
 
 \subsection{Código fuente}
 \lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeDBSCAN\_arnau.py}}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
+
+\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeval.py}}]{../problemas/2_Nuclear/nukeval.py}
 
 % ==========================================
 \section{Problema de Matías: agrupación de sismos y detección de anomalías}

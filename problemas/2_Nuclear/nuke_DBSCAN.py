@@ -127,5 +127,5 @@ fig.update_geos(projection_type='natural earth',
 
 # Guardamos el mapa junto a este script y lo abrimos en el navegador
 carpeta = os.path.dirname(os.path.abspath(__file__))
-fig.write_html(os.path.join(carpeta, 'globo.html'), include_plotlyjs='cdn')
+fig.write_html(os.path.jo   in(carpeta, 'globo.html'), include_plotlyjs='cdn')
 fig.show()

@@ -74,10 +74,12 @@ diapo('Cómo se detecta', [
     '4. Comparar con la etiqueta: aciertos, falsos positivos (FP) y falsos negativos (FN)'], 'deteccion_nevada.png', 7.2,
     notas='Zoom en Nevada: a la izquierda los epicentros, a la derecha los clusters; en morado los sospechosos.')
 
-diapo('Elegir los parámetros', [
-    'Barrido de eps con un 10 % aleatorio de los datos',
-    'Optimizador por F1: DBSCAN una vez por (eps, vmin) y todas las ventanas de profundidad sobre esos clusters',
-    'Óptimo: eps = 25 km, vmin = 1, profundidad [0; 0,1) km'], 'barrido_eps.png', 6.8)
+diapo('Elegir y validar los parámetros', [
+    'Optimizador por F1 (con etiquetas): DBSCAN una vez por (eps, vmin) y todas las ventanas de profundidad',
+    'Óptimo: eps = 25 km, vmin = 1, profundidad [0; 0,1) km',
+    'La silueta no elige eps (es negativa y baja con eps); el codo de distancias k no marca un valor claro',
+    'Con eps ≥ 50 km los FN se disparan (261): los grupos se funden con terremotos profundos',
+    'Estabilidad (ARI, muestra del 50 %): 0,52-0,62'], 'nukeval_eps.png', 7.2)
 
 diapo('Resultado', [
     '585 aciertos, 36 FP, 29 FN',

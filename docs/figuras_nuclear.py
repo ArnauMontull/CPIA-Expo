@@ -64,21 +64,6 @@ for a in ax:
 ax[0].set_ylabel('Latitud (°)')
 fig.tight_layout(); fig.savefig(OUT / 'deteccion_nevada.png', dpi=170); plt.close(fig)
 
-# 4. Barrido de eps con el 10 % de los datos
-eps_vec = np.linspace(1, 201, 50)
-fp_v, fn_v = [], []
-for i, eps in enumerate(eps_vec):
-    m = df.sample(frac=0.1, random_state=i)
-    d = sospechosos(m, clusters(m, eps, P['vmin']), P['dmin'], P['dmax'])
-    e = m['tipo'] == 'nuclear explosion'
-    fp_v.append((d & ~e).sum()); fn_v.append((~d & e).sum())
-fig, ax = plt.subplots(figsize=(7, 3.8))
-ax.plot(eps_vec, fp_v, 'o-', color='orange', ms=3, label='Falsos positivos')
-ax.plot(eps_vec, fn_v, 'o-', color='gray', ms=3, label='Falsos negativos')
-ax.set(xlabel='Radio eps (km)', ylabel='Número de sismos', title='Errores con un 10 % aleatorio de los datos')
-ax.legend(); ax.grid(alpha=.3)
-fig.tight_layout(); fig.savefig(OUT / 'barrido_eps.png', dpi=170); plt.close(fig)
-
 # 5. Resultado final: aciertos y errores
 fig, ax = plt.subplots(figsize=(9, 4.5))
 ax.scatter(df[~expl & ~det].longitude, df[~expl & ~det].latitude, s=1, c='lightgray')
