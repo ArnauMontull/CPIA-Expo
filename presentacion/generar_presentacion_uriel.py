@@ -130,24 +130,24 @@ set_speaker_notes(s1,
 s2 = prs.slides.add_slide(blank_layout)
 add_header(s2, "El Problema Físico: Estructura de Bandas y Firmas Térmicas")
 
-# Recuadro superior con borde negro para las fórmulas LaTeX
-add_card(s2, 0.8, 1.55, 11.733, 1.35)
+# Recuadro superior con borde negro para las fórmulas LaTeX (compacto y centrado)
+add_card(s2, 0.8, 1.45, 11.733, 1.25)
 
 # Titulo de formulas en negro
-tit_f = s2.shapes.add_textbox(Inches(1.0), Inches(1.6), Inches(11.3), Inches(0.35))
+tit_f = s2.shapes.add_textbox(Inches(1.0), Inches(1.5), Inches(11.3), Inches(0.3))
 p = tit_f.text_frame.paragraphs[0]
 p.text = "Ecuaciones Macroscópicas de Transporte Eléctrico:"
-p.font.size = Pt(12)
+p.font.size = Pt(11.5)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
-# Incrustar formula LaTeX de transporte
+# Incrustar formula LaTeX de transporte centrada
 if LATEX_TRANSPORTE.exists():
-    s2.shapes.add_picture(str(LATEX_TRANSPORTE), Inches(1.8), Inches(1.95), width=Inches(9.7))
+    s2.shapes.add_picture(str(LATEX_TRANSPORTE), Inches(2.4), Inches(1.82), width=Inches(8.5))
 
-# Imagen de estructura de bandas de los 3 materiales abajo
+# Imagen de estructura de bandas de los 3 materiales abajo (bien separada)
 if FIG_BANDAS.exists():
-    s2.shapes.add_picture(str(FIG_BANDAS), Inches(0.8), Inches(3.05), width=Inches(11.733))
+    s2.shapes.add_picture(str(FIG_BANDAS), Inches(0.8), Inches(2.85), width=Inches(11.733))
 
 set_speaker_notes(s2,
     "GUION SLIDE 2:\n"
@@ -600,10 +600,16 @@ aplicar_fuente_arial(prs)
 # ==============================================================================
 # GUARDAR PRESENTACIONES
 # ==============================================================================
-OUTPUT_DIR_1.parent.mkdir(parents=True, exist_ok=True)
-prs.save(str(OUTPUT_DIR_1))
-print(f"Presentacion guardada en: {OUTPUT_DIR_1}")
+try:
+    OUTPUT_DIR_1.parent.mkdir(parents=True, exist_ok=True)
+    prs.save(str(OUTPUT_DIR_1))
+    print(f"Presentacion guardada en: {OUTPUT_DIR_1}")
+except PermissionError:
+    print(f"Aviso: {OUTPUT_DIR_1.name} en problemas/ esta abierto. Cierralo para actualizarlo.")
 
-OUTPUT_DIR_2.parent.mkdir(parents=True, exist_ok=True)
-prs.save(str(OUTPUT_DIR_2))
-print(f"Presentacion guardada en: {OUTPUT_DIR_2}")
+try:
+    OUTPUT_DIR_2.parent.mkdir(parents=True, exist_ok=True)
+    prs.save(str(OUTPUT_DIR_2))
+    print(f"Presentacion guardada en: {OUTPUT_DIR_2}")
+except PermissionError:
+    print(f"Aviso: {OUTPUT_DIR_2.name} en presentacion/ esta abierto. Cierralo en PowerPoint para sobrescribirlo.")

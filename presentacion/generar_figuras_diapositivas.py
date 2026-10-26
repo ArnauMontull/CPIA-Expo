@@ -19,82 +19,85 @@ plt.rcParams['font.family'] = 'sans-serif'
 # FIGURA 1: Esquema de Bandas Cuánticas y Fórmulas
 # ------------------------------------------------------------------------------
 def crear_figura_bandas():
-    fig, axes = plt.subplots(1, 3, figsize=(11, 4.2), dpi=250)
+    fig, axes = plt.subplots(1, 3, figsize=(11.5, 4.2), dpi=300)
     fig.patch.set_facecolor("#ffffff")
 
     materiales = [
         {
             "tipo": "Conductores (Metales)",
             "color": "#d97706",
-            "bandas": "Solapamiento de bandas\n(Sin bandgap, $E_g = 0$)",
-            "mecanismo": "Mar de electrones libres\nChoques con fonones al calentar",
+            "bc_y": 0.7,
+            "bc_h": 0.6,
+            "gap": 0.0,
+            "anotacion_gap": "Solapadas ($E_g = 0$)",
             "alpha": r"$\mathbf{\alpha > 0}$ (+0.004 K$^{-1}$)",
             "rho": r"$\rho \sim 10^{-8}\ \Omega\cdot\mathrm{m}$",
-            "gap": 0.0,
-            "fermi_pos": 0.5
+            "mecanismo": "Mar de electrones libres\nChoques con fonones al calentar",
         },
         {
             "tipo": "Semiconductores",
             "color": "#059669",
-            "bandas": "Gap moderado\n($E_g \sim 1.1$ eV: Si, Ge)",
-            "mecanismo": "Activación térmica (Boltzmann)\n$n \propto e^{-E_g / 2k_B T}$",
+            "bc_y": 1.4,
+            "bc_h": 0.6,
+            "gap": 0.7,
+            "anotacion_gap": r"$E_g \sim 1.1\ \mathrm{eV}$",
             "alpha": r"$\mathbf{\alpha < 0}$ (-0.05 K$^{-1}$)",
             "rho": r"$\rho \sim 10^{-2}\text{--}10^3\ \Omega\cdot\mathrm{m}$",
-            "gap": 0.6,
-            "fermi_pos": 0.5
+            "mecanismo": "Activación térmica (Boltzmann)\n$n \propto e^{-E_g / 2k_B T}$",
         },
         {
             "tipo": "Aislantes",
             "color": "#2563eb",
-            "bandas": "Gap prohibido colosal\n($E_g > 5\text{--}9$ eV: Vidrio, Teflón)",
-            "mecanismo": "$k_B T \ll E_g$ a 300 K\nSin portadores en conducción",
+            "bc_y": 2.05,
+            "bc_h": 0.6,
+            "gap": 1.35,
+            "anotacion_gap": r"$E_g > 5\ \mathrm{eV}$",
             "alpha": r"$\mathbf{\alpha \approx 0}\ \mathrm{K}^{-1}$",
             "rho": r"$\rho > 10^{12}\ \Omega\cdot\mathrm{m}$",
-            "gap": 1.4,
-            "fermi_pos": 0.5
+            "mecanismo": r"$k_B T \ll E_g$ a 300 K" + "\nSin portadores en conducción",
         }
     ]
 
     for ax, mat in zip(axes, materiales):
         ax.set_facecolor("#f8fafc")
         ax.set_xlim(0, 1)
-        ax.set_ylim(-0.2, 2.6)
+        ax.set_ylim(-0.75, 3.4)
         ax.axis("off")
 
-        # Titulo de la tarjeta
-        ax.text(0.5, 2.45, mat["tipo"], ha="center", va="center", fontsize=12, fontweight="bold", color=mat["color"])
+        # Titulo superior (posicionado alto a 3.1 para que nunca choque con las bandas)
+        ax.text(0.5, 3.1, mat["tipo"], ha="center", va="center", fontsize=13, fontweight="bold", color=mat["color"])
 
-        # Dibujo de Bandas
-        # Banda de Valencia
-        bv = plt.Rectangle((0.15, 0.2), 0.7, 0.6, color="#94a3b8", alpha=0.85, ec="#475569", lw=1.5)
+        # 1. Banda de Valencia (base fija para todos: y = 0.18 a 0.70)
+        bv = plt.Rectangle((0.15, 0.18), 0.7, 0.52, color="#94a3b8", alpha=0.85, ec="#334155", lw=1.5)
         ax.add_patch(bv)
-        ax.text(0.5, 0.5, "Banda de\nValencia", ha="center", va="center", fontsize=9.5, fontweight="bold", color="#0f172a")
+        ax.text(0.5, 0.44, "Banda de\nValencia", ha="center", va="center", fontsize=9.5, fontweight="bold", color="#0f172a")
 
-        # Banda de Conduccion
-        bc_y = 0.8 + mat["gap"]
-        bc = plt.Rectangle((0.15, bc_y), 0.7, 0.6, color=mat["color"], alpha=0.35, ec=mat["color"], lw=1.5)
+        # 2. Banda de Conduccion (posicionada segun mat["bc_y"])
+        bc = plt.Rectangle((0.15, mat["bc_y"]), 0.7, mat["bc_h"], color=mat["color"], alpha=0.35, ec=mat["color"], lw=1.5)
         ax.add_patch(bc)
-        ax.text(0.5, bc_y + 0.3, "Banda de\nConducción", ha="center", va="center", fontsize=9.5, fontweight="bold", color=mat["color"])
+        ax.text(0.5, mat["bc_y"] + mat["bc_h"]/2, "Banda de\nConducción", ha="center", va="center", fontsize=9.5, fontweight="bold", color=mat["color"])
 
-        # Flecha de Bandgap si existe
+        # 3. Gap y flechas indicadoras
         if mat["gap"] > 0:
-            ax.annotate("", xy=(0.88, bc_y), xytext=(0.88, 0.8),
+            # Flecha vertical
+            ax.annotate("", xy=(0.88, mat["bc_y"]), xytext=(0.88, 0.70),
                         arrowprops=dict(arrowstyle="<->", color="#ef4444", lw=1.8))
-            ax.text(0.92, (0.8 + bc_y)/2, "$E_g$", ha="left", va="center", fontsize=11, fontweight="bold", color="#ef4444")
+            ax.text(0.92, (0.70 + mat["bc_y"])/2, mat["anotacion_gap"], ha="left", va="center", fontsize=9.5, fontweight="bold", color="#ef4444")
         else:
-            ax.text(0.5, 0.8, "SOLAPADAS", ha="center", va="center", fontsize=8.5, fontweight="bold", color="#d97706")
+            # Anotacion para conductores arriba de la banda
+            ax.text(0.5, 1.45, "SOLAPADAS ($E_g = 0$)", ha="center", va="center", fontsize=9, fontweight="bold", color="#d97706")
 
-        # Textos fisicos inferiores
+        # 4. Textos fisicos inferiores (espaciados de forma limpia)
         info_text = (
             f"{mat['alpha']}\n"
             f"{mat['rho']}\n"
             f"{mat['mecanismo']}"
         )
-        ax.text(0.5, -0.05, info_text, ha="center", va="top", fontsize=8.5, color="#334155", linespacing=1.35)
+        ax.text(0.5, -0.08, info_text, ha="center", va="top", fontsize=8.5, color="#1e293b", linespacing=1.35)
 
     plt.tight_layout()
     out_path = OUTPUT_DIR / "esquema_bandas_materiales.png"
-    plt.savefig(out_path, dpi=250, bbox_inches="tight")
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Figura 1 guardada en: {out_path}")
 
