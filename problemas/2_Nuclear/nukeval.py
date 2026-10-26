@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import silhouette_score, adjusted_rand_score
 from sklearn.neighbors import NearestNeighbors
 
-from nukeDBSCAN_arnau import CATALOGO, optimos, df, agrupar, nukeDBSCAN, errores
+from nukeDBSCAN_arnau import CATALOGO, parametros, df, agrupar, nukeDBSCAN, errores
 
 CARPETA = Path(__file__).resolve().parent
 RADIO_TIERRA_KM = 6371
@@ -85,7 +85,7 @@ def generar_figuras(df, eps_vec, n_clusters, siluetas, k_distancias, detectado, 
                     label=f'{nombre} ({mascara.sum()})')
     plt.xlabel('Longitud (°)')
     plt.ylabel('Latitud (°)')
-    plt.title('Aciertos y errores con los parametros optimos')
+    plt.title('Aciertos y errores con los parametros fijos')
     plt.legend(loc='lower left', markerscale=2)
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
@@ -94,7 +94,7 @@ def generar_figuras(df, eps_vec, n_clusters, siluetas, k_distancias, detectado, 
 
 
 def main():
-    p = optimos[CATALOGO]
+    p = parametros
     print(f'Catalogo: {CATALOGO} ({len(df)} sismos), parametros {p}')
 
     eps_vec, n_clusters, siluetas = evaluar_eps(df, p['vmin'], p['dmin'], p['dmax'])

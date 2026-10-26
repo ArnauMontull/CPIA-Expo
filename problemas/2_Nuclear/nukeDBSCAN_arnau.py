@@ -13,9 +13,11 @@ DATOS = CARPETA.parent.parent / 'datos'
 archivos = {'grande': DATOS / 'sismos_usgs_M45_1951_2025.csv',
             'pequeno': DATOS / 'sismos_usgs.csv'}
 
-# Parametros optimos de nuke_optimizar.py para cada catalogo
-optimos = {'grande': dict(eps_km=25, vmin=1, dmin=0, dmax=0.1),
-           'pequeno': dict(eps_km=10, vmin=1, dmin=-4, dmax=0.1)}
+# Parametros fijos (iguales para los dos catalogos)
+#   eps_km: radio de DBSCAN. vmin: sismos minimos por cluster.
+#   dmin, dmax: una explosion es casi superficial, asi que un cluster es sospechoso
+#   si la mediana de su profundidad esta entre 0 y 2.5 km.
+parametros = dict(eps_km=25, vmin=1, dmin=0, dmax=2.5)
 
 # --- Datos ---
 df = pd.read_csv(archivos[CATALOGO])
@@ -62,11 +64,10 @@ def errores(df, detectado):
 
 
 if __name__ == '__main__':
-    # --- Run con los parametros optimos ---
-    p = optimos[CATALOGO]
-    detectado = nukeDBSCAN(df, **p)
+    # --- Run con los parametros fijos ---
+    detectado = nukeDBSCAN(df, **parametros)
     fp, fn = errores(df, detectado)
-    print(f'Optimos {p}: FP={fp}, FN={fn}')
+    print(f'{parametros}: FP={fp}, FN={fn}')
 
     # --- Grupos de sismos para el globo ---
     es_explosion = df['tipo'] == 'nuclear explosion'

@@ -75,20 +75,22 @@ diapo('Cómo se detecta', [
     notas='Zoom en Nevada: a la izquierda los epicentros, a la derecha los clusters; en morado los sospechosos.')
 
 diapo('Elegir y validar los parámetros', [
-    'Optimizador por F1 (con etiquetas): DBSCAN una vez por (eps, vmin) y todas las ventanas de profundidad',
-    'Óptimo: eps = 25 km, vmin = 1, profundidad [0; 0,1) km',
+    'Parámetros fijos: eps = 25 km, vmin = 1, profundidad mediana en [0; 2,5) km (criterio físico)',
+    'eps = 25 km da el mínimo de falsos positivos (91) entre 5 y 100 km; es la única elección que mira la etiqueta',
     'La silueta no elige eps (es negativa y baja con eps); el codo de distancias k no marca un valor claro',
-    'Con eps ≥ 50 km los FN se disparan (261): los grupos se funden con terremotos profundos',
-    'Estabilidad (ARI, muestra del 50 %): 0,52-0,62'], 'nukeval_eps.png', 7.2)
+    'Con eps ≥ 50 km los grupos se funden con terremotos profundos: FP 460 (50 km) y FN 261 (75 km)',
+    'Estabilidad (ARI, muestra del 50 %): 0,52-0,62',
+    'nuke_optimizar.py se probó y se descartó: su ventana [0; 0,1) mide la convención del USGS'], 'nukeval_eps.png', 7.2)
 
 diapo('Resultado', [
-    '585 aciertos, 36 FP, 29 FN',
-    'Precisión 94,2 %  ·  recall 95,3 %  ·  F1 = 0,947',
+    '586 aciertos, 91 FP, 28 FN',
+    'Precisión 86,6 %  ·  recall 95,4 %  ·  F1 = 0,908',
     'Globo interactivo: problemas/2_Nuclear/globo.html (4 vistas, sin internet)'], 'resultado.png', 7.2)
 
 diapo('Limitaciones (preguntas probables)', [
-    'vmin = 1: no hay ruido; la selección real la hace la profundidad. Con vmin = 3, F1 baja a 0,928',
-    'Sobreajuste: parámetros elegidos y evaluados con los mismos datos. Cruzado entre catálogos: F1 0,855 (pequeño→grande) y 0,977 (grande→pequeño)',
+    'vmin = 1: no hay ruido; la selección real la hace la profundidad. Con vmin = 3, F1 baja a 0,910',
+    'Mismos parámetros en los dos catálogos: F1 0,908 (grande) y 0,955 (pequeño); sin conjunto de prueba separado',
+    'El 85 % de las explosiones figura con profundidad 0,0 km en el USGS: una ventana [0; 0,1) daría F1 0,947, pero mediría esa convención',
     'FP: terremotos muy superficiales y explosiones de minas; algunas pruebas oficiales figuran como earthquake',
     'No usamos año ni número de estaciones: delatarían la época, no la física'])
 

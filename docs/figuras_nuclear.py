@@ -1,4 +1,4 @@
-# Genera las figuras del documento (docs/figuras/*.png) con el catalogo grande y sus parametros optimos
+# Genera las figuras del documento (docs/figuras/*.png) con el catalogo grande y los parametros fijos
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ from sklearn.cluster import DBSCAN
 RAIZ = Path(__file__).resolve().parent.parent
 OUT = Path(__file__).resolve().parent / 'figuras'
 OUT.mkdir(exist_ok=True)
-P = dict(eps_km=25, vmin=1, dmin=0, dmax=0.1)
+P = dict(eps_km=25, vmin=1, dmin=0, dmax=2.5)
 
 df = pd.read_csv(RAIZ / 'datos' / 'sismos_usgs_M45_1951_2025.csv')
 df = df.dropna(subset=['latitude', 'longitude', 'depth', 'mag'])
