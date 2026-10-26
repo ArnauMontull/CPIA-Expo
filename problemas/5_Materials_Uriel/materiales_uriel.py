@@ -1,4 +1,4 @@
-"""problemas/materiales_uriel.py
+"""problemas/5_Materials_Uriel/materiales_uriel.py
 
 Clasificación no supervisada de materiales eléctricos (Conductores, Semiconductores y Aislantes)
 mediante DBSCAN (Density-Based Spatial Clustering of Applications with Noise).
@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 # ==============================================================================
 # 1. Cargar el dataset descargado en datos/
 # ==============================================================================
-DATOS_DIR = Path(__file__).resolve().parent.parent / "datos"
+DATOS_DIR = Path(__file__).resolve().parents[2] / "datos"
 CSV_PATH = DATOS_DIR / "materiales_electricos.csv"
 
 if not CSV_PATH.exists():
@@ -47,44 +47,39 @@ EPS = 0.65
 MIN_SAMPLES = 3
 
 def ejecutar_dbscan(X, eps=0.65, min_samples=3):
-    """Implementación robusta y autocontenida de DBSCAN con NumPy."""
-    try:
-        from sklearn.cluster import DBSCAN as SklearnDBSCAN
-        return SklearnDBSCAN(eps=eps, min_samples=min_samples).fit_predict(X)
-    except Exception:
-        # Algoritmo canónico de DBSCAN en NumPy puro (inmune a directivas de DLL de Windows)
-        N = len(X)
-        etiquetas = np.full(N, -1, dtype=int)
-        visitados = np.zeros(N, dtype=bool)
-        cluster_actual = 0
+    """Algoritmo canónico de DBSCAN implementado desde cero con NumPy."""
+    N = len(X)
+    etiquetas = np.full(N, -1, dtype=int)
+    visitados = np.zeros(N, dtype=bool)
+    cluster_actual = 0
+    
+    # Matriz de distancias euclídeas
+    D = np.linalg.norm(X[:, None, :] - X[None, :, :], axis=-1)
+    
+    for i in range(N):
+        if visitados[i]:
+            continue
+        visitados[i] = True
         
-        # Matriz de distancias euclídeas
-        D = np.linalg.norm(X[:, None, :] - X[None, :, :], axis=-1)
-        
-        for i in range(N):
-            if visitados[i]:
-                continue
-            visitados[i] = True
-            
-            vecinos = np.where(D[i] <= eps)[0]
-            if len(vecinos) < min_samples:
-                etiquetas[i] = -1  # Ruido inicial
-            else:
-                etiquetas[i] = cluster_actual
-                cola = list(vecinos[vecinos != i])
-                while cola:
-                    j = cola.pop(0)
-                    if not visitados[j]:
-                        visitados[j] = True
-                        j_vecinos = np.where(D[j] <= eps)[0]
-                        if len(j_vecinos) >= min_samples:
-                            for v in j_vecinos:
-                                if v not in cola and etiquetas[v] == -1:
-                                    cola.append(v)
-                    if etiquetas[j] == -1:
-                        etiquetas[j] = cluster_actual
-                cluster_actual += 1
-        return etiquetas
+        vecinos = np.where(D[i] <= eps)[0]
+        if len(vecinos) < min_samples:
+            etiquetas[i] = -1  # Ruido inicial
+        else:
+            etiquetas[i] = cluster_actual
+            cola = list(vecinos[vecinos != i])
+            while cola:
+                j = cola.pop(0)
+                if not visitados[j]:
+                    visitados[j] = True
+                    j_vecinos = np.where(D[j] <= eps)[0]
+                    if len(j_vecinos) >= min_samples:
+                        for v in j_vecinos:
+                            if v not in cola and etiquetas[v] == -1:
+                                cola.append(v)
+                if etiquetas[j] == -1:
+                    etiquetas[j] = cluster_actual
+            cluster_actual += 1
+    return etiquetas
 
 df["cluster"] = ejecutar_dbscan(X_scaled, eps=EPS, min_samples=MIN_SAMPLES)
 
@@ -93,28 +88,21 @@ df["cluster"] = ejecutar_dbscan(X_scaled, eps=EPS, min_samples=MIN_SAMPLES)
 # ==============================================================================
 def calcular_silhouette(X, labels):
     """Calcula el Silhouette Score sobre los puntos asignados a clusters válidos."""
-    try:
-        from sklearn.metrics import silhouette_score as sk_sil
-        mask = labels != -1
-        if len(set(labels[mask])) > 1:
-            return sk_sil(X[mask], labels[mask])
+    mask = labels != -1
+    if len(set(labels[mask])) <= 1:
         return None
-    except Exception:
-        mask = labels != -1
-        if len(set(labels[mask])) <= 1:
-            return None
-        D = np.linalg.norm(X[:, None, :] - X[None, :, :], axis=-1)
-        sils = []
-        for i in range(len(X)):
-            if labels[i] == -1:
-                continue
-            c_i = labels[i]
-            same_c = np.where((labels == c_i) & (np.arange(len(X)) != i))[0]
-            a_i = np.mean(D[i, same_c]) if len(same_c) > 0 else 0
-            other_clusters = set(labels) - {-1, c_i}
-            b_i = min(np.mean(D[i, labels == c_o]) for c_o in other_clusters)
-            sils.append((b_i - a_i) / max(a_i, b_i))
-        return float(np.mean(sils))
+    D = np.linalg.norm(X[:, None, :] - X[None, :, :], axis=-1)
+    sils = []
+    for i in range(len(X)):
+        if labels[i] == -1:
+            continue
+        c_i = labels[i]
+        same_c = np.where((labels == c_i) & (np.arange(len(X)) != i))[0]
+        a_i = np.mean(D[i, same_c]) if len(same_c) > 0 else 0
+        other_clusters = set(labels) - {-1, c_i}
+        b_i = min(np.mean(D[i, labels == c_o]) for c_o in other_clusters)
+        sils.append((b_i - a_i) / max(a_i, b_i))
+    return float(np.mean(sils))
 
 score_sil = calcular_silhouette(X_scaled, df["cluster"].values)
 
@@ -147,7 +135,6 @@ if n_ruido > 0:
 # ==============================================================================
 plt.figure(figsize=(10, 6.5))
 
-# Mapeo de colores y etiquetas por cluster
 paleta_colores = {
     0: ("#d97706", "Cluster 0 (Conductores)"),
     1: ("#2563eb", "Cluster 1 (Aislantes)"),

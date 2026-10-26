@@ -12,7 +12,7 @@ import math
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
-DATOS_DIR = Path(__file__).resolve().parent / "datos"
+DATOS_DIR = Path(__file__).resolve().parents[2] / "datos"
 DATOS_DIR.mkdir(exist_ok=True)
 CSV_DESTINO = DATOS_DIR / "materiales_electricos.csv"
 
