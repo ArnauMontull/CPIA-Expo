@@ -1,0 +1,310 @@
+\documentclass[a4paper,11pt]{article}
+
+% ==========================================
+% 1. CONFIGURACIÓN DEL PROYECTO
+% ==========================================
+\newcommand{\titol}{Aprendizaje no supervisado y detección de anomalías}
+\newcommand{\subtitol}{Documento de descripción de los problemas de la exposición}
+\newcommand{\assignatura}{Computació d'Altes Prestacions i Intel·ligència Artificial (CPIA)}
+\newcommand{\assignaturaCurt}{CPIA (UPC)}
+\newcommand{\universitat}{Universitat Politècnica de Catalunya}
+\newcommand{\escola}{ETSETB / FIB}
+\newcommand{\autorA}{Matías, Martí, Uriel y Arnau Montull}
+\newcommand{\autorB}{Grado en Ingeniería Física}
+
+% ==========================================
+% 2. PAQUETES Y CONFIGURACIÓN TIPOGRÁFICA
+% ==========================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[spanish,es-nodecimaldot]{babel}
+
+% Estandarizar nombre de tablas
+\addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+
+\usepackage{amsmath, amssymb, amsfonts, amsthm}
+\usepackage{mathtools}
+\usepackage{geometry}
+\geometry{
+    left=2.1cm,
+    right=2.1cm,
+    top=2.2cm,
+    bottom=2.2cm,
+    headheight=14.5pt
+}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{parskip}   
+\usepackage{caption}
+\usepackage{subcaption} 
+\usepackage{fancyhdr}   
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}  
+\usepackage{array}
+\usepackage{siunitx}
+\sisetup{output-decimal-marker = {.}}
+
+% Control fino de distancias para figuras flotantes
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{9pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+
+% Hipervínculos
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=green!50!black,
+    urlcolor=blue!80!black
+}
+
+% Cabeceras y pies de página
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small \textbf{\assignaturaCurt}}
+\rhead{\small \autorA, \autorB}
+\cfoot{\small \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Configuración para código fuente
+\usepackage{listings}
+\definecolor{mGreen}{rgb}{0,0.55,0}
+\definecolor{mGray}{rgb}{0.45,0.45,0.45}
+\definecolor{mPurple}{rgb}{0.55,0,0.75}
+\definecolor{codeBackground}{rgb}{0.97,0.98,0.99}
+
+\lstset{
+    language=Python,
+    backgroundcolor=\color{codeBackground},   
+    commentstyle=\color{mGreen}\itshape,
+    keywordstyle=\color{blue}\bfseries,
+    numberstyle=\tiny\color{mGray},
+    stringstyle=\color{mPurple},
+    basicstyle=\ttfamily\footnotesize, 
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=8pt,                  
+    tabsize=2,
+    frame=single,                    
+    rulecolor=\color{black!15},
+    xleftmargin=16pt,
+    framexleftmargin=6pt
+}
+
+% ==========================================
+% 3. INICIO DEL DOCUMENTO
+% ==========================================
+
+% ---- extras de este documento ----
+\lstset{language=Python, inputencoding=utf8, extendedchars=true,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {Á}{{\'A}}1 {°}{{$^\circ$}}1 {–}{{--}}1 {—}{{---}}1}
+\usepackage{float}
+\newcommand{\pendiente}[1]{\textcolor{red!70!black}{\textbf{[PENDIENTE: #1]}}}
+\newcommand{\comentarios}[1][4cm]{%
+  \par\medskip\noindent\fbox{\parbox[t][#1][t]{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{%
+  \small\textcolor{black!50}{\textit{Comentarios / observaciones:}}}}\par\medskip}
+
+\begin{document}
+
+% --- PORTADA ---
+\begin{titlepage}
+    \thispagestyle{empty}
+    \centering
+    \vspace*{0.2cm}
+    \includegraphics[width=0.16\textwidth]{Logo_UPC.svg.png}\\[0.3cm]
+    {\large \textbf{\universitat}}\\[0.12cm]
+    {\normalsize \escola}\\[0.9cm]
+    \rule{\textwidth}{0.6pt}\\[0.35cm]
+    {\LARGE \textbf{\titol}}\\[0.25cm]
+    {\large \subtitol}\\[0.15cm]
+    \rule{\textwidth}{0.6pt}\\[0.7cm]
+    {\large \textbf{\assignatura}}\\[0.45cm]
+    {\large \textbf{Equipo:}}\\[0.12cm]
+    {\large \autorA}\\[0.08cm]
+    {\large \autorB}\\[1.2cm]
+    \vfill
+    \includegraphics[width=0.12\textwidth]{logo-enginyeria-fisica.jpg}\\[0.25cm]
+    {\normalsize \today}
+\end{titlepage}
+
+\clearpage
+
+\tableofcontents
+\clearpage
+
+% ==========================================
+\section{Equipo y reparto de problemas}
+% ==========================================
+Exposición del tema «Aprendizaje no supervisado y detección de anomalías». El objetivo es entender cómo encontrar
+estructura y patrones en datos sin etiquetar con clustering (K-Means, DBSCAN, jerárquico), mezclas gaussianas e
+Isolation Forest, y cómo evaluar un clustering sin etiquetas (silhouette y método del codo).
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}Xl@{}}
+\toprule
+Integrante & Problema & Algoritmo principal & Fichero \\
+\midrule
+Arnau Montull & Detección de explosiones nucleares entre sismos (catálogo USGS) & DBSCAN (haversine) & \texttt{nukeDBSCAN\_arnau.py} \\
+Matías & \pendiente{título del problema} & \pendiente{algoritmo} & \pendiente{fichero} \\
+Martí & \pendiente{título del problema} & \pendiente{algoritmo} & \pendiente{fichero} \\
+Uriel & \pendiente{título del problema} & \pendiente{algoritmo} & \pendiente{fichero} \\
+\bottomrule
+\end{tabularx}
+\caption{Reparto de problemas. Cada fichero se llama \texttt{<nemotécnico>\_<estudiante>.py}.}
+\end{table}
+
+\section{Fundamentos comunes}
+\pendiente{resumen común del equipo: K-Means, DBSCAN, jerárquico, GMM, Isolation Forest, silhouette y codo (una o dos páginas).}
+\comentarios[5cm]
+
+% ==========================================
+\section{Problema de Arnau Montull: detección de explosiones nucleares con DBSCAN}
+% ==========================================
+
+\subsection{Planteamiento y originalidad}
+Los sismógrafos registran por igual terremotos y explosiones nucleares. Preguntamos si, \emph{sin usar la etiqueta},
+un algoritmo de clustering puede señalar las explosiones solo con la posición y la profundidad del evento. La idea
+física es doble: las pruebas nucleares se repiten en los mismos polígonos de ensayo (Nevada, Semipalátinsk, Novaya
+Zemlya, Lop Nor, Mururoa\ldots), por lo que forman agrupaciones espaciales muy compactas, y ocurren casi en la
+superficie, mientras que los terremotos tectónicos tienen profundidad mediana de unos 22 km.
+
+Es un problema de aplicación física que no figura entre las sugerencias del enunciado. Los datos son públicos y el
+trabajo es de detección y verificación, no una guía para ocultar pruebas.
+
+\subsection{Datos}
+Catálogo del USGS (\textit{ComCat}) con todos los eventos de magnitud $M\ge 4{,}5$ entre 1951 y 2025
+(\texttt{datos/sismos\_usgs\_M45\_1951\_2025.csv}), generado con \texttt{descargar\_datos.py sismos\_hist}. Contiene
+298\,025 eventos, de los cuales 614 están etiquetados por el USGS como \texttt{nuclear explosion}; el resto son
+terremotos y otros eventos. La columna \texttt{tipo} \emph{solo se usa para evaluar}, nunca para entrenar. También se
+puede elegir el catálogo reducido \texttt{sismos\_usgs.csv} (554 explosiones, mayoritariamente 2010--2025), con
+\texttt{CATALOGO = 'pequeno'}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{figuras/catalogo.png}
+\caption{Catálogo completo: las explosiones (rojo) se concentran en unos pocos polígonos de ensayo.}
+\end{figure}
+
+\subsection{Método: cómo se detecta}
+\begin{enumerate}
+  \item \textbf{Agrupar por posición.} DBSCAN con distancia \emph{haversine} (distancia sobre la esfera; las
+        coordenadas se pasan a radianes y el radio $\varepsilon$ se divide por el radio terrestre, 6371 km). Dos
+        sismos pertenecen al mismo cluster si hay una cadena de sismos a menos de $\varepsilon$ km uno del siguiente.
+  \item \textbf{Mirar la profundidad de cada cluster.} Se calcula la \emph{mediana} de profundidad de cada cluster
+        (la mediana no se deja engañar por unos pocos valores atípicos).
+  \item \textbf{Marcar como sospechosos} los clusters cuya mediana está en $[d_{\min}, d_{\max})$: casi en la
+        superficie. Todos los sismos de un cluster sospechoso se marcan como \emph{detectados}.
+  \item \textbf{Evaluar contra la etiqueta.} Acierto: detectado y explosión. Falso positivo (FP): detectado pero no
+        explosión. Falso negativo (FN): explosión no detectada.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figuras/deteccion_nevada.png}
+\caption{Zoom en el polígono de Nevada. Izquierda: epicentros sin etiquetar. Derecha: clusters de DBSCAN; en morado,
+los clusters sospechosos por profundidad; círculos rojos: explosiones reales (etiqueta USGS).}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{figuras/profundidad.png}
+\caption{Distribución de profundidades (escala logarítmica). La banda morada es la ventana $[d_{\min}, d_{\max})$.}
+\end{figure}
+
+\subsection{Elección de parámetros}
+Se barre $\varepsilon$ de 1 a 201 km tomando cada vez un 10\,\% aleatorio de los sismos (con
+\texttt{random\_state} fijo, reproducible) y se cuentan FP y FN. Para escoger $(\varepsilon, v_{\min}, d_{\min},
+d_{\max})$ se usa \texttt{nuke\_optimizar.py}, que maximiza la medida $F_1 = 2\,\mathrm{TP}/(2\,\mathrm{TP}+\mathrm{FP}+\mathrm{FN})$.
+Como DBSCAN es lo lento y solo depende de $\varepsilon$ y $v_{\min}$, se ejecuta una vez por pareja y las ventanas de
+profundidad se prueban sobre los clusters ya calculados (77 ejecuciones de DBSCAN en lugar de unas 32\,000). No se usa
+Newton ni descenso por gradiente porque el resultado salta a trompicones y $v_{\min}$ es entero.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{figuras/barrido_eps.png}
+\caption{Barrido de $\varepsilon$ con el 10\,\% de los datos (parámetros óptimos del catálogo grande).}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Catálogo & Expl. & $\varepsilon$ (km) & $v_{\min}$ & $d_{\min}$ & $d_{\max}$ & FP & FN \\
+\midrule
+Grande (1951--2025) & 614 & 25 & 1 & 0 & 0,1 & 36 & 29 \\
+Pequeño (2010--2025) & 554 & 10 & 1 & $-4$ & 0,1 & 6 & 14 \\
+\bottomrule
+\end{tabular}
+\caption{Parámetros óptimos por $F_1$ de cada catálogo.}
+\end{table}
+
+\subsection{Resultados}
+Con el catálogo grande y los parámetros óptimos: 585 aciertos, 36 FP y 29 FN, es decir, precisión 94,2\,\%,
+recall 95,3\,\% y $F_1=0{,}947$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{figuras/resultado.png}
+\caption{Resultado final: aciertos (verde), falsos positivos (naranja) y falsos negativos (negro).}
+\end{figure}
+
+\paragraph{Limitaciones y honestidad del resultado.}
+\begin{itemize}
+  \item \textbf{Con $v_{\min}=1$ no hay ruido:} cada sismo aislado forma su propio cluster. DBSCAN actúa aquí como un
+        agrupador por proximidad encadenada, y la selección real la hace el filtro de profundidad. Con $v_{\min}=3$ el
+        resultado empeora ($F_1=0{,}928$; FN = 69), porque muchas pruebas aisladas se perderían como «ruido».
+  \item \textbf{Sobreajuste:} los parámetros se eligen y se evalúan con los mismos datos. Comprobación cruzada
+        entre catálogos: los parámetros del catálogo pequeño aplicados al grande dan $F_1=0{,}855$ (189 FP: aparecen
+        terremotos superficiales de 1951--2009 que el catálogo pequeño no contiene); los del grande aplicados al
+        pequeño dan $F_1=0{,}977$. Los parámetros transfieren bien hacia datos más «fáciles», no al revés.
+  \item \textbf{Falsos positivos:} terremotos muy superficiales (años 80 en Washington, California, Alaska) y
+        explosiones de minas o canteras. Algunas pruebas oficiales de Nevada figuran en el USGS como
+        \texttt{earthquake}; ese error es de la etiqueta, no del método.
+  \item \textbf{Sesgo de época:} no se usan el año ni el número de estaciones como variable, porque delatan la época
+        del catálogo y no la física.
+\end{itemize}
+\comentarios[5cm]
+
+\subsection{Cómo reproducirlo}
+\begin{enumerate}
+  \item Crear el entorno: \texttt{python -m venv .venv} e instalar \texttt{requirements.txt}
+        (numpy, pandas, matplotlib, scikit-learn, plotly).
+  \item Opcional: \texttt{python descargar\_datos.py sismos\_hist} regenera los CSV desde el USGS.
+  \item \texttt{python problemas/2\_Nuclear/nukeDBSCAN\_arnau.py} (se puede lanzar desde cualquier carpeta). Imprime el
+        barrido, muestra la gráfica de errores, imprime FP y FN del run óptimo y escribe \texttt{globo.html}
+        (globo interactivo con 4 vistas, funciona sin internet).
+  \item Cambiar \texttt{CATALOGO} al principio del fichero para usar el catálogo pequeño.
+  \item \texttt{python problemas/2\_Nuclear/nuke\_optimizar.py} reproduce la búsqueda de parámetros óptimos
+        (unos 2 min el catálogo pequeño, unos 5 min el grande).
+  \item Las figuras de este documento: \texttt{python docs/figuras\_nuclear.py}.
+\end{enumerate}
+
+\subsection{Código fuente}
+\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeDBSCAN\_arnau.py}}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
+
+% ==========================================
+\section{Problema de Matías}
+% ==========================================
+\pendiente{descripción detallada para reproducir el experimento: datos, método, parámetros, resultados, código.}
+\comentarios[8cm]
+
+\section{Problema de Martí}
+\pendiente{descripción detallada para reproducir el experimento: datos, método, parámetros, resultados, código.}
+\comentarios[8cm]
+
+\section{Problema de Uriel}
+\pendiente{descripción detallada para reproducir el experimento: datos, método, parámetros, resultados, código.}
+\comentarios[8cm]
+
+\section{Conclusiones del equipo}
+\pendiente{comparativa de los cuatro problemas, qué algoritmo funcionó mejor y por qué.}
+\comentarios[4cm]
+
+\end{document}

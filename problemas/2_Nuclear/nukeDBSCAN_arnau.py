@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,8 +8,10 @@ from sklearn.cluster import DBSCAN
 # Catalogo: 'grande' (1951-2025, 614 explosiones) o 'pequeno' (sismos_usgs.csv, 554 explosiones)
 CATALOGO = 'grande'
 
-archivos = {'grande': 'datos/sismos_usgs_M45_1951_2025.csv',
-            'pequeno': 'datos/sismos_usgs.csv'}
+CARPETA = Path(__file__).resolve().parent
+DATOS = CARPETA.parent.parent / 'datos'
+archivos = {'grande': DATOS / 'sismos_usgs_M45_1951_2025.csv',
+            'pequeno': DATOS / 'sismos_usgs.csv'}
 
 # Parametros optimos de nuke_optimizar.py para cada catalogo
 optimos = {'grande': dict(eps_km=25, vmin=1, dmin=0, dmax=0.1),
@@ -93,6 +95,6 @@ fig.update_layout(updatemenus=[dict(buttons=botones, x=0.01, y=0.99)],
                   legend=dict(x=0.01, y=0.1), margin=dict(l=0, r=0, t=0, b=0))
 fig.update_geos(projection_type='natural earth', showland=True, landcolor='whitesmoke', showcountries=True)
 
-carpeta = os.path.dirname(os.path.abspath(__file__))
-fig.write_html(os.path.join(carpeta, 'globo.html'), include_plotlyjs='cdn')
+# Plotly incluido en el HTML (include_plotlyjs=True): funciona sin internet
+fig.write_html(CARPETA / 'globo.html', include_plotlyjs=True)
 fig.show()
