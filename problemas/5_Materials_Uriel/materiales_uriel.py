@@ -1,16 +1,22 @@
 """problemas/5_Materials_Uriel/materiales_uriel.py
 
-Clasificación no supervisada de materiales eléctricos (Conductores, Semiconductores y Aislantes)
-mediante DBSCAN de scikit-learn (Density-Based Spatial Clustering of Applications with Noise).
+Classificació no supervisada de materials elèctrics (Conductors, Semiconductors i Aïllants)
+mitjançant DBSCAN de scikit-learn (Density-Based Spatial Clustering of Applications with Noise).
 
-Parámetros fijados:
-- Epsilon (radio de vecindad): eps = 0.65
-- Min samples (mínimo de muestras por núcleo): min_samples = 3
+Genera:
+1. materiales_antes_clustering.png -> Visualització de l'espai físic abans de l'agrupament.
+2. clusters_materiales_dbscan.png -> Clústers descoberts per densitat amb DBSCAN.
+3. comparativa_abans_despres_dbscan.png -> Panell comparatiu (Abans vs Després).
+
+Paràmetres fixats:
+- Epsilon (radi de veïnat): eps = 0.65
+- Min samples (mínim de mostres per nucli): min_samples = 3
 
 Autor: Uriel
-Asignatura: CPIA · Aprendizaje No Supervisado
+Assignatura: CPIA · Aprenentatge No Supervisat
 """
 from pathlib import Path
+import shutil
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -18,33 +24,91 @@ from sklearn.cluster import DBSCAN
 from sklearn.metrics import silhouette_score
 
 # ==============================================================================
-# 1. Cargar el dataset descargado en datos/
+# 1. Carregar el dataset descarregat a datos/
 # ==============================================================================
-DATOS_DIR = Path(__file__).resolve().parents[2] / "datos"
+AQUI = Path(__file__).resolve().parent
+REPO_ROOT = AQUI.parents[1]
+DATOS_DIR = REPO_ROOT / "datos"
+FIGURAS_DOCS = REPO_ROOT / "docs" / "figuras"
 CSV_PATH = DATOS_DIR / "materiales_electricos.csv"
 
 if not CSV_PATH.exists():
-    raise FileNotFoundError(f"No se encontró el archivo de datos en: {CSV_PATH}")
+    raise FileNotFoundError(f"No s'ha trobat l'arxiu de dades a: {CSV_PATH}")
 
 df = pd.read_csv(CSV_PATH)
-print(f"Dataset cargado con éxito ({len(df)} materiales).")
+print(f"Dataset carregat amb èxit ({len(df)} materials).")
 
 # ==============================================================================
-# 2. Selección de características y estandarización manual (Z-Score)
+# 2. Selecció de característiques i estandardització manual (Z-Score)
 # ==============================================================================
-# x1: log10(resistividad a 300 K) -> comprime más de 30 órdenes de magnitud
-# x2: coeficiente térmico alpha -> firma cuántica del material
+# x1: log10(resistivitat a 300 K) -> comprimeix més de 30 ordres de magnitud
+# x2: coeficient tèrmic alpha -> signatura quàntica del material
 features = ["log_rho_300K", "alpha_coef"]
 X_raw = df[features].values
 
-# Estandarización manual: Z = (X - μ) / σ
-# Garantiza media = 0 y desviación típica = 1 en cada dimensión
+# Estandardització manual: Z = (X - μ) / σ
+# Garanteix mitjana = 0 i desviació típica = 1 a cada dimensió
 media = np.mean(X_raw, axis=0)
 desv = np.std(X_raw, axis=0)
 X_scaled = (X_raw - media) / desv
 
+# Configuració tipogràfica per a Matplotlib
+plt.rcParams['font.sans-serif'] = 'Arial'
+plt.rcParams['font.family'] = 'sans-serif'
+
+materiales_destacados = ["copper", "silver", "silicon", "germanium", "gaas", "glass", "ptfe", "quartz", "graphite"]
+
 # ==============================================================================
-# 3. Aplicación de DBSCAN (scikit-learn)
+# 3. IMATGE 1: Pla (log10 rho, alpha) ABANS de l'agrupament (Dades en Brut)
+# ==============================================================================
+fig_abans, ax_abans = plt.subplots(figsize=(10, 6.5))
+
+ax_abans.scatter(
+    df["log_rho_300K"],
+    df["alpha_coef"],
+    c="#334155",
+    s=75,
+    alpha=0.85,
+    edgecolors="black",
+    linewidth=0.8,
+    label=f"Materials experimentals sense etiquetar (n={len(df)})"
+)
+
+# Línia de referència física per a α = 0
+ax_abans.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera física $\alpha = 0$")
+
+# Etiquetes de materials representatius
+for _, r in df.iterrows():
+    mat = r["material"]
+    if any(k in mat.lower() for k in materiales_destacados):
+        ax_abans.annotate(
+            mat.split("(")[0].strip(),
+            (r["log_rho_300K"], r["alpha_coef"]),
+            xytext=(6, 4),
+            textcoords="offset points",
+            fontsize=8.5,
+            fontweight="bold",
+            color="#1e293b",
+            alpha=0.9
+        )
+
+ax_abans.set_title(r"Pla $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$ abans del Clustering (Dades en Brut)", fontsize=13, fontweight="bold")
+ax_abans.set_xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=11)
+ax_abans.set_ylabel(r"Coeficient tèrmic $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=11)
+ax_abans.grid(True, linestyle=":", alpha=0.6)
+ax_abans.legend(loc="upper right", framealpha=0.9)
+plt.tight_layout()
+
+RUTA_ABANS = AQUI / "materiales_antes_clustering.png"
+fig_abans.savefig(RUTA_ABANS, dpi=300)
+plt.close(fig_abans)
+print(f"Gràfic d'abans de l'agrupament guardat a: {RUTA_ABANS}")
+
+if FIGURAS_DOCS.exists():
+    shutil.copy(RUTA_ABANS, FIGURAS_DOCS / "materiales_antes_clustering.png")
+
+# ==============================================================================
+# 4. Aplicació de DBSCAN (scikit-learn)
 # ==============================================================================
 EPS = 0.65
 MIN_SAMPLES = 3
@@ -53,7 +117,7 @@ dbscan = DBSCAN(eps=EPS, min_samples=MIN_SAMPLES)
 df["cluster"] = dbscan.fit_predict(X_scaled)
 
 # ==============================================================================
-# 4. Cálculo del Silhouette Score (scikit-learn)
+# 5. Càlcul del Silhouette Score (scikit-learn)
 # ==============================================================================
 mask_validos = df["cluster"] != -1
 if len(set(df["cluster"][mask_validos])) > 1:
@@ -61,48 +125,133 @@ if len(set(df["cluster"][mask_validos])) > 1:
 else:
     score_sil = None
 
-# ==============================================================================
-# 5. Métricas y análisis de resultados
-# ==============================================================================
 clusters_encontrados = sorted(set(df["cluster"]) - {-1})
 n_clusters = len(clusters_encontrados)
 n_ruido = int(np.sum(df["cluster"] == -1))
 
 print("\n" + "=" * 65)
-print(f"RESULTADOS DE DBSCAN (eps={EPS}, min_samples={MIN_SAMPLES})")
+print(f"RESULTATS DE DBSCAN (eps={EPS}, min_samples={MIN_SAMPLES})")
 print("=" * 65)
-print(f"Clusters descubiertos por densidad : {n_clusters}")
-print(f"Puntos clasificados como ruido (-1): {n_ruido} de {len(df)}")
+print(f"Clústers descoberts per densitat    : {n_clusters}")
+print(f"Punts classificats com a soroll (-1): {n_ruido} de {len(df)}")
 if score_sil is not None:
-    print(f"Silhouette Score (núcleos densos) : {score_sil:.4f}")
+    print(f"Silhouette Score (núclis densos)   : {score_sil:.4f}")
 
-print("\nMatriz de contingencia (Clase real vs. Cluster DBSCAN):")
+print("\nMatriu de contingència (Classe real vs. Clúster DBSCAN):")
 print(pd.crosstab(df["clase_real"], df["cluster"], margins=True))
 
 if n_ruido > 0:
     ruido_df = df[df["cluster"] == -1][["material", "log_rho_300K", "alpha_coef", "clase_real"]]
-    print("\nMateriales clasificados como ruido/anomalía (cluster = -1):")
+    print("\nMaterials classificats com a soroll/anomalia (cluster = -1):")
     for _, r in ruido_df.iterrows():
-        print(f" - {r['material']:<30} | log10(ρ)={r['log_rho_300K']:>6.2f} | α={r['alpha_coef']:>8.5f} | Tipo: {r['clase_real']}")
+        print(f" - {r['material']:<30} | log10(ρ)={r['log_rho_300K']:>6.2f} | α={r['alpha_coef']:>8.5f} | Tipus: {r['clase_real']}")
 
 # ==============================================================================
-# 6. Visualización científica en 2D con Matplotlib
+# 6. IMATGE 2: Pla DESPRÉS de l'agrupament amb DBSCAN
 # ==============================================================================
-plt.rcParams['font.sans-serif'] = 'Arial'
-plt.rcParams['font.family'] = 'sans-serif'
-
-plt.figure(figsize=(10, 6.5))
-
 paleta_colores = {
     0: ("#d97706", "Clúster 0 (Conductors)"),
     1: ("#2563eb", "Clúster 1 (Aïllants)"),
     2: ("#059669", "Clúster 2 (Semiconductors)"),
 }
 
+fig_despres, ax_despres = plt.subplots(figsize=(10, 6.5))
+
 for cl in clusters_encontrados:
     sub = df[df["cluster"] == cl]
     color, nombre_cl = paleta_colores.get(cl, ("#6b7280", f"Clúster {cl}"))
-    plt.scatter(
+    ax_despres.scatter(
+        sub["log_rho_300K"],
+        sub["alpha_coef"],
+        c=color,
+        s=75,
+        alpha=0.85,
+        edgecolors="black",
+        linewidth=0.8,
+        label=f"{nombre_cl} (n={len(sub)})"
+    )
+
+sub_ruido = df[df["cluster"] == -1]
+if len(sub_ruido) > 0:
+    ax_despres.scatter(
+        sub_ruido["log_rho_300K"],
+        sub_ruido["alpha_coef"],
+        c="#dc2626",
+        marker="x",
+        s=85,
+        linewidth=2,
+        label=f"Soroll / Anomalies (n={len(sub_ruido)})",
+        zorder=5
+    )
+
+ax_despres.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera física $\alpha = 0$")
+
+for _, r in df.iterrows():
+    mat = r["material"]
+    if any(k in mat.lower() for k in materiales_destacados):
+        ax_despres.annotate(
+            mat.split("(")[0].strip(),
+            (r["log_rho_300K"], r["alpha_coef"]),
+            xytext=(6, 4),
+            textcoords="offset points",
+            fontsize=8.5,
+            fontweight="bold",
+            color="#1e293b",
+            alpha=0.9
+        )
+
+ax_despres.set_title(f"Classificació de Materials amb DBSCAN ($\\varepsilon = {EPS}$, $min\\_samples = {MIN_SAMPLES}$)", fontsize=13, fontweight="bold")
+ax_despres.set_xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=11)
+ax_despres.set_ylabel(r"Coeficient tèrmic $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=11)
+ax_despres.grid(True, linestyle=":", alpha=0.6)
+ax_despres.legend(loc="upper right", framealpha=0.9)
+plt.tight_layout()
+
+RUTA_DESPRES = AQUI / "clusters_materiales_dbscan.png"
+fig_despres.savefig(RUTA_DESPRES, dpi=300)
+plt.close(fig_despres)
+print(f"Gràfic de clústers DBSCAN guardat a: {RUTA_DESPRES}")
+
+if FIGURAS_DOCS.exists():
+    shutil.copy(RUTA_DESPRES, FIGURAS_DOCS / "clusters_materiales_dbscan.png")
+
+# ==============================================================================
+# 7. IMATGE 3: Comparativa ABANS i DESPRÉS (Panell 1x2)
+# ==============================================================================
+fig_comp, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6.2), sharey=True)
+
+# Panell Esquerre: Abans
+ax1.scatter(
+    df["log_rho_300K"],
+    df["alpha_coef"],
+    c="#334155",
+    s=70,
+    alpha=0.85,
+    edgecolors="black",
+    linewidth=0.8,
+    label=f"Materials en brut (n={len(df)})"
+)
+ax1.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera física $\alpha = 0$")
+for _, r in df.iterrows():
+    mat = r["material"]
+    if any(k in mat.lower() for k in materiales_destacados):
+        ax1.annotate(
+            mat.split("(")[0].strip(),
+            (r["log_rho_300K"], r["alpha_coef"]),
+            xytext=(6, 4), textcoords="offset points",
+            fontsize=8, fontweight="bold", color="#1e293b", alpha=0.9
+        )
+ax1.set_title(r"1. Abans: Dades Experimentals en Brut (Sense Etiquetes)", fontsize=12, fontweight="bold")
+ax1.set_xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=10.5)
+ax1.set_ylabel(r"Coeficient tèrmic $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=10.5)
+ax1.grid(True, linestyle=":", alpha=0.6)
+ax1.legend(loc="upper right", framealpha=0.9, fontsize=9)
+
+# Panell Dret: Després
+for cl in clusters_encontrados:
+    sub = df[df["cluster"] == cl]
+    color, nombre_cl = paleta_colores.get(cl, ("#6b7280", f"Clúster {cl}"))
+    ax2.scatter(
         sub["log_rho_300K"],
         sub["alpha_coef"],
         c=color,
@@ -112,53 +261,39 @@ for cl in clusters_encontrados:
         linewidth=0.8,
         label=f"{nombre_cl} (n={len(sub)})"
     )
-
-# Puntos de ruido si existieran
-sub_ruido = df[df["cluster"] == -1]
 if len(sub_ruido) > 0:
-    plt.scatter(
+    ax2.scatter(
         sub_ruido["log_rho_300K"],
         sub_ruido["alpha_coef"],
         c="#dc2626",
         marker="x",
-        s=80,
+        s=85,
         linewidth=2,
-        label=f"Soroll / Anomalies (n={len(sub_ruido)})",
+        label=f"Soroll (-1)",
         zorder=5
     )
-
-# Línea de referencia física para α = 0
-plt.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera física $\alpha = 0$")
-
-# Etiquetas de texto para materiales clave representativos
-materiales_destacados = ["copper", "silver", "silicon", "germanium", "gaas", "glass", "ptfe", "quartz", "graphite"]
+ax2.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera física $\alpha = 0$")
 for _, r in df.iterrows():
     mat = r["material"]
     if any(k in mat.lower() for k in materiales_destacados):
-        plt.annotate(
+        ax2.annotate(
             mat.split("(")[0].strip(),
             (r["log_rho_300K"], r["alpha_coef"]),
-            xytext=(6, 4),
-            textcoords="offset points",
-            fontsize=8.5,
-            fontweight="semibold",
-            color="#1e293b",
-            alpha=0.9
+            xytext=(6, 4), textcoords="offset points",
+            fontsize=8, fontweight="bold", color="#1e293b", alpha=0.9
         )
+ax2.set_title(f"2. Després: 3 Clústers Descoberts amb DBSCAN ($\\varepsilon={EPS}$)", fontsize=12, fontweight="bold")
+ax2.set_xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=10.5)
+ax2.grid(True, linestyle=":", alpha=0.6)
+ax2.legend(loc="upper right", framealpha=0.9, fontsize=9)
 
-plt.title(f"Classificació de Materials amb DBSCAN ($\\varepsilon = {EPS}$, $min\\_samples = {MIN_SAMPLES}$)", fontsize=13, fontweight="bold")
-plt.xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=11)
-plt.ylabel(r"Coeficient tèrmic $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=11)
-plt.grid(True, linestyle=":", alpha=0.6)
-plt.legend(loc="upper right", framealpha=0.9)
 plt.tight_layout()
+RUTA_COMP = AQUI / "comparativa_abans_despres_dbscan.png"
+fig_comp.savefig(RUTA_COMP, dpi=300)
+plt.close(fig_comp)
+print(f"Gràfic comparatiu Abans vs Després guardat a: {RUTA_COMP}")
 
-# Guardar figura en la carpeta del problema
-FIGURA_PATH = Path(__file__).resolve().parent / "clusters_materiales_dbscan.png"
-plt.savefig(FIGURA_PATH, dpi=300)
-print(f"\nGráfico guardado en: {FIGURA_PATH}")
+if FIGURAS_DOCS.exists():
+    shutil.copy(RUTA_COMP, FIGURAS_DOCS / "comparativa_abans_despres_dbscan.png")
 
-try:
-    plt.show()
-except Exception:
-    pass
+print("\nTotes les figures s'han generat i guardat correctament.")
