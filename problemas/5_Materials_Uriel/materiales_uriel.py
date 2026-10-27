@@ -96,7 +96,7 @@ ax_abans.set_title(r"Pla $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$ abans del Clu
 ax_abans.set_xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=11)
 ax_abans.set_ylabel(r"Coeficient tèrmic $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=11)
 ax_abans.grid(True, linestyle=":", alpha=0.6)
-ax_abans.legend(loc="upper right", framealpha=0.9)
+ax_abans.legend(loc="lower right", framealpha=0.9)
 plt.tight_layout()
 
 RUTA_ABANS = AQUI / "materiales_antes_clustering.png"
@@ -204,7 +204,7 @@ ax_despres.set_title(f"Classificació de Materials amb DBSCAN ($\\varepsilon = {
 ax_despres.set_xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=11)
 ax_despres.set_ylabel(r"Coeficient tèrmic $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=11)
 ax_despres.grid(True, linestyle=":", alpha=0.6)
-ax_despres.legend(loc="upper right", framealpha=0.9)
+ax_despres.legend(loc="lower right", framealpha=0.9)
 plt.tight_layout()
 
 RUTA_DESPRES = AQUI / "clusters_materiales_dbscan.png"
@@ -245,7 +245,7 @@ ax1.set_title(r"1. Abans: Dades Experimentals en Brut (Sense Etiquetes)", fontsi
 ax1.set_xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=10.5)
 ax1.set_ylabel(r"Coeficient tèrmic $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=10.5)
 ax1.grid(True, linestyle=":", alpha=0.6)
-ax1.legend(loc="upper right", framealpha=0.9, fontsize=9)
+ax1.legend(loc="lower right", framealpha=0.9, fontsize=9)
 
 # Panell Dret: Després
 for cl in clusters_encontrados:
@@ -285,7 +285,7 @@ for _, r in df.iterrows():
 ax2.set_title(f"2. Després: 3 Clústers Descoberts amb DBSCAN ($\\varepsilon={EPS}$)", fontsize=12, fontweight="bold")
 ax2.set_xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=10.5)
 ax2.grid(True, linestyle=":", alpha=0.6)
-ax2.legend(loc="upper right", framealpha=0.9, fontsize=9)
+ax2.legend(loc="lower right", framealpha=0.9, fontsize=9)
 
 plt.tight_layout()
 RUTA_COMP = AQUI / "comparativa_abans_despres_dbscan.png"
