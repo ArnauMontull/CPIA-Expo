@@ -16,9 +16,17 @@ import math
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
-DATOS_DIR = Path(__file__).resolve().parents[2] / "datos"
+AQUI = Path(__file__).resolve().parent
+if len(AQUI.parents) >= 2 and (AQUI.parents[1] / "datos").exists():
+    DATOS_DIR = AQUI.parents[1] / "datos"
+else:
+    DATOS_DIR = AQUI / "datos"
 DATOS_DIR.mkdir(exist_ok=True)
 CSV_DESTINO = DATOS_DIR / "materiales_electricos.csv"
+
+# Assegurar també carpeta local datos/ per a execució standalone
+(AQUI / "datos").mkdir(exist_ok=True)
+CSV_LOCAL = AQUI / "datos" / "materiales_electricos.csv"
 
 URL = "https://en.wikipedia.org/wiki/Electrical_resistivity_and_conductivity"
 
@@ -174,10 +182,11 @@ for r in rows[1:]:
 datos_materiales.extend(SEMICONDUCTORES_EXTRA)
 
 # Guardar a CSV
-with open(CSV_DESTINO, "w", encoding="utf-8") as f:
-    f.write("material,resistividad_ohm_m,log_rho_300K,alpha_coef,clase_real\n")
-    for d in datos_materiales:
-        f.write(f'"{d["material"]}",{d["resistividad_ohm_m"]},{d["log_rho_300K"]},{d["alpha_coef"]},"{d["clase_real"]}"\n')
+for dest in {CSV_DESTINO, CSV_LOCAL}:
+    with open(dest, "w", encoding="utf-8") as f:
+        f.write("material,resistividad_ohm_m,log_rho_300K,alpha_coef,clase_real\n")
+        for d in datos_materiales:
+            f.write(f'"{d["material"]}",{d["resistividad_ohm_m"]},{d["log_rho_300K"]},{d["alpha_coef"]},"{d["clase_real"]}"\n')
 
 print(f"\nÈxit! Dataset generat amb {len(datos_materiales)} materials a:")
 print(f"-> {CSV_DESTINO}")

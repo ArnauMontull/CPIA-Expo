@@ -23,13 +23,22 @@ from sklearn.cluster import DBSCAN
 # 1. Carregar el dataset descarregat a datos/
 
 AQUI = Path(__file__).resolve().parent
-REPO_ROOT = AQUI.parents[1]
-DATOS_DIR = REPO_ROOT / "datos"
-FIGURAS_DOCS = REPO_ROOT / "docs" / "figuras"
-CSV_PATH = DATOS_DIR / "materiales_electricos.csv"
+REPO_ROOT = AQUI.parents[1] if len(AQUI.parents) >= 2 else AQUI
 
-if not CSV_PATH.exists():
-    raise FileNotFoundError(f"No s'ha trobat l'arxiu de dades a: {CSV_PATH}")
+# Trobar el fitxer de dades (sigui al repositori complet o a la carpeta standalone)
+candidats_csv = [
+    AQUI / "datos" / "materiales_electricos.csv",
+    AQUI / "materiales_electricos.csv",
+    REPO_ROOT / "datos" / "materiales_electricos.csv",
+]
+CSV_PATH = next((p for p in candidats_csv if p.exists() and p.is_file()), None)
+
+if CSV_PATH is None:
+    raise FileNotFoundError(f"No s'ha trobat l'arxiu de dades a cap d'aquestes rutes: {candidats_csv}")
+
+FIGURAS_DOCS = REPO_ROOT / "docs" / "figuras" if (REPO_ROOT / "docs" / "figuras").exists() else None
+FIGURAS_LOCAL = AQUI / "figuras"
+FIGURAS_LOCAL.mkdir(parents=True, exist_ok=True)
 
 df = pd.read_csv(CSV_PATH)
 print(f"Dataset carregat amb èxit ({len(df)} materials).")
@@ -98,7 +107,9 @@ fig_abans.savefig(RUTA_ABANS, dpi=300)
 plt.close(fig_abans)
 print(f"Gràfic d'abans de l'agrupament guardat a: {RUTA_ABANS}")
 
-if FIGURAS_DOCS.exists():
+if FIGURAS_LOCAL.exists():
+    shutil.copy(RUTA_ABANS, FIGURAS_LOCAL / "materiales_antes_clustering.png")
+if FIGURAS_DOCS is not None and FIGURAS_DOCS.exists():
     shutil.copy(RUTA_ABANS, FIGURAS_DOCS / "materiales_antes_clustering.png")
 
 
@@ -197,7 +208,9 @@ fig_despres.savefig(RUTA_DESPRES, dpi=300)
 plt.close(fig_despres)
 print(f"Gràfic de clústers DBSCAN guardat a: {RUTA_DESPRES}")
 
-if FIGURAS_DOCS.exists():
+if FIGURAS_LOCAL.exists():
+    shutil.copy(RUTA_DESPRES, FIGURAS_LOCAL / "clusters_materiales_dbscan.png")
+if FIGURAS_DOCS is not None and FIGURAS_DOCS.exists():
     shutil.copy(RUTA_DESPRES, FIGURAS_DOCS / "clusters_materiales_dbscan.png")
 
 # 7. IMATGE 3: Comparativa ABANS i DESPRÉS (Panell 1x2)
@@ -277,7 +290,9 @@ fig_comp.savefig(RUTA_COMP, dpi=300)
 plt.close(fig_comp)
 print(f"Gràfic comparatiu Abans vs Després guardat a: {RUTA_COMP}")
 
-if FIGURAS_DOCS.exists():
+if FIGURAS_LOCAL.exists():
+    shutil.copy(RUTA_COMP, FIGURAS_LOCAL / "comparativa_abans_despres_dbscan.png")
+if FIGURAS_DOCS is not None and FIGURAS_DOCS.exists():
     shutil.copy(RUTA_COMP, FIGURAS_DOCS / "comparativa_abans_despres_dbscan.png")
 
 print("\nTotes les figures s'han generat i guardat correctament.")
