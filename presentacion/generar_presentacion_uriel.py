@@ -528,29 +528,22 @@ def agregar_diapositivas_uriel(prs):
     add_header(s8, "Conclusions")
 
     add_card(s8, 1.2, 1.7, 10.933, 5.0)
-    b_c = s8.shapes.add_textbox(Inches(1.6), Inches(2.0), Inches(10.1), Inches(4.4))
+    b_c = s8.shapes.add_textbox(Inches(1.6), Inches(2.1), Inches(10.1), Inches(4.3))
     tf_c = b_c.text_frame
     tf_c.word_wrap = True
-
-    p = tf_c.paragraphs[0]
-    p.text = "Punts Clau del Projecte"
-    p.font.size = Pt(20)
-    p.font.bold = True
-    p.font.color.rgb = COLOR_NEGRO
-    p.space_after = Pt(14)
 
     concl_puntos = [
         ("Física de bandes sense supervisió:", " DBSCAN descobreix de manera autònoma les 3 fases de conducció (conductors, aïllants i semiconductors) a partir de propietats macroscòpiques."),
         ("Immune a densitats dispars:", " Supera K-Means agrupant simultàniament la ultradensitat dels metalls i la dispersió de 12 ordres de magnitud dels aïllants."),
         ("Variables òptimes:", " L'escala logarítmica log₁₀(ρ) i el coeficient tèrmic quàntic α són suficients per separar completament els règims de transport."),
-        ("Validació rotunda:", " 100% de puresa en conductors i aïllants amb Silhouette Score = 0.7858.")
+        ("Validació rotunda:", " 100% de puresa en conductors i aïllants")
     ]
-    for tit, desc in concl_puntos:
-        p = tf_c.add_paragraph()
+    for i, (tit, desc) in enumerate(concl_puntos):
+        p = tf_c.paragraphs[0] if i == 0 else tf_c.add_paragraph()
         p.text = f"✔  {tit} {desc}"
-        p.font.size = Pt(14)
+        p.font.size = Pt(15)
         p.font.color.rgb = COLOR_NEGRO
-        p.space_after = Pt(12)
+        p.space_after = Pt(16)
 
     set_speaker_notes(s8,
         "GUIÓ SLIDE 8:\n"
