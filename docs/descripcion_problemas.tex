@@ -195,7 +195,7 @@ Cada integrant ha abordat un repte científic que posa a prova les propietats ge
 \label{sec:fonaments_comuns}
 % ==========================================
 
-L'\textbf{aprenentatge no supervisat} (\emph{unsupervised learning}) aborda un dels reptes més fascinants de la ciència de dades i la física computacional: descobrir estructura, patrons geomètrics o relacions latents en conjunts d'observacions on \emph{no disposem d'etiquetes prèvies} de classe durant el modelatge. En lloc de comptar amb un conjunt de dades d'entrenament amb respostes correctes conegudes, l'objectiu consisteix a deixar que les pròpies dades «parlin» a través de la seva distribució espacial i la seva densitat, revelant taxonomies naturals que sovint reflecteixen mecanismes físics fonamentals.
+L'\textbf{aprenentatge no supervisat} (\emph{unsupervised learning}) aborda un dels reptes més importants de la ciència de dades i la física computacional: descobrir estructura, patrons geomètrics o relacions latents en conjunts d'observacions on no disposem d'etiquetes prèvies de classe durant el modelatge. En lloc de comptar amb un conjunt de dades d'entrenament amb respostes correctes conegudes, l'objectiu consisteix a deixar que les pròpies dades parlin a través de la seva distribució espacial i la seva densitat, revelant taxonomies naturals que sovint reflecteixen mecanismes físics fonamentals.
 
 Dins d'aquest paradigma, el \textbf{clustering} o agrupament cerca particionar les dades de manera que les observacions d'un mateix grup presentin una màxima semblança entre si (\emph{alta cohesió intraclúster}) i una diferenciació clara respecte de les d'altres grups (\emph{bona separació interclúster}). Al llarg dels quatre problemes desenvolupats per l'equip, aquest enfocament permet abordar preguntes científiques de gran rellevància: descobrir assaigs nuclears clandestins enmig de la sismicitat global, identificar terratrèmols ultraprofunds de subducció, estratificar pacients de leucèmia per la seva expressió gènica o classificar autònomament les fases conductores, semiconductores i aïllants de la matèria.
 
@@ -248,7 +248,7 @@ Aquest cicle garanteix que la inèrcia $J$ disminueix a cada pas i s'atura sempr
 
 L'algorisme DBSCAN \cite{ester1996, schubert2017} aborda el problema des d'una perspectiva totalment diferent: en lloc de buscar punts centrals, imita la manera com l'ull humà reconeix els cúmuls naturals, és a dir, com a \textbf{regions de l'espai amb una alta concentració de punts, separades entre si per zones buides o de baixa densitat}.
 
-\paragraph{La intuïció dels punts nucli, frontera i soroll.} DBSCAN només demana dos paràmetres geomètrics: un radi d'inspecció local $\varepsilon$ i un nombre mínim de veïns $v_{\min}$ (`min_samples`) que exigeix trobar dins d'aquest radi per considerar que una zona és prou densa:
+\paragraph{La intuïció dels punts nucli, frontera i soroll.} DBSCAN només demana dos paràmetres geomètrics: un radi d'inspecció local $\varepsilon$ i un nombre mínim de veïns $v_{\min}$ que exigeix trobar dins d'aquest radi per considerar que una zona és prou densa:
 \begin{itemize}
     \item \textbf{Punts Nucli (\emph{Core points}):} Són aquells que estan envoltats d'almenys $v_{\min}$ punts veïns dins del radi $\varepsilon$. Representen el cor dens d'un clúster.
     \item \textbf{Punts Frontera (\emph{Border points}):} Són punts que no arriben a la densitat mínima per ser nucli, però que cauen dins del radi $\varepsilon$ d'un punt nucli. Formen la perifèria del clúster.
