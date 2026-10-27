@@ -231,8 +231,7 @@ de detecció i verificació, no una guia per amagar proves.
 
 \subsection{Dades}
 Catàleg de l'USGS (\textit{ComCat: Comprehensive Earthquake Catalog}) amb tots els esdeveniments de magnitud $M\ge 4{,}5$ entre 1951 i 2025
-(\texttt{datos/sismos\_usgs\_M45\_1951\_2025.csv}), descarregat amb \texttt{nukedatos.py}. No es filtra per tipus
-d'esdeveniment. Després de treure els esdeveniments sense latitud, longitud, profunditat o magnitud en queden 298\,127: 614
+(\texttt{datos/sismos\_usgs\_M45\_1951\_2025.csv}), descarregat amb \texttt{nukedatos.py}. Després de treure els esdeveniments sense latitud, longitud, profunditat o magnitud en queden 298\,127: 614
 etiquetats per l'USGS com a \texttt{nuclear explosion}, 297\,413 \texttt{earthquake} i 100 d'altres tipus (71 erupcions
 volcàniques, 16 \texttt{explosion}, 6 esfondraments de mina, 3 esclats de roca, 2 esllavissades, 1 voladura de pedrera i 1
 \texttt{other event}). La columna \texttt{tipo} \emph{només s'utilitza per avaluar}, mai per entrenar.
@@ -251,7 +250,7 @@ volcàniques, 16 \texttt{explosion}, 6 esfondraments de mina, 3 esclats de roca,
 DBSCAN \cite{ester1996} agrupa els punts que estan a prop els uns dels altres. Té dos paràmetres: un radi $\varepsilon$ i un
 nombre mínim de punts $v_{\min}$. Un punt és \emph{central} si té com a mínim $v_{\min}$ punts (ell inclòs) a una distància
 $\le\varepsilon$. Dos punts centrals que són a menys de $\varepsilon$ l'un de l'altre queden al mateix grup, i així el grup
-creix de punt en punt com una cadena. Els punts que no són centrals ni tenen cap punt central a prop són soroll.
+creix de punt en punt com una cadena. Els punts que no són centrals ni tenen cap punt central a prop es marquen com soroll.
 
 Nosaltres fem servir $v_{\min}=1$. Aleshores tots els punts són centrals, no hi ha soroll i cada grup és simplement un conjunt
 de sismes units per cadenes de menys de $\varepsilon$ km. Per això els assajos d'un mateix polígon, que estan molt a prop, acaben
