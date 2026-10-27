@@ -181,6 +181,9 @@ quedan como ruido ($-1$). No necesita fijar el número de grupos y encuentra for
 \paragraph{Clustering jerárquico, mezclas gaussianas e Isolation Forest.} El jerárquico construye un dendrograma según
 el tipo de enlace (simple, medio, Ward) y se corta a una altura. Las mezclas gaussianas (\texttt{GaussianMixture}) dan una asignación
 blanda por probabilidad. Isolation Forest \cite{liu2008} puntúa como anómalos los puntos que se aíslan con pocos cortes aleatorios.
+Las mezclas gaussianas e Isolation Forest forman parte del temario y se explican en la exposición, pero ninguno de los cuatro
+problemas los aplica: en ellos la detección de anomalías se hace con DBSCAN (puntos de ruido o clusters atípicos) y con la
+distancia al $k$-ésimo vecino.
 \pendiente{el equipo revisa y amplía este resumen con lo que se exponga.}
 
 % ==========================================
