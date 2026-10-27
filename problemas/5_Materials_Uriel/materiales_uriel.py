@@ -12,8 +12,6 @@ Paràmetres fixats:
 - Epsilon (radi de veïnat): eps = 0.65
 - Min samples (mínim de mostres per nucli): min_samples = 3
 
-Autor: Uriel
-Assignatura: CPIA · Aprenentatge No Supervisat
 """
 from pathlib import Path
 import shutil
@@ -21,11 +19,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
-from sklearn.metrics import silhouette_score
 
-# ==============================================================================
 # 1. Carregar el dataset descarregat a datos/
-# ==============================================================================
+
 AQUI = Path(__file__).resolve().parent
 REPO_ROOT = AQUI.parents[1]
 DATOS_DIR = REPO_ROOT / "datos"
@@ -38,16 +34,15 @@ if not CSV_PATH.exists():
 df = pd.read_csv(CSV_PATH)
 print(f"Dataset carregat amb èxit ({len(df)} materials).")
 
-# ==============================================================================
 # 2. Selecció de característiques i estandardització manual (Z-Score)
-# ==============================================================================
+
 # x1: log10(resistivitat a 300 K) -> comprimeix més de 30 ordres de magnitud
-# x2: coeficient tèrmic alpha -> signatura quàntica del material
+# x2: coeficient tèrmic alpha -> signatura quàntica del material, mirem el signe
 features = ["log_rho_300K", "alpha_coef"]
 X_raw = df[features].values
 
 # Estandardització manual: Z = (X - μ) / σ
-# Garanteix mitjana = 0 i desviació típica = 1 a cada dimensió
+# --> Garanteix mitjana = 0 i desviació típica = 1 a cada dimensió (millora la distància euclidiana)
 media = np.mean(X_raw, axis=0)
 desv = np.std(X_raw, axis=0)
 X_scaled = (X_raw - media) / desv
@@ -58,9 +53,8 @@ plt.rcParams['font.family'] = 'sans-serif'
 
 materiales_destacados = ["copper", "silver", "silicon", "germanium", "gaas", "glass", "ptfe", "quartz", "graphite"]
 
-# ==============================================================================
-# 3. IMATGE 1: Pla (log10 rho, alpha) ABANS de l'agrupament (Dades en Brut)
-# ==============================================================================
+# 3. IMATGE 1: Pla (log10 rho, alpha) abans de l'agrupament (Dades en Brut)
+
 fig_abans, ax_abans = plt.subplots(figsize=(10, 6.5))
 
 ax_abans.scatter(
@@ -74,7 +68,7 @@ ax_abans.scatter(
     label=f"Materials experimentals sense etiquetar (n={len(df)})"
 )
 
-# Línia de referència física per a α = 0
+# Línia de referència física per a alpha = 0
 ax_abans.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera física $\alpha = 0$")
 
 # Etiquetes de materials representatius
@@ -107,24 +101,18 @@ print(f"Gràfic d'abans de l'agrupament guardat a: {RUTA_ABANS}")
 if FIGURAS_DOCS.exists():
     shutil.copy(RUTA_ABANS, FIGURAS_DOCS / "materiales_antes_clustering.png")
 
-# ==============================================================================
-# 4. Aplicació de DBSCAN (scikit-learn)
-# ==============================================================================
-EPS = 0.65
+
+# 4. Aplicació de DBSCAN (funció de la llibreria scikit-learn)
+
+EPS = 0.65 
 MIN_SAMPLES = 3
 
 dbscan = DBSCAN(eps=EPS, min_samples=MIN_SAMPLES)
 df["cluster"] = dbscan.fit_predict(X_scaled)
 
 # ==============================================================================
-# 5. Càlcul del Silhouette Score (scikit-learn)
+# 5. Resultats de DBSCAN
 # ==============================================================================
-mask_validos = df["cluster"] != -1
-if len(set(df["cluster"][mask_validos])) > 1:
-    score_sil = silhouette_score(X_scaled[mask_validos], df["cluster"][mask_validos])
-else:
-    score_sil = None
-
 clusters_encontrados = sorted(set(df["cluster"]) - {-1})
 n_clusters = len(clusters_encontrados)
 n_ruido = int(np.sum(df["cluster"] == -1))
@@ -134,8 +122,6 @@ print(f"RESULTATS DE DBSCAN (eps={EPS}, min_samples={MIN_SAMPLES})")
 print("=" * 65)
 print(f"Clústers descoberts per densitat    : {n_clusters}")
 print(f"Punts classificats com a soroll (-1): {n_ruido} de {len(df)}")
-if score_sil is not None:
-    print(f"Silhouette Score (núclis densos)   : {score_sil:.4f}")
 
 print("\nMatriu de contingència (Classe real vs. Clúster DBSCAN):")
 print(pd.crosstab(df["clase_real"], df["cluster"], margins=True))
@@ -146,9 +132,8 @@ if n_ruido > 0:
     for _, r in ruido_df.iterrows():
         print(f" - {r['material']:<30} | log10(ρ)={r['log_rho_300K']:>6.2f} | α={r['alpha_coef']:>8.5f} | Tipus: {r['clase_real']}")
 
-# ==============================================================================
 # 6. IMATGE 2: Pla DESPRÉS de l'agrupament amb DBSCAN
-# ==============================================================================
+
 paleta_colores = {
     0: ("#d97706", "Clúster 0 (Conductors)"),
     1: ("#2563eb", "Clúster 1 (Aïllants)"),
@@ -215,9 +200,8 @@ print(f"Gràfic de clústers DBSCAN guardat a: {RUTA_DESPRES}")
 if FIGURAS_DOCS.exists():
     shutil.copy(RUTA_DESPRES, FIGURAS_DOCS / "clusters_materiales_dbscan.png")
 
-# ==============================================================================
 # 7. IMATGE 3: Comparativa ABANS i DESPRÉS (Panell 1x2)
-# ==============================================================================
+
 fig_comp, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6.2), sharey=True)
 
 # Panell Esquerre: Abans
