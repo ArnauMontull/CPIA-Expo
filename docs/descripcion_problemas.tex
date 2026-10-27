@@ -106,9 +106,6 @@
   literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {Á}{{\'A}}1 {°}{{$^\circ$}}1 {–}{{--}}1 {—}{{---}}1}
 \usepackage{float}
 \newcommand{\pendiente}[1]{\textcolor{red!70!black}{\textbf{[PENDIENTE: #1]}}}
-\newcommand{\comentarios}[1][4cm]{%
-  \par\medskip\noindent\fbox{\parbox[t][#1][t]{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{%
-  \small\textcolor{black!50}{\textit{Comentarios / observaciones:}}}}\par\medskip}
 
 \begin{document}
 
@@ -184,7 +181,6 @@ quedan como ruido ($-1$). No necesita fijar el número de grupos y encuentra for
 el tipo de enlace (simple, medio, Ward) y se corta a una altura. Las mezclas gaussianas (\texttt{GaussianMixture}) dan una asignación
 blanda por probabilidad. Isolation Forest puntúa como anómalos los puntos que se aíslan con pocos cortes aleatorios.
 \pendiente{el equipo revisa y amplía este resumen con lo que se exponga.}
-\comentarios[4cm]
 
 % ==========================================
 \section{Problema de Arnau Montull: detección de explosiones nucleares con DBSCAN}
@@ -394,7 +390,6 @@ recall 95,4\,\% y $F_1=0{,}891$.
   \item \textbf{Sesgo de época:} no se usan el año ni el número de estaciones como variable, porque delatan la época
         del catálogo y no la física.
 \end{itemize}
-\comentarios[5cm]
 
 \subsection{Conclusiones}
 \begin{itemize}
@@ -452,7 +447,6 @@ Nota: el README nombra \texttt{problema\_matias.py}, que no existe en la carpeta
 \texttt{<nemotécnico>\_<estudiante>.py} que pide el enunciado.
 
 \pendiente{Matías: resultados (valor de $K$ elegido, silueta, ARI, anomalías encontradas) y su conclusión.}
-\comentarios[6cm]
 
 \section{Problema de Martí: transcriptómica (RNA-seq)}
 Material en \texttt{problemas/4\_RNAseq\_Marti/} (documento \texttt{EXPO CPIA - Clustering.docx}). Es por ahora un
@@ -476,19 +470,15 @@ se sabe de antemano qué genes funcionan juntos: es un problema de alta dimensio
   \item Conclusiones y limitaciones: maldición de la dimensionalidad, sensibilidad al preprocesado, datos sintéticos frente a reales.
 \end{itemize}
 \pendiente{Martí: código \texttt{.py}, resultados y figuras.}
-\comentarios[6cm]
 
 \section{Problema de Uriel}
 \pendiente{Uriel: título, datos, método, parámetros, resultados y código.}
-\comentarios[6cm]
 
 \section{Problema de Uriel}
 \pendiente{descripción detallada para reproducir el experimento: datos, método, parámetros, resultados, código.}
-\comentarios[8cm]
 
 \section{Conclusiones del equipo}
 \pendiente{comparativa de los cuatro problemas, qué algoritmo funcionó mejor y por qué.}
-\comentarios[4cm]
 
 \clearpage
 \thispagestyle{empty}
