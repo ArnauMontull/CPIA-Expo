@@ -396,13 +396,7 @@ sismògrafs (triangles) registren tots dos esdeveniments; aquí només es fa ser
 de detecció i verificació, no una guia per amagar proves.
 
 \subsection{Dades}
-Catàleg de l'USGS (\textit{ComCat: Comprehensive Earthquake Catalog}) amb tots els esdeveniments de magnitud $M\ge 4{,}5$ entre 1951 i 2025
-(\texttt{datos/sismos\_usgs\_M45\_1951\_2025.csv}), descarregat amb \texttt{nukedatos.py}. Després de treure els esdeveniments sense latitud, longitud, profunditat o magnitud en queden 298\,127: 614
-etiquetats per l'USGS com a \texttt{nuclear explosion}, 297\,413 \texttt{earthquake} i 100 d'altres tipus (71 erupcions
-volcàniques, 16 \texttt{explosion}, 6 esfondraments de mina, 3 esclats de roca, 2 esllavissades, 1 voladura de pedrera i 1
-\texttt{other event}). La columna \texttt{tipo} \emph{només s'utilitza per avaluar}, mai per entrenar.
-
-\texttt{nukeDBSCAN\_arnau.py} carrega el CSV i es queda amb els esdeveniments que tenen posició, profunditat i magnitud.
+Catàleg de l'USGS (\textit{ComCat: Comprehensive Earthquake Catalog}) amb tots els esdeveniments de magnitud $M\ge 4{,}5$ entre 1951 i 2025. Després de filtrar els esdeveniments sense latitud, longitud, profunditat o magnitud en queden 298\,127: 614 etiquetats per l'USGS com a \texttt{nuclear explosion}, 297\,413 \texttt{earthquake} i 100 d'altres tipus (71 erupcions volcàniques, 16 \texttt{explosion}, 6 esfondraments de mina, 3 esclats de roca, 2 esllavissades, 1 voladura de pedrera i 1 \texttt{other event}). La columna de tipologia \emph{només s'utilitza per avaluar}, mai durant la fase de clustering no supervisat.
 
 \begin{figure}[H]
 \centering
@@ -471,8 +465,7 @@ sospitosos per profunditat; cercles negres petits: explosions reals (etiqueta de
 \end{figure}
 
 \subsection{Elecció dels paràmetres}
-Paràmetres fixos: $\varepsilon=25$ km, $v_{\min}=2$, $d_{\min}=0$ i $d_{\max}=2{,}5$ km. Són en un únic diccionari al principi
-de \texttt{nukeDBSCAN\_arnau.py}, que \texttt{nukeval.py} importa.
+Paràmetres fixos de filtratge i densitat: $\varepsilon=25$ km, $v_{\min}=2$, $d_{\min}=0$ km i $d_{\max}=2{,}5$ km.
 
 \begin{itemize}
   \item \textbf{Finestra de profunditat $[0;\,2{,}5)$ km:} criteri físic. Una explosió nuclear soterrada és a menys d'uns
@@ -488,8 +481,7 @@ de \texttt{nukeDBSCAN\_arnau.py}, que \texttt{nukeval.py} importa.
         57 i els FN pugen a 63 ($F_1=0{,}902$), perquè les explosions que estan soles en 25 km queden com a soroll (vegeu les
         limitacions).
 \end{itemize}
-L'script \texttt{nuke\_optimizar.py} (cerca de la finestra i de $\varepsilon$ per $F_1$) es va provar, però no es fa servir per
-als paràmetres finals: el seu òptim, $[0;\,0{,}1)$ km, queda a la vora de la seva graella i aprofita que l'USGS registra amb
+Una exploració numèrica de la finestra i de $\varepsilon$ maximitzant directament la mètrica $F_1$ es va avaluar, però no es fa servir per als paràmetres finals: el seu òptim, $[0;\,0{,}1)$ km, queda a la vora de la seva graella i aprofita que l'USGS registra amb
 profunditat exactament $0{,}0$ km el 85\,\% de les explosions (521 de 614) i només 154 dels 297\,513 esdeveniments que no són
 explosions nuclears. Això mesura com cataloga l'USGS i no la física. La taula compara finestres amb $\varepsilon=25$ km.
 
@@ -508,8 +500,8 @@ $[0;\,10)$ & 552 & 2\,581 & 62 & 0,295 \\
 \caption{Efecte de la finestra de profunditat ($\varepsilon=25$ km, $v_{\min}=2$).}
 \end{table}
 
-\subsection{Validació de $\varepsilon$ i estabilitat (\texttt{nukeval.py})}
-Seguint l'esquema de validació del temari (silueta, colze i estabilitat), \texttt{nukeval.py} avalua $\varepsilon$ amb $v_{\min}=2$ i la finestra $[0;\,2{,}5)$ km. Per a cada $\varepsilon$ compta els clústers, calcula la silueta amb distància
+\subsection{Validació de $\varepsilon$ i estabilitat}
+Seguint l'esquema de validació del temari (silueta, colze i estabilitat), s'avalua $\varepsilon$ amb $v_{\min}=2$ i la finestra $[0;\,2{,}5)$ km. Per a cada $\varepsilon$ compta els clústers, calcula la silueta amb distància
 haversine sobre una mostra de 2\,000 sismes (sense etiquetes) i els FP i FN (amb etiquetes).
 
 L'estabilitat compara els clústers del catàleg complet amb els de cinc mostres aleatòries del 50\,\% mitjançant l'ARI.
@@ -658,29 +650,11 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
         proves de Nevada.
 \end{itemize}
 
-\subsection{Com reproduir-ho}
-\begin{enumerate}
-  \item Crear l'entorn: \texttt{python -m venv .venv} i instal·lar \texttt{requirements.txt}
-        (numpy, pandas, matplotlib, scikit-learn, plotly).
-  \item Opcional: \texttt{python problemas/2\_Nuclear/nukedatos.py} descarrega de l'USGS el catàleg
-        (\texttt{sismos\_usgs\_M45\_1951\_2025.csv}) a \texttt{datos/}; si el fitxer ja existeix, no fa res.
-  \item \texttt{python problemas/2\_Nuclear/nukeDBSCAN\_arnau.py} (es pot executar des de qualsevol carpeta). Imprimeix els FP
-        i FN de l'execució amb els paràmetres fixos i escriu \texttt{globo.html} (globus interactiu amb 4 vistes, funciona
-        sense internet).
-  \item \texttt{python problemas/2\_Nuclear/nuke\_optimizar.py} reprodueix la cerca per $F_1$ que es va descartar
-        (opcional; uns minuts).
-  \item \texttt{python problemas/2\_Nuclear/nukeval.py} reprodueix la validació de $\varepsilon$ i l'estabilitat (uns 4 min) i
-        desa \texttt{nukeval\_eps.png} i \texttt{nukeval\_mapa.png}.
-  \item Les figures d'aquest document: \texttt{python docs/figuras\_nuclear.py}.
-\end{enumerate}
-
 \clearpage
 % ==========================================
 \section{Problema de Matías: terratrèmols, patrons i anomalies amb K-Means}
 \label{sec:matias_sismes}
 % ==========================================
-Material a \texttt{problemas/3\_Sismes\_Matias/} (\texttt{presentacio\_MATIAS.py}, \texttt{validacio\_MATIAS.py}, \texttt{earthquakes.csv}, README i informe propi \texttt{informe\_sismes.tex}) i a \texttt{presentacion/matias/} (presentació). El text que segueix correspon a l'informe complet de Matías (\textit{INFORME\_MATIAS\_FINAL.tex}) sobre la classificació i detecció d'anomalies en el catàleg sísmic global amb $K$-Means i distància als $k$ veïns.\\[0.2cm]
-
 \paragraph{Resum executiu.} \textit{Aquest informe presenta un sistema en Python (pandas + scikit-learn) que agrupa $10\,174$ esdeveniments sísmics d'arreu del món (USGS, 15/09--15/10/2026) amb $K$-Means i detecta els més atípics amb la distància mitjana als $k$ veïns més propers. Es descriuen les decisions de disseny, cada part del codi i els resultats, validats amb silueta, índex de Davies--Bouldin, estabilitat entre llavors (ARI), sensibilitat a $k$ i contrast amb Isolation Forest i LOF. Els tres clústers ($5\,721$/$3\,414$/$1\,039$; silueta $0{,}402$) reflecteixen sobretot \emph{l'abast geogràfic de cada xarxa sísmica} (Califòrnia, Alaska, món) i no una tipologia tectònica; la partició és totalment estable (ARI $=1$). Les 5 anomalies són terratrèmols profunds (286--665~km) en zones de subducció, i no els més grans.}
 
 %------------------------------------------------------------
@@ -902,8 +876,6 @@ Entorn: Python 3.12.3, scikit-learn 1.8.0, pandas 3.0.2, matplotlib 3.10.8, NumP
 \clearpage
 \section{Problema de Martí: expressió gènica i clustering jeràrquic (leucèmia ALL/AML)}
 \label{sec:marti_rnaseq}
-Material a \texttt{problemas/4\_RNAseq\_Marti/} (codi \texttt{clustering\_marti.py}, proves \texttt{test\_clustering.py}, \texttt{README.txt}, figures i informe propi \texttt{informe\_curt.tex}). El text que segueix és l'informe de Martí tal com l'ha escrit ell.
-
 \paragraph{Resum.}
 Aquesta implementació aplica l'aprenentatge no supervisat al conjunt de dades de leucèmia de Golub et al.\ (72 pacients, 7.129 gens) per comprovar, primer, si és possible recuperar sense etiquetes la distinció entre leucèmia limfoblàstica aguda (ALL) i mieloide aguda (AML) i, segon, quins grups de gens mostren patrons d'expressió semblants. Després d'un preprocessament logarítmic i d'una selecció dels 500 gens més variables, s'agrupen els pacients amb clustering jeràrquic (tres tipus d'enllaç) i K-Means, i els gens amb clustering jeràrquic de distància de correlació. Els diagnòstics clínics s'usen només per validar els models. K-Means assoleix un ARI de 0,89 i l'enllaç \emph{complete} de 0,79, mentre que el coeficient de Silhouette indica $k=2$ com a nombre òptim de grups.
 
@@ -950,7 +922,7 @@ Finalment, un \emph{clustermap} mostra la matriu d'expressió com un mapa de cal
 
 \textbf{Mòduls de gens i mapes de calor.} S'agrupen els 500 gens, cadascun descrit pels seus valors en els 72 pacients, amb distància de correlació i enllaç \emph{average}. Per a $k=2,\dots,10$ es talla l'arbre, es calcula la silueta amb la matriu de distàncies precalculada i es tria el $k$ de silueta màxima, que defineix el mòdul de cada gen. Després es representa $X_{\text{clean}}$ en dues versions: sense reordenar (ordre original dels pacients i ordre de selecció dels gens) i reordenada pels dos dendrogrames (clustermap), amb barres de color pel diagnòstic i pel mòdul. Comparar-les mostra què aporta el clustering.
 
-\textbf{Implementació.} El codi és en Python: NumPy i pandas per a les dades, SciPy per al clustering jeràrquic, scikit-learn~\cite{sklearn} per a K-Means, la silueta i l'ARI, i Matplotlib i seaborn per als gràfics. Cada pas és una funció amb \emph{docstring}, totes les llavors són fixes i el repositori inclou un \texttt{README} i un \texttt{requirements.txt}; totes les figures i xifres d'aquest informe s'obtenen d'una única execució del programa.
+\textbf{Implementació.} El flux computacional s'ha desenvolupat en Python emprant NumPy i pandas per a les dades, SciPy per al clustering jeràrquic, scikit-learn~\cite{sklearn} per a K-Means, la silueta i l'ARI, i Matplotlib i seaborn per a les visualitzacions. Totes les llavors aleatòries són fixes per garantir la reproductibilitat de les figures i resultats obtinguts.
 
 \subsection{Resultats i anàlisi}
 
@@ -1073,8 +1045,6 @@ Els resultats permeten respondre els quatre objectius. Sense usar etiquetes, K-M
 \section{Problema d'Uriel: classificació de materials elèctrics mitjançant DBSCAN}
 \label{sec:uriel_materials}
 % ==========================================
-Material a \texttt{problemas/5\_Materials\_Uriel/} (\texttt{materiales\_uriel.py}, \texttt{descargar\_materiales.py}, informe propi \texttt{informe\_materiales\_uriel.tex} i presentació \texttt{presentacion\_materiales\_uriel.pptx}). El text que segueix correspon a l'informe complet d'Uriel per a la classificació no supervisada de materials elèctrics a l'espai $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$.
-
 % ==============================================================================
 \subsection{Introducció i Plantejament del Problema}
 % ==============================================================================
@@ -1163,11 +1133,7 @@ La justificació que els materials formin agrupacions denses i segregades en el 
 \subsection{Dataset Experimental: Recopilació i Propietats}
 % ==============================================================================
 
-Per garantir la reproductibilitat i el rigor científic, es va desenvolupar el script \texttt{descargar\_materiales.py}, el qual compila i estructura un conjunt de dades oficial a:
-\begin{center}
-    \texttt{datos/materiales\_electricos.csv}
-\end{center}
-El conjunt conté \textbf{57 materials reals} procedents de taules empíriques de referència contrastades (\textit{CRC Handbook of Chemistry and Physics}, Kittel i Ashcroft \& Mermin), desglossats en:
+El conjunt de dades compila i estructura una col·lecció de \textbf{57 materials reals} procedents de taules empíriques de referència contrastades (\textit{CRC Handbook of Chemistry and Physics}, Kittel i Ashcroft \& Mermin), desglossats en:
 \begin{itemize}
     \item \textbf{35 conductors metàl·lics:} Metalls elementals purs (Cu, Ag, Au, Al, Fe, Pt, Ti, W, etc.) i aliatges tecnològics (bronze, llautó, constantà, nicrom, acer inoxidable).
     \item \textbf{12 semiconductors:} Semiconductors elementals de grup IV (Si, Ge, C-diamant dopat), compostos III-V (GaAs, InP, GaN, InAs) i II-VI (CdTe, ZnSe), juntament amb semimetalls de frontera (grafit, antimoni).
