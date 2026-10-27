@@ -146,54 +146,184 @@
 
 % ==========================================
 \section{Equip i repartiment dels problemes}
+\clearpage
 % ==========================================
-Exposició del tema «Aprenentatge no supervisat i detecció d'anomalies». L'objectiu és entendre com trobar estructura i
-patrons en dades sense etiquetar amb clustering (K-Means, DBSCAN, jeràrquic), mescles gaussianes i Isolation Forest, i com
-avaluar un clustering sense etiquetes (silhouette i mètode del colze).
+\section{Fonaments comuns de l'aprenentatge no supervisat i el clustering}
+\label{sec:fonaments_comuns}
+% ==========================================
+
+L'aprenentatge no supervisat (\emph{unsupervised learning}) aborda el repte fonamental d'extreure estructura, patrons geomètrics o relacions latents a partir d'un conjunt d'observacions $\mathcal{X} = \{\mathbf{x}_1, \dots, \mathbf{x}_n\} \subset \mathbb{R}^d$ sense disposar d'etiquetes de classe $y_i$ preassignades durant el modelatge. Dins d'aquest àmbit, el \textbf{clustering} o agrupament cerca particionar les dades en grups o components de manera que els elements d'un mateix grup presentin una màxima semblança entre si (\emph{cohesió intraclúster}) i una diferenciació nítida respecte dels elements d'altres grups (\emph{separació interclúster}).
+
+A continuació es detallen els fonaments matemàtics, els supòsits algorísmics i les propietats diferencials dels mètodes emprats al llarg dels quatre problemes d'aquesta exposició.
+
+\subsection{Preprocessament de dades i mètriques de distància}
+
+Tot algorisme de clustering depèn intrínsecament de la noció de proximitat entre punts. L'elecció de la mètrica de distància i l'escala dels atributs defineixen la topologia de l'espai i condicionen directament el resultat:
+
+\begin{enumerate}
+    \item \textbf{Estandardització $z$-score:} Quan les característiques mesurades posseeixen unitats o ordres de magnitud dispars, una distància no normalitzada queda completament dominada per la variable de major variància numèrica. La transformació canònica $z$-score normalitza cada dimensió $j$ a mitjana nul·la i variància unitària:
+    \begin{equation}
+        z_{ij} = \frac{x_{ij} - \mu_j}{\sigma_j}, \qquad \mu_j = \frac{1}{n}\sum_{i=1}^n x_{ij}, \quad \sigma_j = \sqrt{\frac{1}{n}\sum_{i=1}^n (x_{ij} - \mu_j)^2}.
+    \end{equation}
+    Aquesta operació és imprescindible en casos com la resistivitat elèctrica enfront del coeficient tèrmic (on el rang varia en més de 30 ordres de magnitud) o en catàlegs sísmics que combinen magnituds amb profunditats en quilòmetres.
+
+    \item \textbf{Distància Euclidiana ($L_2$):} Mètrica canònica en espais afins continus plans:
+    \begin{equation}
+        d_E(\mathbf{x}, \mathbf{y}) = \lVert \mathbf{x} - \mathbf{y} \rVert_2 = \sqrt{\sum_{j=1}^d (x_j - y_j)^2}.
+    \end{equation}
+
+    \item \textbf{Distància de Haversine (geometria esfèrica):} Per a dades georeferenciades (latitud $\varphi$, longitud $\lambda$) sobre una superfície esfèrica de radi mitjà terrestre $R \approx 6\,371\text{ km}$, la distància euclidiana sobre graus distorsiona fortament les distàncies polars i ignora la discontinuïtat periòdica dels meridians $\pm 180^\circ$. La mètrica de Haversine \cite{sinnott1984} calcula la distància ortodròmica exacta sobre el cercle màxim:
+    \begin{equation}
+        d_H(\mathbf{x}, \mathbf{y}) = 2 R \arcsin\sqrt{\sin^2\left(\frac{\Delta\varphi}{2}\right) + \cos\varphi_1\cos\varphi_2\sin^2\left(\frac{\Delta\lambda}{2}\right)}.
+    \end{equation}
+
+    \item \textbf{Distància de Correlació (Pearson):} En perfils d'alta dimensionalitat com l'expressió genòmica ($d > 7\,000$ gens), la magnitud absoluta d'expressió sol estar distorsionada pel fons instrumental. La distància de correlació avalua la similitud de perfils relatius independentment de la línia de base:
+    \begin{equation}
+        d_{\mathrm{corr}}(\mathbf{x}, \mathbf{y}) = 1 - r(\mathbf{x}, \mathbf{y}) = 1 - \frac{\sum_{j=1}^d (x_j - \bar{x})(y_j - \bar{y})}{\sqrt{\sum_{j=1}^d (x_j - \bar{x})^2}\sqrt{\sum_{j=1}^d (y_j - \bar{y})^2}}.
+    \end{equation}
+\end{enumerate}
+
+\subsection{Clustering particional: L'algorisme K-Means}
+
+L'algorisme $K$-Means \cite{macqueen1967, lloyd1982} busca una partició disjunta de $n$ observacions en $K$ clústers $C = \{C_1, C_2, \dots, C_K\}$ minimitzant la inèrcia o suma de quadrats de distàncies intraclúster (WCSS, \emph{Within-Cluster Sum of Squares}):
+\begin{equation}
+    J = \sum_{k=1}^K \sum_{\mathbf{x} \in C_k} \lVert \mathbf{x} - \boldsymbol{\mu}_k \rVert^2, \qquad \text{on} \quad \boldsymbol{\mu}_k = \frac{1}{|C_k|}\sum_{\mathbf{x} \in C_k} \mathbf{x}.
+\end{equation}
+
+\paragraph{Mecanisme d'optimització (Algorisme de Lloyd).} L'optimització s'executa mitjançant un esquema iteratiu en dues etapes:
+\begin{enumerate}
+    \item \textbf{Pas d'assignació:} Cada observació s'associa al centroide més proper en termes euclidians, formant regions de Voronoi:
+    \begin{equation}
+        C_k^{(t)} = \left\{ \mathbf{x}_i : \lVert \mathbf{x}_i - \boldsymbol{\mu}_k^{(t)} \rVert^2 \le \lVert \mathbf{x}_i - \boldsymbol{\mu}_j^{(t)} \rVert^2 \quad \forall j \in \{1,\dots,K\} \right\}.
+    \end{equation}
+    \item \textbf{Pas d'actualització:} Es recalculen els centroides com el baricentre o mitjana aritmètica dels punts assignats:
+    \begin{equation}
+        \boldsymbol{\mu}_k^{(t+1)} = \frac{1}{|C_k^{(t)}|}\sum_{\mathbf{x} \in C_k^{(t)}} \mathbf{x}.
+    \end{equation}
+\end{enumerate}
+A cada iteració, el valor de $J$ disminueix monòtonament o es manté constant. Com que el nombre de particions possibles és finit ($K^n$), l'algorisme té convergència garantida cap a un mínim local en un temps $O(n K d \cdot I)$, on $I$ és el nombre d'iteracions.
+
+\paragraph{Inicialització $K$-means++.} La convergència a un òptim local deficient amb inicialització purament uniforme es resol mitjançant l'esquema $K$-means++ \cite{arthur2007}: el primer centroide es tria a l'atzar i cada centroide següent es selecciona amb una distribució de probabilitat proporcional al quadrat de la distància al centroide ja establert més proper:
+\begin{equation}
+    P(\mathbf{x}) = \frac{D(\mathbf{x})^2}{\sum_{\mathbf{x}' \in \mathcal{X}} D(\mathbf{x}')^2}, \qquad D(\mathbf{x}) = \min_{j} \lVert \mathbf{x} - \boldsymbol{\mu}_j \rVert.
+\end{equation}
+Això garanteix teòricament una fita d'expectativa $E[J] \le 8(\ln K + 2) J_{\mathrm{opt}}$, evitant que diversos centroides inicials competeixin pel mateix clúster.
+
+\paragraph{Limitacions estructurals.} $K$-Means imposa una geometria implícita esferoïdal i convexa, amb variàncies comparables entre grups. Si els clústers presenten formes complexes (anells, corbes), densitats molt desiguals o proporcions heterogènies, $K$-Means tendeix a fragmentar els grups amplis o fusionar els densos. A més, no té noció nativa de soroll: tot punt atípic és obligat a formar part d'un clúster, distorsionant la posició dels centroides.
+
+\subsection{Clustering basat en densitat: L'algorisme DBSCAN}
+
+L'algorisme DBSCAN (\emph{Density-Based Spatial Clustering of Applications with Noise}) \cite{ester1996, schubert2017} defineix els clústers no pas per proximitat a un centroide fictici, sinó com a zones de l'espai d'alta densitat d'observacions separades per regions de baixa densitat.
+
+\paragraph{Definicions i topologia de punts.} Fixats dos paràmetres, el radi de veïnat $\varepsilon > 0$ i el llindar de mostres mínimes $v_{\min} = \text{min\_samples} \ge 1$:
+\begin{itemize}
+    \item \textbf{$\varepsilon$-Veïnat:} Conjunt de punts a distància menor o igual que $\varepsilon$: $N_\varepsilon(\mathbf{p}) = \{\mathbf{q} \in \mathcal{X} \mid d(\mathbf{p}, \mathbf{q}) \le \varepsilon\}$.
+    \item \textbf{Punt Nucli (\emph{Core point}):} Un punt $\mathbf{p}$ que posseeix una densitat local mínima dins del seu radi: $|N_\varepsilon(\mathbf{p})| \ge v_{\min}$.
+    \item \textbf{Punt Frontera (\emph{Border point}):} Punt que no assoleix el llindar $|N_\varepsilon(\mathbf{p})| < v_{\min}$, però que pertany al veïnat d'un punt nucli: $\exists \mathbf{q}$ nucli tal que $\mathbf{p} \in N_\varepsilon(\mathbf{q})$.
+    \item \textbf{Soroll o Anomalia (\emph{Noise}):} Qualsevol observació que no és nucli ni frontera d'un nucli. Se li assigna formalment l'etiqueta $-1$.
+\end{itemize}
+
+\paragraph{Assolibilitat i Connectivitat per Densitat.}
+\begin{enumerate}
+    \item Un punt $\mathbf{p}$ és \textbf{directament assolible per densitat} des de $\mathbf{q}$ si $\mathbf{q}$ és un punt nucli i $\mathbf{p} \in N_\varepsilon(\mathbf{q})$.
+    \item $\mathbf{p}$ és \textbf{assolible per densitat} des de $\mathbf{q}$ si existeix una cadena finita de punts $\mathbf{p}_1, \mathbf{p}_2, \dots, \mathbf{p}_m$ amb $\mathbf{p}_1 = \mathbf{q}$ i $\mathbf{p}_m = \mathbf{p}$ tal que cada $\mathbf{p}_{i+1}$ és directament assolible per densitat des de $\mathbf{p}_i$.
+    \item Dos punts $\mathbf{p}$ i $\mathbf{q}$ estan \textbf{connectats per densitat} si existeix un punt $\mathbf{o}$ tal que tant $\mathbf{p}$ com $\mathbf{q}$ són assolibles per densitat des de $\mathbf{o}$.
+\end{enumerate}
+Un clúster en DBSCAN és un subconjunt maximal $C \subseteq \mathcal{X}$ de punts connectats per densitat. 
+
+\paragraph{Avantatges determinants.} DBSCAN no requereix establir prèviament el nombre de clústers $K$, descobreix estructures de geometria absolutament arbitrària (perfils curvilinis, cadenes tectòniques, anells concèntrics) i aïlla de forma robusta les anomalies en l'etiqueta de soroll. La seva determinació analítica es recolza en la corba de distàncies al $k$-èssim veí ($k$-NN distance plot).
+
+\subsection{Clustering jeràrquic aglomeratiu i Clustermaps}
+
+El clustering jeràrquic aglomeratiu (\emph{Hierarchical Agglomerative Clustering}, HAC) \cite{eisen} adopta una estratègia ascendent (\emph{bottom-up}): s'inicia amb cada punt formant el seu propi clúster elemental ($n$ clústers) i, a cada etapa, es fusionen recursivament els dos clústers més pròxims segons una mètrica d'enllaç (\emph{linkage}) fins a convergir en un únic superclúster arrel.
+
+\paragraph{Criteris d'enllaç (\emph{Linkage}).} La distància entre dos conjunts de punts $A$ i $B$ es defineix segons diferents criteris geomètrics:
+\begin{itemize}
+    \item \textbf{Enllaç Simple (\emph{Single linkage}):} $d(A, B) = \min_{\mathbf{a} \in A, \mathbf{b} \in B} d(\mathbf{a}, \mathbf{b})$. Tendeix a formar cadenes llargues i filaments prims (\emph{chaining effect}).
+    \item \textbf{Enllaç Complet (\emph{Complete linkage}):} $d(A, B) = \max_{\mathbf{a} \in A, \mathbf{b} \in B} d(\mathbf{a}, \mathbf{b})$. Afavoreix clústers compactes de diàmetre màxim homogeni.
+    \item \textbf{Enllaç Mitjà (\emph{Average linkage}):} $d(A, B) = \frac{1}{|A||B|} \sum_{\mathbf{a} \in A}\sum_{\mathbf{b} \in B} d(\mathbf{a}, \mathbf{b})$. Compromís robust davant de soroll.
+    \item \textbf{Mètode de Ward \cite{ward1963}:} Minimitza l'increment en la suma de quadrats de les desviacions respecte al nou centroide després de la fusió:
+    \begin{equation}
+        \Delta \mathrm{ESS}_{AB} = \frac{|A||B|}{|A| + |B|} \lVert \boldsymbol{\mu}_A - \boldsymbol{\mu}_B \rVert^2.
+    \end{equation}
+\end{itemize}
+
+\paragraph{Dendrogrames i Clustermaps.} L'estructura jeràrquica es visualitza en un \textbf{dendrograma}, on l'alçada de cada branca reflecteix la distància de copulació (\emph{cophenetic distance}) entre els subgrups units. Tallar el dendrograma a una alçada específica permet extreure particions a qualsevol escala sense necessitat de reiniciar el càlcul. Un \textbf{clustermap} integra un mapa de calor (\emph{heatmap}) bidimensional amb dendrogrames independents calculats sobre les files i sobre les columnes, permetent reorganitzar simultàniament variables i mostres (biclustering).
+
+\subsection{Detecció d'anomalies i models probabilístics}
+
+A més de l'agrupament clàssic, la identificació d'elements atípics (\emph{outliers}) constitueix un eix vertebrador de l'aprenentatge no supervisat:
+
+\begin{enumerate}
+    \item \textbf{Distància al $k$-veí més proper (kNN Anomaly Score):} Es calcula la distància mitjana d'una instància $\mathbf{x}$ als seus $k$ veïns més propers en l'espai d'atributs \cite{ramaswamy}:
+    \begin{equation}
+        s(\mathbf{x}) = \frac{1}{k}\sum_{m=1}^k d\bigl(\mathbf{x}, \mathbf{x}_{(m)}\bigr).
+    \end{equation}
+    Punts situats en regions de densitat molt baixa obtenen valors de $s(\mathbf{x})$ elevats, evidenciant raresa multivariant.
+
+    \item \textbf{Local Outlier Factor (LOF) \cite{lof}:} Compara la densitat local d'un punt respecte a la densitat mitjana dels seus veïns. Això permet descobrir anomalies relatives en conjunts amb variacions regionals de densitat.
+
+    \item \textbf{Isolation Forest \cite{liu2008, iforest}:} Construeix una col·lecció d'arbres binaris aleatoris (\emph{iTrees}). Atès que les anomalies són escasses i diferents de la massa densa, queden aïllades en fulles molt properes a l'arrel amb un nombre significativament menor de particions que els punts ordinaris.
+
+    \item \textbf{Models de Mescles Gaussianes (GMM):} Enfocament generatiu on la distribució de probabilitat de les dades es modela com una combinació convexa de $K$ densitats normals multivariades:
+    \begin{equation}
+        p(\mathbf{x}) = \sum_{k=1}^K \pi_k \mathcal{N}(\mathbf{x} \mid \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k), \qquad \sum_{k=1}^K \pi_k = 1.
+    \end{equation}
+    S'ajusta mitjançant l'algorisme Esperança-Maximització (EM) i proporciona un clustering \emph{suau} (\emph{soft clustering}), calculant per a cada punt la probabilitat posterior de pertànyer a cada clúster.
+\end{enumerate}
+
+\subsection{Mètriques de validació interna i tria de paràmetres}
+
+En absència d'etiquetes externes supervisades, la qualitat i la idoneïtat dels clústers es verifiquen mitjançant criteris matemàtics interns:
+
+\begin{itemize}
+    \item \textbf{Mètode del Colze (\emph{Elbow method}):} Representació de la inèrcia $J(K)$ en funció del nombre de clústers $K$. El punt d'inflexió o canvi brusc de pendent assenyala el compromís òptim entre compressió de dades i complexitat del model.
+    \item \textbf{Coeficient de Silueta (\emph{Silhouette Score}) \cite{rousseeuw}:} Per a cada observació $\mathbf{x}_i$, avalua la diferència relativa entre la distància mitjana intraclúster $a(\mathbf{x}_i)$ i la distància mitjana al clúster veí més proper $b(\mathbf{x}_i)$:
+    \begin{equation}
+        s(\mathbf{x}_i) = \frac{b(\mathbf{x}_i) - a(\mathbf{x}_i)}{\max\left(a(\mathbf{x}_i),\, b(\mathbf{x}_i)\right)}, \qquad s(\mathbf{x}_i) \in [-1, +1].
+    \end{equation}
+    La mitjana global $\bar{s}$ quantifica la cohesió i separació: $\bar{s} \ge 0.5$ indica una estructura sòlida; $\bar{s} \ge 0.7$, una separació excel·lent.
+    \item \textbf{Índex de Davies--Bouldin (DB) \cite{db}:} Avalua el quocient entre la dispersió interna de cada parell de clústers i la distància entre els seus respectius centroides:
+    \begin{equation}
+        R_{ij} = \frac{s_i + s_j}{d(\boldsymbol{\mu}_i, \boldsymbol{\mu}_j)}, \qquad \mathrm{DB} = \frac{1}{K}\sum_{i=1}^K \max_{j \ne i} R_{ij}.
+    \end{equation}
+    Valors més baixos de $\mathrm{DB}$ indiquen particions amb clústers més compactes i més distants entre si.
+    \item \textbf{Índex de Rand Ajustat (Adjusted Rand Index, ARI) \cite{hubert}:} Compara dues particions independents corregint per l'efecte de l'atzar:
+    \begin{equation}
+        \mathrm{ARI} = \frac{\sum_{ij} \binom{n_{ij}}{2} - \Big[\sum_i \binom{a_i}{2}\sum_j \binom{b_j}{2}\Big] \Big/ \binom{n}{2}}{\frac{1}{2}\Big[\sum_i \binom{a_i}{2} + \sum_j \binom{b_j}{2}\Big] - \Big[\sum_i \binom{a_i}{2}\sum_j \binom{b_j}{2}\Big] \Big/ \binom{n}{2}}.
+    \end{equation}
+    Val $1$ per a particions idèntiques i $\approx 0$ per a associacions a l'atzar. S'utilitza per comprovar l'estabilitat dels models davant de diferents llavors aleatòries o submostreigs.
+\end{itemize}
+
+\subsection{Taula comparativa dels mètodes de clustering}
+
+A la Taula~\ref{tab:comparativa_clustering_teoria} es sintetitzen les propietats diferencials dels mètodes d'agrupament analitzats i la seva correspondència amb els problemes de l'exposició.
 
 \begin{table}[H]
 \centering
-\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}Xl@{}}
+\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}Xcc@{}}
 \toprule
-Integrant & Problema & Algorisme principal & Fitxer \\
+\textbf{Algorisme} & \textbf{Paradigma} & \textbf{Hiperparàmetres} & \textbf{Geometria i Formes} & \textbf{Gestió Soroll} & \textbf{Problema} \\
 \midrule
-Arnau Montull & Detecció d'explosions nuclears entre sismes (catàleg USGS) & DBSCAN (haversine) & \texttt{nukeDBSCAN\_arnau.py} \\
-Matías & Agrupació dels sismes de l'últim mes i detecció d'anomalies & K-Means ($K=3$) i $k$ veïns més propers & \texttt{presentation\_matias.py}, \texttt{validacio.py} \\
-Martí & Expressió gènica (leucèmia ALL/AML): agrupar pacients i mòduls de gens sense etiquetes & Clustering jeràrquic (single, complete, average) i K-Means & \texttt{clustering\_marti.py} \\
-Uriel & Classificació de materials elèctrics (conductors, semiconductors i aïllants) & DBSCAN ($\varepsilon=0.65$, $v_{\min}=3$) i Z-Score manual & \texttt{materiales\_uriel.py} \\
+\textbf{K-Means} & Particional basat en centroides & Nombre de grups $K$ & Esferoïdal i convexa; mides homogènies & Nul·la (força assignació) & Matías / Martí \\
+\addlinespace
+\textbf{DBSCAN} & Basat en connectivitat de densitat & Radi $\varepsilon$, mostres mínimes $v_{\min}$ & Arbitrària (anells, línies, meandres) & Nativa (etiqueta soroll $-1$) & Arnau / Uriel \\
+\addlinespace
+\textbf{Jeràrquic (HAC)} & Aglomeratiu ascendent (arbre) & Criteri d'enllaç, mètrica de distància & Adaptable segons l'enllaç utilitzat & Nul·la (tot punt en arbre) & Martí \\
+\addlinespace
+\textbf{kNN Anomaly} & Veïnatge geomètric de distàncies & Nombre de veïns $k$ & Sense forma prèvia (densitat local) & Especialitzat en atípics & Matías \\
+\addlinespace
+\textbf{GMM} & Model generatiu probabilístic & Nombre de components $K$, tipus de $\boldsymbol{\Sigma}$ & El·lipsoïdal (covariàncies lliures) & Assignació suau probabilística & Teòric \\
 \bottomrule
 \end{tabularx}
-\caption{Repartiment dels problemes. Cada fitxer es diu \texttt{<nemotècnic>\_<estudiant>.py}.}
+\caption{Resum comparatiu dels paradigmes de clustering i detecció d'anomalies de l'exposició.}
+\label{tab:comparativa_clustering_teoria}
 \end{table}
 
-\section{Fonaments comuns}
-Resum dels conceptes que fan servir els problemes.
 
-\paragraph{Aprenentatge no supervisat i clustering.} Es busca estructura en dades sense etiquetes. Cada algorisme necessita
-una mesura de similitud (distància euclidiana, haversine, correlació\ldots) i l'elecció condiciona el resultat.
 
-\paragraph{K-Means.} Divideix les dades en $K$ grups minimitzant la suma de distàncies quadràtiques de cada punt al centroide
-del seu grup, $J=\sum_{k=1}^{K}\sum_{x\in C_k}\lVert x-\mu_k\rVert^2$. Es resol amb l'algorisme de Lloyd (assignar cada punt
-al centroide més proper i recalcular els centroides, fins a convergir) \cite{macqueen1967,lloyd1982}, inicialitzat amb
-$K$-means++ \cite{arthur2007}, que tria els centroides inicials lluny els uns dels altres. És un clustering \emph{dur}, suposa
-grups compactes i de mida semblant, i cal fixar $K$.
-
-\paragraph{Com triar $K$ sense etiquetes.} Mètode del colze (la inèrcia deixa de baixar de manera apreciable), coeficient de
-silueta, $s=(b-a)/\max(a,b)$, amb $a$ la distància mitjana als punts del seu grup i $b$ la distància mitjana al grup veí més
-proper, i índex de Davies--Bouldin.
-
-\paragraph{DBSCAN.} Agrupa per densitat: un punt és \emph{central} si té com a mínim $v_{\min}$ punts (ell inclòs) a distància
-$\le\varepsilon$; els grups són les components connexes de punts centrals i els punts que no abasta cap queden com a soroll
-($-1$). No cal fixar el nombre de grups i troba formes arbitràries.
-
-\paragraph{Clustering jeràrquic, mescles gaussianes i Isolation Forest.} El jeràrquic construeix un dendrograma segons el
-tipus d'enllaç (simple, mitjà, Ward) i es talla a una altura. Les mescles gaussianes (\texttt{GaussianMixture}) donen una
-assignació tova per probabilitat. Isolation Forest \cite{liu2008} puntua com a anòmals els punts que s'aïllen amb pocs talls
-aleatoris. Les mescles gaussianes i Isolation Forest formen part del temari i s'expliquen a l'exposició, però cap dels quatre
-problemes no els aplica: en tots ells la detecció d'anomalies es fa amb DBSCAN (punts de soroll o clústers atípics) i amb la
-distància al $k$-èsim veí.
-\pendiente{l'equip revisa i amplia aquest resum amb el que s'exposi.}
-
+\clearpage
 % ==========================================
 \section{Problema d'Arnau Montull: detecció d'explosions nuclears amb DBSCAN}
 % ==========================================
@@ -245,8 +375,6 @@ volcàniques, 16 \texttt{explosion}, 6 esfondraments de mina, 3 esclats de roca,
 
 \texttt{nukeDBSCAN\_arnau.py} carrega el CSV i es queda amb els esdeveniments que tenen posició, profunditat i magnitud.
 
-\lstinputlisting[firstline=18,lastline=22,firstnumber=18,caption={\texttt{nukeDBSCAN\_arnau.py}: càrrega i neteja de les dades.},label={lst:datos-carga}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
-
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.92\textwidth]{figuras/catalogo.png}
@@ -295,16 +423,10 @@ recall $R=\mathrm{TP}/(\mathrm{TP}+\mathrm{FN})$ i la seva mitjana harmònica, $
 El pas 1 és la funció \texttt{agrupar}: passa les coordenades a radiants, divideix $\varepsilon$ pel radi terrestre i crida
 DBSCAN amb la mètrica \emph{haversine}.
 
-\lstinputlisting[firstline=25,lastline=33,firstnumber=25,caption={\texttt{agrupar}: DBSCAN amb distància haversine.},label={lst:agrupar}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
-
 Els passos 2 i 3 són \texttt{nukeDBSCAN}: la mitjana de la profunditat de cada clúster i la selecció dels que cauen dins de la
 finestra.
 
-\lstinputlisting[firstline=36,lastline=48,firstnumber=36,caption={\texttt{nukeDBSCAN}: clústers sospitosos per la mitjana de la profunditat.},label={lst:nukedbscan}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
-
 El pas 4 és \texttt{errores}, que compta els FP i els FN amb l'etiqueta \texttt{tipo}.
-
-\lstinputlisting[firstline=51,lastline=59,firstnumber=51,caption={\texttt{errores}: falsos positius i falsos negatius.},label={lst:errores}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
 
 \begin{figure}[H]
 \centering
@@ -322,8 +444,6 @@ sospitosos per profunditat; cercles negres petits: explosions reals (etiqueta de
 \subsection{Elecció dels paràmetres}
 Paràmetres fixos: $\varepsilon=25$ km, $v_{\min}=2$, $d_{\min}=0$ i $d_{\max}=2{,}5$ km. Són en un únic diccionari al principi
 de \texttt{nukeDBSCAN\_arnau.py}, que \texttt{nukeval.py} importa.
-
-\lstinputlisting[firstline=12,lastline=16,firstnumber=12,caption={\texttt{nukeDBSCAN\_arnau.py}: paràmetres fixos.},label={lst:parametros}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
 
 \begin{itemize}
   \item \textbf{Finestra de profunditat $[0;\,2{,}5)$ km:} criteri físic. Una explosió nuclear soterrada és a menys d'uns
@@ -363,11 +483,7 @@ $[0;\,10)$ & 552 & 2\,581 & 62 & 0,295 \\
 Seguint l'esquema de validació del temari (silueta, colze i estabilitat), \texttt{nukeval.py} avalua $\varepsilon$ amb $v_{\min}=2$ i la finestra $[0;\,2{,}5)$ km. Per a cada $\varepsilon$ compta els clústers, calcula la silueta amb distància
 haversine sobre una mostra de 2\,000 sismes (sense etiquetes) i els FP i FN (amb etiquetes).
 
-\lstinputlisting[firstline=18,lastline=50,firstnumber=18,caption={\texttt{nukeval.py}: silueta d'uns clústers i taula per a cada $\varepsilon$ provat.},label={lst:val-eps}]{../problemas/2_Nuclear/nukeval.py}
-
 L'estabilitat compara els clústers del catàleg complet amb els de cinc mostres aleatòries del 50\,\% mitjançant l'ARI.
-
-\lstinputlisting[firstline=63,lastline=74,firstnumber=63,caption={\texttt{nukeval.py}: estabilitat amb l'Adjusted Rand Index.},label={lst:val-ari}]{../problemas/2_Nuclear/nukeval.py}
 
 \begin{table}[H]
 \centering\small
@@ -529,6 +645,7 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
   \item Les figures d'aquest document: \texttt{python docs/figuras\_nuclear.py}.
 \end{enumerate}
 
+\clearpage
 % ==========================================
 \section{Problema de Matías: terratrèmols, patrons i anomalies amb K-Means}
 \label{sec:matias_sismes}
@@ -622,15 +739,7 @@ La solució consta de només dos scripts (Figura~\ref{fig:pipe}). \py{presentaci
 \caption{Elements del codi i la seva funció.}\label{tab:funcs}
 \end{table}
 
-El nucli de la detecció d'anomalies és breu i exacte (sense mostreig):
-\begin{lstlisting}
-def puntuacio_anomalia(X, k_veins=5):
-    if not 1 <= k_veins < len(X):                       # validacio d'entrada
-        raise ValueError(...)
-    veins = NearestNeighbors(n_neighbors=k_veins + 1).fit(X)   # +1: el primer vei es ell mateix
-    distancies, _ = veins.kneighbors(X)
-    return distancies[:, 1:].mean(axis=1)               # puntuacio d'anomalia s
-\end{lstlisting}
+El nucli del c\`alcul de la puntuaci\'o d'anomalia $s(\mathbf{z})$ s'implementa de forma exacta mitjan\c{c}ant \py{NearestNeighbors} amb $k+1$ ve\"\i ns (ignorant la dist\`ancia zero al propi punt i calculant la mitjana de les dist\`ancies als $k$ restants).
 
 \subsubsection{Decisions de disseny justificades}
 \textbf{$K=3$}: hipòtesi de tres règims (petit i superficial, intermedi, gran i profund); contrastada amb $K=2,\dots,8$ (Taula~\ref{tab:k}). \textbf{Distància exacta als veïns} (no mostrejada): amb $n\approx10^4$ costa $<0{,}1$~s, per tant no cal aproximar. \textbf{$k=5$}: valor petit que detecta regions molt buides; se'n comprova la sensibilitat (Secció~\ref{sec:anom}). \textbf{Mateixa normalització} a ambdós scripts perquè els resultats siguin comparables.
@@ -761,9 +870,7 @@ O5 & $K=2$ té millor silueta; llista kNN estable en $k$ però diferent d'IF i L
 \subsection{Reproducibilitat}
 Entorn: Python 3.12.3, scikit-learn 1.8.0, pandas 3.0.2, matplotlib 3.10.8, NumPy 2.4.4, SciPy; versions fixades al \py{requirements.txt}. Instruccions al \py{README}. Fitxers: \py{presentacio_MATIAS.py} (Taules~\ref{tab:cl} i~\ref{tab:an}, Fig.~\ref{fig:cl}a), \py{validacio_MATIAS.py} (Taules~\ref{tab:k} i~\ref{tab:rob}, estabilitat, Figs.~\ref{fig:cl}b, \ref{fig:k} i~\ref{fig:an}, i les proves) i \py{earthquakes.csv} (dades d'exemple, mateix directori). Ordres: \py{python presentacio_MATIAS.py} i \py{python validacio_MATIAS.py} (executa primer les proves); només les proves: \py{python -m unittest -v validacio_MATIAS}. Totes les llavors són fixes (42), per tant la sortida és determinista amb les mateixes dades i versions.
 
-\subsection{Codi font}
-\lstinputlisting[caption={\texttt{problemas/3\_Sismes\_Matias/presentacio\_MATIAS.py}}]{../problemas/3_Sismes_Matias/presentacio_MATIAS.py}
-
+\clearpage
 \section{Problema de Martí: expressió gènica i clustering jeràrquic (leucèmia ALL/AML)}
 Material a \texttt{problemas/4\_RNAseq\_Marti/} (codi \texttt{clustering\_marti.py}, proves \texttt{test\_clustering.py}, \texttt{README.txt}, figures i informe propi \texttt{informe\_curt.tex}). El text que segueix és l'informe de Martí tal com l'ha escrit ell.
 
@@ -799,7 +906,7 @@ El clustering jeràrquic aglomeratiu parteix de cada element com a clúster prop
 \end{itemize}
 K-Means divideix les dades en $k$ grups minimitzant la \emph{inèrcia}, és a dir, la suma de quadrats de les distàncies de cada punt al centre del seu grup. Cal fixar $k$ per endavant i el resultat depèn de la inicialització, per això es repeteix diverses vegades i es guarda la millor. El \emph{mètode del colze} representa la inèrcia en funció de $k$ i busca el punt on la millora deixa de ser apreciable.
 
-Per validar sense etiquetes s'usa el \emph{coeficient de Silhouette}~\cite{rousseeuw}, que mesura com de bé encaixa cada element $i$ en el seu grup, $s(i)=\frac{b(i)-a(i)}{\max\{a(i),b(i)\}}\in[-1,1]$, on $a(i)$ és la distància mitjana als altres elements del seu grup i $b(i)$ la del grup veí més proper; se'n tria el $k$ de silueta mitjana màxima. Com a validació externa s'usa l'\emph{Adjusted Rand Index} (ARI)~\cite{hubert}, que compara dues particions comptant els parells d'elements que coincideixen i corregeix l'acord esperat per atzar: val 1 si són idèntiques, aproximadament 0 si equivalen a una partició aleatòria i pot ser lleugerament negatiu. Les fórmules completes són a l'Annex~\ref{marti-ann:formules}.
+Per validar sense etiquetes s'usa el \emph{coeficient de Silhouette}~\cite{rousseeuw}, que mesura com de bé encaixa cada element $i$ en el seu grup, $s(i)=\frac{b(i)-a(i)}{\max\{a(i),b(i)\}}\in[-1,1]$, on $a(i)$ és la distància mitjana als altres elements del seu grup i $b(i)$ la del grup veí més proper; se'n tria el $k$ de silueta mitjana màxima. Com a validació externa s'usa l'\emph{Adjusted Rand Index} (ARI)~\cite{hubert}, que compara dues particions comptant els parells d'elements que coincideixen i corregeix l'acord esperat per atzar: val 1 si són idèntiques, aproximadament 0 si equivalen a una partició aleatòria i pot ser lleugerament negatiu. Les fórmules completes són a la Secció~\ref{marti-ann:formules}.
 
 Finalment, un \emph{clustermap} mostra la matriu d'expressió com un mapa de calor amb files (gens) i columnes (pacients) reordenades segons els seus dendrogrames, de manera que els blocs de color revelen gens co-expressats en grups de pacients~\cite{eisen}.
 
@@ -931,6 +1038,7 @@ Els resultats permeten respondre els quatre objectius. Sense usar etiquetes, K-M
 {\tfrac12\Big[\sum_i\binom{a_i}{2}+\sum_j\binom{b_j}{2}\Big]-\Big[\sum_i\binom{a_i}{2}\sum_j\binom{b_j}{2}\Big]\Big/\binom{n}{2}}.
 \]
 
+\clearpage
 % ==========================================
 \section{Problema d'Uriel: classificació de materials elèctrics mitjançant DBSCAN}
 \label{sec:uriel_materials}
@@ -1105,11 +1213,7 @@ Després de la transformació, ambdues columnes queden exactament amb mitjana $0
     \item \textbf{Radi de veïnat $\varepsilon = 0.65$:} Es va determinar avaluant la gràfica de distàncies al $k$-èssim veí més proper ($k$-NN distance plot amb $k = 3$). La corba presenta un colze geomètric nítid al voltant d'$\varepsilon \in [0.60, 0.70]$. Un radi d'$\varepsilon = 0.65$ garanteix suficient connectivitat per abastar la dispersió dels aïllants, mantenint al mateix temps una separació infranquejable entre el nucli de metalls i els semiconductors.
 \end{enumerate}
 
-L'execució es realitza de forma neta mitjançant la llibreria oficial \texttt{scikit-learn}~\cite{sklearn_dbscan, pedregosa2011}:
-\begin{lstlisting}
-dbscan = DBSCAN(eps=0.65, min_samples=3)
-df["cluster"] = dbscan.fit_predict(X_scaled)
-\end{lstlisting}
+L'execuci\'o es realitza de forma directa mitjan\c{c}ant el m\`odul \texttt{DBSCAN} de la llibreria oficial \texttt{scikit-learn}~\cite{sklearn_dbscan, pedregosa2011}, fixant els hiperpar\`ametres $\varepsilon=0.65$ i $\text{min\_samples}=3$ sobre la matriu d'atributs estandarditzada $X_{\mathrm{scaled}}$.
 
 % ==============================================================================
 \subsection{Resultats Experimentals i Visualització}
@@ -1174,33 +1278,13 @@ L'anàlisi de la matriu revela un rendiment extraordinari:
     \item \textbf{Semiconductors:} 10 de 12 s'agrupen al Clúster 2. Els dos materials restants (grafit pirolític i un semimetall amb estructura cristal·lina semimetàl·lica) van ser assignats al Clúster 0 pel fet que, a temperatura ambient, exhibeixen una resistivitat d'$\approx 10^{-5}\ \Omega\cdot\text{m}$, un comportament resistiu cuasimetàl·lic àmpliament documentat en estat sòlid.
 \end{itemize}
 
-\subsection{Codi font}
-\lstinputlisting[caption={\texttt{problemas/5\_Materials\_Uriel/materiales\_uriel.py}}]{../problemas/5_Materials_Uriel/materiales_uriel.py}
-
+\clearpage
 \section{Conclusions de l'equip}
 \pendiente{comparativa dels quatre problemes, quin algorisme ha funcionat millor i per què.}
 
+
+
 \clearpage
-\thispagestyle{empty}
-\null
-\vspace*{\fill}
-\begin{center}
-{\fontsize{48}{58}\selectfont\bfseries Annex}
-\end{center}
-\vspace*{\fill}
-\clearpage
-
-\section*{Annex: codi complet del problema d'Arnau}
-\addcontentsline{toc}{section}{Annex: codi complet del problema d'Arnau}
-Els tres programes del problema de les explosions nuclears, tal com es van executar. Cada secció de l'informe cita només les
-línies que s'hi expliquen.
-
-\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukedatos.py}: descàrrega del catàleg.},label={lst:anexo-datos}]{../problemas/2_Nuclear/nukedatos.py}
-
-\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeDBSCAN\_arnau.py}: detecció i globus interactiu.},label={lst:anexo-nuke}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
-
-\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeval.py}: validació de $\varepsilon$ i estabilitat.},label={lst:anexo-val}]{../problemas/2_Nuclear/nukeval.py}
-
 \begin{thebibliography}{9}
 \bibitem{ester1996} Ester, M., Kriegel, H.-P., Sander, J., \& Xu, X. (1996). A density-based algorithm for discovering
 clusters in large spatial databases with noise. \textit{Proc. 2nd Int. Conf. on Knowledge Discovery and Data Mining (KDD-96)}, 226--231.
@@ -1253,6 +1337,7 @@ Conference on Data Mining}, 413--422. \url{https://doi.org/10.1109/ICDM.2008.17}
 \bibitem{frohlich} Frohlich, C. (2006). \emph{Deep Earthquakes}. Cambridge University Press.
 \bibitem{pandas} McKinney, W. (2010). Data structures for statistical computing in Python. \emph{Proc.\ 9th Python in Science Conf.}, 56--61.
 \bibitem{mpl} Hunter, J.\ D. (2007). Matplotlib: a 2D graphics environment. \emph{Comput.\ Sci.\ Eng.}, 9(3), 90--95.
+\bibitem{ward1963} Ward, J. H. (1963). Hierarchical grouping to optimize an objective function. \textit{Journal of the American Statistical Association}, 58(301), 236--244.
 \end{thebibliography}
 
 \end{document}
