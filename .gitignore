@@ -21,3 +21,5 @@ Thumbs.db
 *.fls
 *.fdb_latexmk
 *.synctex*
+
+*.zip
