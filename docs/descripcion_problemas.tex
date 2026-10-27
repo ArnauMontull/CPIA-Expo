@@ -353,42 +353,55 @@ $[0;\,10)$ & 552 & 2\,581 & 62 & 0,295 \\
 Seguint l'esquema de validació del temari (silueta, colze i estabilitat), \texttt{nukeval.py} avalua $\varepsilon$ amb $v_{\min}=2$ i la finestra $[0;\,2{,}5)$ km. Per a cada $\varepsilon$ compta els clústers, calcula la silueta amb distància
 haversine sobre una mostra de 2\,000 sismes (sense etiquetes) i els FP i FN (amb etiquetes).
 
-\lstinputlisting[firstline=18,lastline=46,firstnumber=18,caption={\texttt{nukeval.py}: silueta d'uns clústers i taula per a cada $\varepsilon$ provat.},label={lst:val-eps}]{../problemas/2_Nuclear/nukeval.py}
+\lstinputlisting[firstline=18,lastline=50,firstnumber=18,caption={\texttt{nukeval.py}: silueta d'uns clústers i taula per a cada $\varepsilon$ provat.},label={lst:val-eps}]{../problemas/2_Nuclear/nukeval.py}
 
 L'estabilitat compara els clústers del catàleg complet amb els de cinc mostres aleatòries del 50\,\% mitjançant l'ARI.
 
-\lstinputlisting[firstline=59,lastline=70,firstnumber=59,caption={\texttt{nukeval.py}: estabilitat amb l'Adjusted Rand Index.},label={lst:val-ari}]{../problemas/2_Nuclear/nukeval.py}
+\lstinputlisting[firstline=63,lastline=74,firstnumber=63,caption={\texttt{nukeval.py}: estabilitat amb l'Adjusted Rand Index.},label={lst:val-ari}]{../problemas/2_Nuclear/nukeval.py}
 
 \begin{table}[H]
-\centering
-\begin{tabular}{@{}rrrrr@{}}
+\centering\small
+\begin{tabular}{@{}rrrrr@{\hspace{1.5em}}rrrrr@{}}
 \toprule
-$\varepsilon$ (km) & Clústers & Silueta & FP & FN \\
+$\varepsilon$ (km) & Clústers & Silueta & FP & FN & $\varepsilon$ (km) & Clústers & Silueta & FP & FN \\
 \midrule
-5 & 29\,451 & $-0{,}26$ & 266 & 77 \\
-10 & 14\,166 & $-0{,}27$ & 126 & 56 \\
-25 & 3\,759 & $-0{,}45$ & 57 & 63 \\
-40 & 1\,941 & $-0{,}40$ & 88 & 62 \\
-50 & 1\,464 & $-0{,}49$ & 453 & 57 \\
-100 & 669 & $-0{,}41$ & 136 & 293 \\
+5 & 29\,451 & $-0{,}258$ & 266 & 77 & 55 & 1\,290 & $-0{,}541$ & 130 & 289 \\
+10 & 14\,166 & $-0{,}267$ & 126 & 56 & 60 & 1\,181 & $-0{,}517$ & 129 & 289 \\
+15 & 7\,938 & $-0{,}326$ & 89 & 66 & 65 & 1\,070 & $-0{,}389$ & 136 & 288 \\
+20 & 5\,140 & $-0{,}326$ & 66 & 64 & 70 & 997 & $-0{,}352$ & 137 & 288 \\
+25 & 3\,759 & $-0{,}447$ & 57 & 63 & 75 & 930 & $-0{,}411$ & 137 & 288 \\
+30 & 2\,824 & $-0{,}401$ & 99 & 63 & 80 & 874 & $-0{,}415$ & 137 & 288 \\
+35 & 2\,282 & $-0{,}436$ & 100 & 63 & 85 & 817 & $-0{,}466$ & 139 & 286 \\
+40 & 1\,941 & $-0{,}399$ & 88 & 62 & 90 & 768 & $-0{,}461$ & 136 & 292 \\
+45 & 1\,680 & $-0{,}485$ & 86 & 61 & 95 & 722 & $-0{,}461$ & 139 & 291 \\
+50 & 1\,464 & $-0{,}493$ & 453 & 57 & 100 & 669 & $-0{,}408$ & 136 & 293 \\
 \bottomrule
 \end{tabular}
-\caption{Validació de $\varepsilon$ (extracte; \texttt{nukeval.py} n'imprimeix 10 valors).}
+\caption{Validació de $\varepsilon$ de 5 en 5 km, de 5 a 100 km, amb $v_{\min}=2$ i la finestra $[0;\,2{,}5)$ km. Els clústers
+inclouen el soroll com un grup més.}
 \end{table}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figuras/nukeval_eps.png}
-\caption{Clústers, silueta i distància al 4t veí (colze clàssic de DBSCAN) en funció de $\varepsilon$.}
+\includegraphics[width=0.92\textwidth]{figuras/nukeval_eps.png}
+\caption{Validació de $\varepsilon$. (a) Nombre de clústers. (b) Silueta. (c) Falsos positius i falsos negatius; la línia de punts marca $\varepsilon=25$ km. (d) Distància de cada sisme al seu 4t veí, ordenada (colze clàssic de DBSCAN). Els eixos verticals de (a) i (c) són logarítmics.}
 \end{figure}
 
 \begin{itemize}
-  \item \textbf{La silueta no tria $\varepsilon$:} és negativa per a tots els valors provats. Amb distància per
-        densitat, DBSCAN uneix cadenes allargades de sismes i la silueta \cite{rousseeuw}, que premia grups compactes i
-        separats, el penalitza. Tampoc el gràfic de distàncies al 4t veí no mostra un colze clar entre 20 i 30 km.
-  \item \textbf{El que sí que limita $\varepsilon$ és la profunditat:} els FP baixen quan $\varepsilon$ creix fins a un mínim de 57 a 25 km (amb $\varepsilon$ petit molts terratrèmols superficials formen grups propis); a partir de 40--50 km els grups d'explosions es fonen amb terratrèmols més profunds: els FP pugen a 453 amb 50 km i els FN passen de 63 a 288 amb 75 km, perquè la mitjana deixa de ser superficial.
-  \item \textbf{Estabilitat:} l'ARI \cite{hubert} (val 1 si dues particions coincideixen i 0 si s'assemblen com dues a l'atzar)
-        entre el clustering de tot el catàleg i el d'una mostra aleatòria del 50\,\% (5 llavors, $\varepsilon=25$ km) val entre $0{,}54$ i $0{,}64$: moderat, perquè en treure sismes es trenquen cadenes de DBSCAN.
+  \item \textbf{La silueta no serveix per triar $\varepsilon$ (panell b).} La silueta \cite{rousseeuw} mesura si els grups són
+        compactes i estan ben separats. Aquí és negativa per a tots els valors de $\varepsilon$ (entre $-0{,}26$ i $-0{,}54$) i no
+        té cap màxim ni cap tendència, així que no ens diu quin $\varepsilon$ és millor. El motiu és que DBSCAN uneix els sismes en
+        cadenes llargues, com les d'una falla, i aquests grups no són compactes. El gràfic de distàncies al 4t veí (panell d)
+        tampoc no té un colze clar.
+  \item \textbf{Els errors sí que ajuden a triar-lo (panell c).} Amb $\varepsilon$ petit (5--20 km) hi ha molts falsos positius
+        (de 266 a 66), perquè molts terratrèmols superficials formen grups petits propis. Els FP tenen el mínim, 57, a
+        $\varepsilon=25$ km, i els FN es mantenen entre 56 i 66 per a tot $\varepsilon\le50$ km. A 50 km els FP pugen de sobte a 453
+        (és probable que un grup superficial gran n'absorbeixi molts d'altres) i a partir de 55 km els FN salten d'uns 60 a uns 290 i
+        s'hi queden: els grups d'explosions es fonen amb grups de terratrèmols més profunds i la seva mediana deixa de ser
+        superficial. Per això triem $\varepsilon=25$ km: és on hi ha menys FP sense perdre explosions. Aquí sí que es mira l'etiqueta.
+  \item \textbf{Estabilitat.} L'ARI \cite{hubert} val 1 si dues particions coincideixen i 0 si s'assemblen com dues a l'atzar.
+        Comparem el clustering de tot el catàleg amb el d'una mostra aleatòria del 50\,\% (5 llavors, $\varepsilon=25$ km): val
+        entre $0{,}54$ i $0{,}64$. És moderat, perquè en treure sismes es trenquen cadenes de DBSCAN.
 \end{itemize}
 
 \subsection{Resultats}
