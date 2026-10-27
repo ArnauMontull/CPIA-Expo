@@ -94,14 +94,14 @@ plt.rcParams['font.family'] = 'sans-serif'
 plt.figure(figsize=(10, 6.5))
 
 paleta_colores = {
-    0: ("#d97706", "Cluster 0 (Conductores)"),
-    1: ("#2563eb", "Cluster 1 (Aislantes)"),
-    2: ("#059669", "Cluster 2 (Semiconductores)"),
+    0: ("#d97706", "Clúster 0 (Conductors)"),
+    1: ("#2563eb", "Clúster 1 (Aïllants)"),
+    2: ("#059669", "Clúster 2 (Semiconductors)"),
 }
 
 for cl in clusters_encontrados:
     sub = df[df["cluster"] == cl]
-    color, nombre_cl = paleta_colores.get(cl, ("#6b7280", f"Cluster {cl}"))
+    color, nombre_cl = paleta_colores.get(cl, ("#6b7280", f"Clúster {cl}"))
     plt.scatter(
         sub["log_rho_300K"],
         sub["alpha_coef"],
@@ -123,12 +123,12 @@ if len(sub_ruido) > 0:
         marker="x",
         s=80,
         linewidth=2,
-        label=f"Ruido / Anomalías (n={len(sub_ruido)})",
+        label=f"Soroll / Anomalies (n={len(sub_ruido)})",
         zorder=5
     )
 
 # Línea de referencia física para α = 0
-plt.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera $\alpha = 0$")
+plt.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera física $\alpha = 0$")
 
 # Etiquetas de texto para materiales clave representativos
 materiales_destacados = ["copper", "silver", "silicon", "germanium", "gaas", "glass", "ptfe", "quartz", "graphite"]
@@ -146,9 +146,9 @@ for _, r in df.iterrows():
             alpha=0.9
         )
 
-plt.title(f"Clasificación de Materiales con DBSCAN ($\\varepsilon = {EPS}$, $min\\_samples = {MIN_SAMPLES}$)", fontsize=13, fontweight="bold")
+plt.title(f"Classificació de Materials amb DBSCAN ($\\varepsilon = {EPS}$, $min\\_samples = {MIN_SAMPLES}$)", fontsize=13, fontweight="bold")
 plt.xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=11)
-plt.ylabel(r"Coeficiente térmico $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=11)
+plt.ylabel(r"Coeficient tèrmic $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=11)
 plt.grid(True, linestyle=":", alpha=0.6)
 plt.legend(loc="upper right", framealpha=0.9)
 plt.tight_layout()

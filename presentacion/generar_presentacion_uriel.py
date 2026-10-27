@@ -1,10 +1,11 @@
 """generar_presentacion_uriel.py
 
-Genera una presentacion PowerPoint (.pptx) profesional y minimalista para Uriel:
-- Todos los recuadros redondeados con borde NEGRO solido.
-- Sin barras/rayas debajo de los titulos.
-- Todo el texto unificado en un solo color (NEGRO puro).
-- Todas las formulas matematicas en estilo LaTeX Computer Modern incrustadas como imagenes.
+Genera la presentacio PowerPoint (.pptx) en CATALÀ per a Uriel:
+- Tots els textos en català (diapositives, notes d'orador, títols).
+- Tots els requadres arrodonits amb vora NEGRA sòlida.
+- Sense barres/ratlles sota els títols.
+- Tot el text unificat en color NEGRE pur i font Arial.
+- Totes les fórmules matemàtiques en estil LaTeX Computer Modern incrustades com a imatges.
 """
 
 from pathlib import Path
@@ -23,7 +24,7 @@ FIG_BANDAS = FIG_DIR / "esquema_bandas_materiales.png"
 FIG_COMPARATIVA = FIG_DIR / "comparativa_kmeans_dbscan.png"
 FIG_DATASET = FIG_DIR / "distribucion_escala_rho.png"
 
-# Fórmulas LaTeX
+# Fórmules LaTeX
 LATEX_TRANSPORTE = LATEX_DIR / "formula_transporte.png"
 LATEX_COORDENADAS = LATEX_DIR / "formula_coordenadas.png"
 LATEX_ZSCORE = LATEX_DIR / "formula_zscore.png"
@@ -39,14 +40,13 @@ prs.slide_width = Inches(13.333)
 prs.slide_height = Inches(7.5)
 blank_layout = prs.slide_layouts[6]
 
-# Paleta unificada: Todo el texto y bordes en NEGRO
+# Paleta unificada: Tot el text i vores en NEGRE
 COLOR_NEGRO = RGBColor(0x00, 0x00, 0x00)
-COLOR_BG_CARD = RGBColor(0xFF, 0xFF, 0xFF)      # Blanco puro para maximo contraste
-COLOR_BORDER_BLACK = RGBColor(0x00, 0x00, 0x00) # Borde NEGRO en todos los recuadros
+COLOR_BG_CARD = RGBColor(0xFF, 0xFF, 0xFF)      # Blanc pur
+COLOR_BORDER_BLACK = RGBColor(0x00, 0x00, 0x00) # Vora NEGRA
 
-def add_header(slide, title_text, category="CPIA · APRENDIZAJE NO SUPERVISADO"):
-    """Cabecera limpia: categoria y titulo en negro, sin ninguna raya/barra debajo."""
-    # Categoria
+def add_header(slide, title_text, category="CPIA · APRENENTATGE NO SUPERVISAT"):
+    """Capçalera neta: categoria i títol en negre, sense cap ratlla a sota."""
     cat_box = slide.shapes.add_textbox(Inches(0.8), Inches(0.4), Inches(11.7), Inches(0.35))
     tf_cat = cat_box.text_frame
     p_cat = tf_cat.paragraphs[0]
@@ -55,7 +55,6 @@ def add_header(slide, title_text, category="CPIA · APRENDIZAJE NO SUPERVISADO")
     p_cat.font.bold = True
     p_cat.font.color.rgb = COLOR_NEGRO
     
-    # Titulo principal
     t_box = slide.shapes.add_textbox(Inches(0.8), Inches(0.75), Inches(11.7), Inches(0.7))
     tf_t = t_box.text_frame
     p_t = tf_t.paragraphs[0]
@@ -63,10 +62,9 @@ def add_header(slide, title_text, category="CPIA · APRENDIZAJE NO SUPERVISADO")
     p_t.font.size = Pt(23)
     p_t.font.bold = True
     p_t.font.color.rgb = COLOR_NEGRO
-    # No se añade ninguna barra o raya debajo
 
 def add_card(slide, x, y, w, h, bg_color=COLOR_BG_CARD):
-    """Crea un recuadro de esquinas redondeadas con borde NEGRO estricto."""
+    """Crea un requadre de cantonades arrodonides amb vora NEGRA estricta."""
     card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
     card.fill.solid()
     card.fill.fore_color.rgb = bg_color
@@ -86,7 +84,7 @@ add_card(s1, 0.8, 0.8, 11.733, 5.9)
 
 b_box = s1.shapes.add_textbox(Inches(1.3), Inches(1.3), Inches(10.7), Inches(0.5))
 p = b_box.text_frame.paragraphs[0]
-p.text = "CPIA · APRENDIZAJE NO SUPERVISADO"
+p.text = "CPIA · APRENENTATGE NO SUPERVISAT"
 p.font.size = Pt(13)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
@@ -95,7 +93,7 @@ t_box = s1.shapes.add_textbox(Inches(1.3), Inches(1.9), Inches(10.7), Inches(1.8
 tf = t_box.text_frame
 tf.word_wrap = True
 p = tf.paragraphs[0]
-p.text = "Clasificación de Materiales Eléctricos mediante DBSCAN"
+p.text = "Classificació de Materials Elèctrics mitjançant DBSCAN"
 p.font.size = Pt(36)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
@@ -103,94 +101,91 @@ p.font.color.rgb = COLOR_NEGRO
 sub_box = s1.shapes.add_textbox(Inches(1.3), Inches(3.6), Inches(10.7), Inches(1.0))
 tf_sub = sub_box.text_frame
 p = tf_sub.paragraphs[0]
-p.text = "Descubrimiento No Supervisado de Fases Cuánticas (Conductores, Semiconductores y Aislantes)"
+p.text = "Descobriment No Supervisat de Fases Quàntiques (Conductors, Semiconductors i Aïllants)"
 p.font.size = Pt(17)
 p.font.color.rgb = COLOR_NEGRO
 
 meta_box = s1.shapes.add_textbox(Inches(1.3), Inches(4.7), Inches(10.7), Inches(1.5))
 tf_m = meta_box.text_frame
 p1 = tf_m.paragraphs[0]
-p1.text = "Uriel · Grado en Ingeniería Física (UPC)"
+p1.text = "Uriel · Grau en Enginyeria Física (UPC)"
 p1.font.size = Pt(16)
 p1.font.bold = True
 p1.font.color.rgb = COLOR_NEGRO
 
 p2 = tf_m.add_paragraph()
-p2.text = "Equipo: Matías · Martí · Uriel · Arnau Montull"
+p2.text = "Equip: Matías · Martí · Uriel · Arnau Montull"
 p2.font.size = Pt(14)
 p2.font.color.rgb = COLOR_NEGRO
 
 set_speaker_notes(s1,
-    "Buenos días tribunal y compañeros. Soy Uriel y presento la clasificación no supervisada de materiales eléctricos con DBSCAN."
+    "GUIÓ SLIDE 1:\n"
+    "Bon dia tribunal i companys. Sóc l'Uriel i presento la classificació no supervisada de materials elèctrics mitjançant DBSCAN."
 )
 
 # ==============================================================================
-# SLIDE 2: DEFINICIÓN DEL PROBLEMA Y LAS 3 FASES (BANDAS + FÓRMULAS LATEX)
+# SLIDE 2: DEFINICIÓ DEL PROBLEMA I LES 3 FASES (BANDES + FÓRMULES LATEX)
 # ==============================================================================
 s2 = prs.slides.add_slide(blank_layout)
-add_header(s2, "El Problema Físico: Estructura de Bandas y Firmas Térmicas")
+add_header(s2, "El Problema Físic: Estructura de Bandes i Signatures Tèrmiques")
 
-# Recuadro superior con borde negro para las fórmulas LaTeX (compacto y centrado)
+# Requadre superior amb vora negra per a les fórmules LaTeX
 add_card(s2, 0.8, 1.45, 11.733, 1.25)
 
-# Titulo de formulas en negro
 tit_f = s2.shapes.add_textbox(Inches(1.0), Inches(1.5), Inches(11.3), Inches(0.3))
 p = tit_f.text_frame.paragraphs[0]
-p.text = "Ecuaciones Macroscópicas de Transporte Eléctrico:"
+p.text = "Equacions Macroscòpiques de Transport Elèctric:"
 p.font.size = Pt(11.5)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
-# Incrustar formula LaTeX de transporte centrada
+# Incrustar formula LaTeX de transport centrada
 if LATEX_TRANSPORTE.exists():
     s2.shapes.add_picture(str(LATEX_TRANSPORTE), Inches(2.4), Inches(1.82), width=Inches(8.5))
 
-# Imagen de estructura de bandas de los 3 materiales abajo (bien separada)
+# Imatge d'estructura de bandes dels 3 materials a sota
 if FIG_BANDAS.exists():
     s2.shapes.add_picture(str(FIG_BANDAS), Inches(0.8), Inches(2.85), width=Inches(11.733))
 
 set_speaker_notes(s2,
-    "GUION SLIDE 2:\n"
-    "Definimos el problema físico a partir de las ecuaciones de transporte en LaTeX:\n"
-    "- La variación térmica de la resistividad rho(T) y su derivada térmica alfa.\n"
-    "- Metales: bandas solapadas, electrones libres, alfa positivo por choques con fonones de la red.\n"
-    "- Semiconductores: bandgap moderado, alfa negativo por activación térmica exponencial según Boltzmann.\n"
-    "- Aislantes: bandgap colosal (> 5 eV), sin portadores libres a 300 K, alfa nulo y resistividad gigantesca."
+    "GUIÓ SLIDE 2:\n"
+    "Definim el problema físic a partir de les equacions de transport:\n"
+    "- La variació tèrmica de la resistivitat rho(T) i la seva derivada tèrmica alfa.\n"
+    "- Metalls: bandes solapades, electrons lliures, alfa positiu per xocs amb fonons de la xarxa.\n"
+    "- Semiconductors: bandgap moderat, alfa negatiu per activació tèrmica exponencial segons Boltzmann.\n"
+    "- Aïllants: bandgap colossal (> 5 eV), sense portadors lliures a 300 K, alfa nul i resistivitat gegantina."
 )
 
 # ==============================================================================
-# SLIDE 3: DATASET Y CLASIFICACIÓN SIN ETIQUETAS (30 ÓRDENES DE MAGNITUD)
+# SLIDE 3: DATASET I CLASSIFICACIÓ SENSE ETIQUETES (30 ORDRES DE MAGNITUD)
 # ==============================================================================
 s3 = prs.slides.add_slide(blank_layout)
-add_header(s3, "Dataset Experimental y Espacio de Trabajo (log₁₀ρ, α)")
+add_header(s3, "Dataset Experimental i Espai de Treball (log₁₀ρ, α)")
 
-# Tarjeta izquierda con borde negro
 add_card(s3, 0.8, 1.6, 4.6, 5.3)
 b_data = s3.shapes.add_textbox(Inches(1.0), Inches(1.75), Inches(4.2), Inches(5.0))
 tf_d = b_data.text_frame
 tf_d.word_wrap = True
 
 p = tf_d.paragraphs[0]
-p.text = "¿Cómo clasificar sin etiquetas?"
+p.text = "Com classificar sense etiquetes?"
 p.font.size = Pt(17)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
-# Incrustar formula LaTeX de coordenadas
 if LATEX_COORDENADAS.exists():
     s3.shapes.add_picture(str(LATEX_COORDENADAS), Inches(1.0), Inches(2.3), width=Inches(4.1))
 
-# Texto en negro debajo de la formula
 b_data2 = s3.shapes.add_textbox(Inches(1.0), Inches(3.1), Inches(4.2), Inches(3.7))
 tf_d2 = b_data2.text_frame
 tf_d2.word_wrap = True
 
 d_items = [
-    ("57 Materiales reales:", " Metales puros, aleaciones, semiconductores y dieléctricos."),
-    ("30 órdenes de magnitud:", " De conductores (~10⁻⁸ Ω·m) a teflón (> 10²² Ω·m)."),
-    ("Compresión logarítmica:", " Evita el colapso numérico en el origen."),
-    ("Firma cuántica:", " α delata el origen microscópico del transporte."),
-    ("Objetivo no supervisado:", " Descubrir las clases automáticamente por densidad.")
+    ("57 Materials reals:", " Metalls purs, aliatges, semiconductors i dielèctrics."),
+    ("30 ordres de magnitud:", " De conductors (~10⁻⁸ Ω·m) a tefló (> 10²² Ω·m)."),
+    ("Compressió logarítmica:", " Evita el col·lapse numèric a l'origen."),
+    ("Signatura quàntica:", " α delata l'origen microscòpic del transport."),
+    ("Objectiu no supervisat:", " Descobrir les classes automàticament per densitat.")
 ]
 for i, (tit, desc) in enumerate(d_items):
     p = tf_d2.paragraphs[0] if i == 0 else tf_d2.add_paragraph()
@@ -199,41 +194,38 @@ for i, (tit, desc) in enumerate(d_items):
     p.font.color.rgb = COLOR_NEGRO
     p.space_after = Pt(7)
 
-# Imagen derecha: Grafico comparativo de escala lineal vs logaritmica
 if FIG_DATASET.exists():
     s3.shapes.add_picture(str(FIG_DATASET), Inches(5.6), Inches(1.9), width=Inches(6.9))
 
 set_speaker_notes(s3,
-    "GUION SLIDE 3:\n"
-    "Disponemos de 57 materiales reales en el dataset.\n"
-    "Como se aprecia en el gráfico comparativo: en escala lineal, el 99% de los materiales se aplasta en el cero. "
-    "El logaritmo de resistividad es imprescindible para desplegar el espacio, y combinado con alfa crea un plano perfecto para el clustering."
+    "GUIÓ SLIDE 3:\n"
+    "Disposem de 57 materials reals al dataset.\n"
+    "Com s'aprecia al gràfic comparatiu: en escala lineal, el 99% dels materials s'aixafa al zero. "
+    "El logaritme de resistivitat és imprescindible per desplegar l'espai, i combinat amb alfa crea un pla ideal per al clustering."
 )
 
 # ==============================================================================
-# SLIDE 4: ¿POR QUÉ DBSCAN Y NO K-MEANS? (LISTA VENTAJAS/DESVENTAJAS + FIGURA)
+# SLIDE 4: PER QUÈ DBSCAN I NO K-MEANS? (LLISTA AVANTATGES/INCONVENIENTS + FIGURA)
 # ==============================================================================
 s4 = prs.slides.add_slide(blank_layout)
-add_header(s4, "¿Por qué DBSCAN y no K-Means?")
+add_header(s4, "Per què DBSCAN i no K-Means?")
 
-# Tarjeta izquierda con borde negro
 add_card(s4, 0.8, 1.6, 4.8, 5.3)
 b_vs = s4.shapes.add_textbox(Inches(1.0), Inches(1.75), Inches(4.4), Inches(5.0))
 tf_vs = b_vs.text_frame
 tf_vs.word_wrap = True
 
-# K-Means Desventajas (texto en negro)
 p = tf_vs.paragraphs[0]
-p.text = "K-Means (Inadecuado en este dominio)"
+p.text = "K-Means (Inadequat en aquest domini)"
 p.font.size = Pt(15)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
 km_list = [
-    "Asume grupos esféricos e isodensos (igual varianza).",
-    "Fractura el grupo disperso de aislantes.",
-    "Exige prefijar 'k' a priori de forma arbitraria.",
-    "No detecta ruido: fuerza anomalías a tener cluster."
+    "Assumeix grups esfèrics i isodensos (igual variància).",
+    "Fractura el grup dispers d'aïllants.",
+    "Exigeix prefixar 'k' a priori de forma arbitrària.",
+    "No detecta soroll: força anomalies a tenir clúster."
 ]
 for l in km_list:
     p = tf_vs.add_paragraph()
@@ -242,18 +234,17 @@ for l in km_list:
     p.font.color.rgb = COLOR_NEGRO
     p.space_after = Pt(4)
 
-# DBSCAN Ventajas (texto en negro)
 p_db = tf_vs.add_paragraph()
-p_db.text = "\nDBSCAN (Elección Óptima)"
+p_db.text = "\nDBSCAN (Elecció Òptima)"
 p_db.font.size = Pt(15)
 p_db.font.bold = True
 p_db.font.color.rgb = COLOR_NEGRO
 
 db_list = [
-    "Conecta por densidad local de cualquier forma.",
-    "Tolera metales hiperdensos y aislantes laxos.",
-    "Descubre el número de clusters sin prefijar k.",
-    "Etiqueta ruido y anomalías de forma nativa (-1)."
+    "Connecta per densitat local de qualsevol forma.",
+    "Tolera metalls hiperdensos i aïllants laxos.",
+    "Descobreix el nombre de clústers sense prefixar k.",
+    "Etiqueta soroll i anomalies de forma nativa (-1)."
 ]
 for l in db_list:
     p = tf_vs.add_paragraph()
@@ -262,38 +253,36 @@ for l in db_list:
     p.font.color.rgb = COLOR_NEGRO
     p.space_after = Pt(4)
 
-# Imagen derecha: Comparativa grafica
 if FIG_COMPARATIVA.exists():
     s4.shapes.add_picture(str(FIG_COMPARATIVA), Inches(5.8), Inches(1.8), width=Inches(6.7))
 
 set_speaker_notes(s4,
-    "GUION SLIDE 4:\n"
-    "Pregunta clave: ¿por qué DBSCAN y no K-Means?\n"
-    "En el gráfico de la derecha se ve claro: K-Means impone fronteras esféricas forzadas. "
-    "Al tener metales ultra concentrados y aislantes dispersos, K-Means falla. "
-    "DBSCAN sigue los caminos de densidad natural y aísla puntos atípicos como ruido."
+    "GUIÓ SLIDE 4:\n"
+    "Pregunta clau: per què DBSCAN i no K-Means?\n"
+    "Al gràfic de la dreta es veu clar: K-Means imposa fronteres esfèriques forçades. "
+    "En tenir metalls ultra concentrats i aïllants dispersos, K-Means falla. "
+    "DBSCAN segueix els camins de densitat natural i aïlla punts atípics com a soroll."
 )
 
 # ==============================================================================
-# SLIDE 5: METODOLOGÍA Y PARÁMETROS (SOLO FÓRMULAS LATEX)
+# SLIDE 5: METODOLOGIA I PARÀMETRES (NOMÉS FÓRMULES LATEX)
 # ==============================================================================
 s5 = prs.slides.add_slide(blank_layout)
-add_header(s5, "Metodología Matemática: Fórmulas y Parámetros")
+add_header(s5, "Metodologia Matemàtica: Fórmules i Paràmetres")
 
 w_box = 3.65
 h_box = 5.2
 y_s5 = 1.6
 
-# 1. Estandarización Z-Score (Recuadro con borde negro)
+# 1. Estandarditzacio Z-Score
 add_card(s5, 0.8, y_s5, w_box, h_box)
 b_f1 = s5.shapes.add_textbox(Inches(1.0), Inches(y_s5 + 0.15), Inches(w_box - 0.4), Inches(1.0))
 p = b_f1.text_frame.paragraphs[0]
-p.text = "1. Estandarización Z-Score\n(Implementada con NumPy)"
+p.text = "1. Estandardització Z-Score\n(Implementada amb NumPy)"
 p.font.size = Pt(15)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
-# Incrustar formula LaTeX Z-Score
 if LATEX_ZSCORE.exists():
     s5.shapes.add_picture(str(LATEX_ZSCORE), Inches(0.95), Inches(y_s5 + 0.95), width=Inches(3.35))
 
@@ -302,10 +291,10 @@ tf_1_desc = b_f1_desc.text_frame
 tf_1_desc.word_wrap = True
 
 f1_sub = [
-    "μ = Media muestral por columna",
-    "σ = Desviación estándar típica",
-    "Resultado: Media = 0, Varianza = 1",
-    "Imprescindible: equipara el rango de log₁₀ρ (~31) con el de α (~0.08) para la distancia euclídea."
+    "μ = Mitjana mostral per columna",
+    "σ = Desviació estàndard típica",
+    "Resultat: Mitjana = 0, Variància = 1",
+    "Imprescindible: equipara el rang de log₁₀ρ (~31) amb el d'α (~0.08) per a la distància euclidiana."
 ]
 for i, item in enumerate(f1_sub):
     p = tf_1_desc.paragraphs[0] if i == 0 else tf_1_desc.add_paragraph()
@@ -314,16 +303,15 @@ for i, item in enumerate(f1_sub):
     p.font.color.rgb = COLOR_NEGRO
     p.space_after = Pt(5)
 
-# 2. Criterio de Vecindad DBSCAN (Recuadro con borde negro)
+# 2. Criteri de Veinat DBSCAN
 add_card(s5, 4.85, y_s5, w_box, h_box)
 b_f2 = s5.shapes.add_textbox(Inches(5.05), Inches(y_s5 + 0.15), Inches(w_box - 0.4), Inches(1.0))
 p = b_f2.text_frame.paragraphs[0]
-p.text = "2. Criterio de Núcleo\n(DBSCAN Espacial)"
+p.text = "2. Criteri de Nucli\n(DBSCAN Espacial)"
 p.font.size = Pt(15)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
-# Incrustar formula LaTeX Nucleo
 if LATEX_NUCLEO.exists():
     s5.shapes.add_picture(str(LATEX_NUCLEO), Inches(5.0), Inches(y_s5 + 0.95), width=Inches(3.35))
 
@@ -332,13 +320,13 @@ tf_2_desc = b_f2_desc.text_frame
 tf_2_desc.word_wrap = True
 
 f2_sub = [
-    "d(p, q) = Distancia Euclídea en 2D",
-    "Punto Núcleo (Core Point):",
+    "d(p, q) = Distància Euclidiana en 2D",
+    "Punt Nucli (Core Point):",
     "   |N_ε(p)| ≥ min_samples",
-    "Punto Frontera (Border):",
-    "   Alcanzable desde un núcleo",
-    "Ruido (Noise):",
-    "   No alcanzable (|N_ε| < min_samples)"
+    "Punt Frontera (Border):",
+    "   Assolible des d'un nucli",
+    "Soroll (Noise):",
+    "   No assolible (|N_ε| < min_samples)"
 ]
 for i, item in enumerate(f2_sub):
     p = tf_2_desc.paragraphs[0] if i == 0 else tf_2_desc.add_paragraph()
@@ -347,16 +335,15 @@ for i, item in enumerate(f2_sub):
     p.font.color.rgb = COLOR_NEGRO
     p.space_after = Pt(4)
 
-# 3. Parámetros fijados (Recuadro con borde negro)
+# 3. Parametres fixats
 add_card(s5, 8.9, y_s5, w_box, h_box)
 b_f3 = s5.shapes.add_textbox(Inches(9.1), Inches(y_s5 + 0.15), Inches(w_box - 0.4), Inches(1.0))
 p = b_f3.text_frame.paragraphs[0]
-p.text = "3. Parámetros Fijados\n(Criterio Objetivo)"
+p.text = "3. Paràmetres Fixats\n(Criteri Objectiu)"
 p.font.size = Pt(15)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
-# Incrustar formula LaTeX Parametros
 if LATEX_PARAMETROS.exists():
     s5.shapes.add_picture(str(LATEX_PARAMETROS), Inches(9.05), Inches(y_s5 + 0.95), width=Inches(3.35))
 
@@ -366,11 +353,11 @@ tf_3_desc.word_wrap = True
 
 f3_sub = [
     "min_samples = 3:",
-    "   Regla canónica k ≥ d + 1 (dimensión d = 2).",
+    "   Regla canònica k ≥ d + 1 (dimensió d = 2).",
     "ε = 0.65:",
-    "   Determinado mediante gráfico k-NN (codo).",
-    "   Ventana óptima que aísla aislantes sin fusionar metales.",
-    "Ejecución: scikit-learn DBSCAN"
+    "   Determinat mitjançant gràfic k-NN (colze).",
+    "   Finestra òptima que aïlla aïllants sense fusionar metalls.",
+    "Execució: scikit-learn DBSCAN"
 ]
 for i, item in enumerate(f3_sub):
     p = tf_3_desc.paragraphs[0] if i == 0 else tf_3_desc.add_paragraph()
@@ -380,62 +367,59 @@ for i, item in enumerate(f3_sub):
     p.space_after = Pt(5)
 
 set_speaker_notes(s5,
-    "GUION SLIDE 5:\n"
-    "En metodología: fórmulas en LaTeX claras y limpias.\n"
-    "1. Escalado Z-Score manual con NumPy para igualar varianzas.\n"
-    "2. Criterio de núcleo de DBSCAN: puntos con al menos min_samples vecinos en radio épsilon.\n"
-    "3. Hiperparámetros fijados rigurosamente: min_samples=3 (dimensión + 1) y épsilon=0.65 obtenido por el codo k-NN."
+    "GUIÓ SLIDE 5:\n"
+    "En metodologia: fórmules en LaTeX clares i netes.\n"
+    "1. Escalat Z-Score manual amb NumPy per igualar variàncies.\n"
+    "2. Criteri de nucli de DBSCAN: punts amb almenys min_samples veïns en radi èpsilon.\n"
+    "3. Hiperparàmetres fixats rigorosament: min_samples=3 (dimensió + 1) i èpsilon=0.65 obtingut pel colze k-NN."
 )
 
 # ==============================================================================
-# SLIDE 6: CLUSTERS EN GRANDE (SOLO LA IMAGEN)
+# SLIDE 6: CLUSTERS EN GRAN (NOMÉS LA IMATGE)
 # ==============================================================================
 s6 = prs.slides.add_slide(blank_layout)
 
-# Cabecera minima en negro, sin lineas
 t_box = s6.shapes.add_textbox(Inches(0.8), Inches(0.25), Inches(11.7), Inches(0.6))
 p = t_box.text_frame.paragraphs[0]
-p.text = "Resultado DBSCAN: Clasificación 2D de Materiales Eléctricos"
+p.text = "Resultat DBSCAN: Classificació 2D de Materials Elèctrics"
 p.font.size = Pt(22)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
 sub_t = t_box.text_frame.add_paragraph()
-sub_t.text = "ε = 0.65 · min_samples = 3  |  3 Clusters descubiertos  |  0 Ruido"
+sub_t.text = "ε = 0.65 · min_samples = 3  |  3 Clústers descoberts  |  0 Soroll"
 sub_t.font.size = Pt(13)
 sub_t.font.color.rgb = COLOR_NEGRO
 
-# Imagen grande ocupando la diapositiva completa
 if FIG_CLUSTERS.exists():
     s6.shapes.add_picture(str(FIG_CLUSTERS), Inches(1.1), Inches(1.15), width=Inches(11.1))
 
 set_speaker_notes(s6,
-    "GUION SLIDE 6:\n"
-    "Este es el resultado gráfico final en pantalla grande:\n"
-    "- Cluster 0 (ámbar): Metales conductores (Cu, Ag, Au, Al) concentrados arriba a la izquierda con alfa > 0.\n"
-    "- Cluster 1 (azul): Aislantes dieléctricos (Vidrio, Cuarzo, Teflón) a la derecha con alfa centrado en cero.\n"
-    "- Cluster 2 (verde): Semiconductores (Silicio, Germanio, GaAs) abajo, claramente separados por alfa fuertemente negativo.\n"
-    "La línea horizontal de alfa = 0 marca la división física fundamental entre choques de fonones y generación térmica de portadores."
+    "GUIÓ SLIDE 6:\n"
+    "Aquest és el resultat gràfic final en pantalla gran:\n"
+    "- Clúster 0 (ambre): Metalls conductors (Cu, Ag, Au, Al) concentrats a dalt a l'esquerra amb alfa > 0.\n"
+    "- Clúster 1 (blau): Aïllants dielèctrics (Vidre, Quars, Tefló) a la dreta amb alfa centrat a zero.\n"
+    "- Clúster 2 (verd): Semiconductors (Silici, Germani, GaAs) a sota, clarament separats per alfa fortament negatiu.\n"
+    "La línia horitzontal d'alfa = 0 marca la divisió física fonamental entre xocs de fonons i generació tèrmica de portadors."
 )
 
 # ==============================================================================
-# SLIDE 7: VALIDACIÓN DE RESULTADOS: MATRIZ DE CONTINGENCIA FÍSICA
+# SLIDE 7: VALIDACIÓ EXPERIMENTAL: MATRIU DE CONTINGÈNCIA FÍSICA
 # ==============================================================================
 s7 = prs.slides.add_slide(blank_layout)
-add_header(s7, "Validación Experimental: Matriz de Contingencia Física")
+add_header(s7, "Validació Experimental: Matriu de Contingència Física")
 
-# 3 Tarjetas con borde negro
 w_card7 = 3.65
 h_card7 = 3.4
 y_card7 = 1.6
 
-# Conductores (Borde negro, texto negro)
+# Conductors
 add_card(s7, 0.8, y_card7, w_card7, h_card7)
 bc = s7.shapes.add_textbox(Inches(1.0), Inches(y_card7 + 0.2), Inches(w_card7 - 0.4), Inches(3.0))
 tfc = bc.text_frame
 tfc.word_wrap = True
 p = tfc.paragraphs[0]
-p.text = "Conductores (Metales)"
+p.text = "Conductors (Metalls)"
 p.font.size = Pt(16)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
@@ -448,24 +432,24 @@ p_num.font.color.rgb = COLOR_NEGRO
 p_num.alignment = PP_ALIGN.CENTER
 
 p_p = tfc.add_paragraph()
-p_p.text = "100 % Pureza"
+p_p.text = "100 % Puresa"
 p_p.font.size = Pt(16)
 p_p.font.bold = True
 p_p.font.color.rgb = COLOR_NEGRO
 p_p.alignment = PP_ALIGN.CENTER
 
 p_sub = tfc.add_paragraph()
-p_sub.text = "\nAsignados íntegramente al Cluster 0. Cero falsos negativos."
+p_sub.text = "\nAssignats íntegrament al Clúster 0. Zero falsos negatius."
 p_sub.font.size = Pt(11)
 p_sub.font.color.rgb = COLOR_NEGRO
 
-# Aislantes (Borde negro, texto negro)
+# Aïllants
 add_card(s7, 4.85, y_card7, w_card7, h_card7)
 ba = s7.shapes.add_textbox(Inches(5.05), Inches(y_card7 + 0.2), Inches(w_card7 - 0.4), Inches(3.0))
 tfa = ba.text_frame
 tfa.word_wrap = True
 p = tfa.paragraphs[0]
-p.text = "Aislantes (Dieléctricos)"
+p.text = "Aïllants (Dielèctrics)"
 p.font.size = Pt(16)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
@@ -478,24 +462,24 @@ p_num.font.color.rgb = COLOR_NEGRO
 p_num.alignment = PP_ALIGN.CENTER
 
 p_p = tfa.add_paragraph()
-p_p.text = "100 % Pureza"
+p_p.text = "100 % Puresa"
 p_p.font.size = Pt(16)
 p_p.font.bold = True
 p_p.font.color.rgb = COLOR_NEGRO
 p_p.alignment = PP_ALIGN.CENTER
 
 p_sub = tfa.add_paragraph()
-p_sub.text = "\nAsignados íntegramente al Cluster 1. Coincidencia total con física."
+p_sub.text = "\nAssignats íntegrament al Clúster 1. Coincidència total amb la física."
 p_sub.font.size = Pt(11)
 p_sub.font.color.rgb = COLOR_NEGRO
 
-# Semiconductores (Borde negro, texto negro)
+# Semiconductors
 add_card(s7, 8.9, y_card7, w_card7, h_card7)
 bs = s7.shapes.add_textbox(Inches(9.1), Inches(y_card7 + 0.2), Inches(w_card7 - 0.4), Inches(3.0))
 tfs = bs.text_frame
 tfs.word_wrap = True
 p = tfs.paragraphs[0]
-p.text = "Semiconductores"
+p.text = "Semiconductors"
 p.font.size = Pt(16)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
@@ -508,22 +492,22 @@ p_num.font.color.rgb = COLOR_NEGRO
 p_num.alignment = PP_ALIGN.CENTER
 
 p_p = tfs.add_paragraph()
-p_p.text = "83.3 % Pureza"
+p_p.text = "83.3 % Puresa"
 p_p.font.size = Pt(16)
 p_p.font.bold = True
 p_p.font.color.rgb = COLOR_NEGRO
 p_p.alignment = PP_ALIGN.CENTER
 
 p_sub = tfs.add_paragraph()
-p_sub.text = "\n10 al Cluster 2. 2 semimetales clasificados en cluster 0 por conducción cuasi-metálica."
+p_sub.text = "\n10 al Clúster 2. 2 semimetalls classificats al clúster 0 per conducció cuasimetàl·lica."
 p_sub.font.size = Pt(10.5)
 p_sub.font.color.rgb = COLOR_NEGRO
 
-# Barra inferior con borde negro e imagen LaTeX de la silueta
+# Barra inferior amb la silueta en LaTeX
 add_card(s7, 0.8, 5.25, 11.733, 1.55)
 b_sil = s7.shapes.add_textbox(Inches(1.1), Inches(5.35), Inches(11.1), Inches(0.35))
 p = b_sil.text_frame.paragraphs[0]
-p.text = "Métrica Matemática Complementaria (No Supervisada):"
+p.text = "Mètrica Matemàtica Complementària (No Supervisada):"
 p.font.size = Pt(11.5)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
@@ -532,39 +516,38 @@ if LATEX_SILHOUETTE.exists():
     s7.shapes.add_picture(str(LATEX_SILHOUETTE), Inches(2.2), Inches(5.75), width=Inches(8.8))
 
 set_speaker_notes(s7,
-    "GUION SLIDE 7:\n"
-    "En cuanto a validación, la prueba reina es la Matriz de Contingencia Física:\n"
-    "- 100% de pureza en conductores (35 de 35 metales en cluster 0).\n"
-    "- 100% de pureza en aislantes (10 de 10 dieléctricos en cluster 1).\n"
-    "- En semiconductores, los 10 materiales tecnológicos puros forman el cluster 2. "
-    "Los dos restantes son semimetales cuyo transporte a 300 K es prácticamente metálico.\n"
-    "Y como métrica matemática complementaria, la fórmula en LaTeX de Silhouette Score arroja 0.7858."
+    "GUIÓ SLIDE 7:\n"
+    "Pel que fa a validació, la prova reina és la Matriu de Contingència Física:\n"
+    "- 100% de puresa en conductors (35 de 35 metalls al clúster 0).\n"
+    "- 100% de puresa en aïllants (10 de 10 dielèctrics al clúster 1).\n"
+    "- En semiconductors, els 10 materials tecnològics purs formen el clúster 2. "
+    "Els dos restants són semimetalls amb transport cuasimetàl·lic a 300 K.\n"
+    "I com a mètrica matemàtica complementària, la fórmula de Silhouette Score dona 0.7858."
 )
 
 # ==============================================================================
-# SLIDE 8: CONCLUSIONES RESUMIDAS
+# SLIDE 8: CONCLUSIONS RESUMIDES
 # ==============================================================================
 s8 = prs.slides.add_slide(blank_layout)
-add_header(s8, "Conclusiones")
+add_header(s8, "Conclusions")
 
-# Recuadro con borde negro y texto unificado en negro
 add_card(s8, 1.2, 1.7, 10.933, 5.0)
 b_c = s8.shapes.add_textbox(Inches(1.6), Inches(2.0), Inches(10.1), Inches(4.4))
 tf_c = b_c.text_frame
 tf_c.word_wrap = True
 
 p = tf_c.paragraphs[0]
-p.text = "Puntos Clave del Proyecto"
+p.text = "Punts Clau del Projecte"
 p.font.size = Pt(20)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 p.space_after = Pt(14)
 
 concl_puntos = [
-    ("Física de bandas sin supervisión:", " DBSCAN descubre de manera autónoma las 3 fases de conducción (conductores, aislantes y semiconductores) a partir de propiedades macroscópicas."),
-    ("Inmune a densidades dispares:", " Supera a K-Means agrupando simultáneamente la ultra-densidad de los metales y la dispersión de 12 órdenes de magnitud de los aislantes."),
-    ("Variables óptimas:", " La escala logarítmica log₁₀(ρ) y el coeficiente térmico cuántico α bastan para separar completamente los regímenes de transporte."),
-    ("Validación rotunda:", " 100% de pureza en conductores y aislantes con Silhouette Score = 0.7858.")
+    ("Física de bandes sense supervisió:", " DBSCAN descobreix de manera autònoma les 3 fases de conducció (conductors, aïllants i semiconductors) a partir de propietats macroscòpiques."),
+    ("Immune a densitats dispars:", " Supera K-Means agrupant simultàniament la ultradensitat dels metalls i la dispersió de 12 ordres de magnitud dels aïllants."),
+    ("Variables òptimes:", " L'escala logarítmica log₁₀(ρ) i el coeficient tèrmic quàntic α són suficients per separar completament els règims de transport."),
+    ("Validació rotunda:", " 100% de puresa en conductors i aïllants amb Silhouette Score = 0.7858.")
 ]
 for tit, desc in concl_puntos:
     p = tf_c.add_paragraph()
@@ -574,19 +557,18 @@ for tit, desc in concl_puntos:
     p.space_after = Pt(12)
 
 set_speaker_notes(s8,
-    "GUION SLIDE 8:\n"
-    "Para concluir:\n"
-    "1. DBSCAN demuestra que la densidad espacial macroscópica refleja con total fidelidad la física cuántica de bandas.\n"
-    "2. Ha demostrado ser la herramienta correcta frente a K-Means al tolerar densidades desiguales.\n"
-    "3. Con solo dos variables físicas y una estandarización rigurosa, se obtiene una pureza del 100% en conductores y aislantes.\n"
-    "Muchas gracias."
+    "GUIÓ SLIDE 8:\n"
+    "Per concloure:\n"
+    "1. DBSCAN demostra que la densitat espacial macroscòpica reflecteix fidelment la física quàntica de bandes.\n"
+    "2. Ha demostrat ser l'eina adequada davant K-Means en tolerar densitats desiguals.\n"
+    "3. Amb només dues variables físiques i una estandardització rigorosa, s'obté un 100% de puresa en conductors i aïllants.\n"
+    "Moltes gràcies."
 )
 
 # ==============================================================================
-# APLICAR FUENTE ARIAL EN TODA LA PRESENTACIÓN
+# APLICAR FONT ARIAL A TOTA LA PRESENTACIÓ
 # ==============================================================================
 def aplicar_fuente_arial(presentation):
-    """Aplica estrictamente la fuente Arial a todos los textos, títulos y párrafos."""
     for slide in presentation.slides:
         for shape in slide.shapes:
             if shape.has_text_frame:
@@ -598,18 +580,18 @@ def aplicar_fuente_arial(presentation):
 aplicar_fuente_arial(prs)
 
 # ==============================================================================
-# GUARDAR PRESENTACIONES
+# GUARDAR PRESENTACIONS
 # ==============================================================================
 try:
     OUTPUT_DIR_1.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(OUTPUT_DIR_1))
-    print(f"Presentacion guardada en: {OUTPUT_DIR_1}")
+    print(f"Presentacio guardada a: {OUTPUT_DIR_1}")
 except PermissionError:
-    print(f"Aviso: {OUTPUT_DIR_1.name} en problemas/ esta abierto. Cierralo para actualizarlo.")
+    print(f"Avis: {OUTPUT_DIR_1.name} a problemas/ esta obert.")
 
 try:
     OUTPUT_DIR_2.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(OUTPUT_DIR_2))
-    print(f"Presentacion guardada en: {OUTPUT_DIR_2}")
+    print(f"Presentacio guardada a: {OUTPUT_DIR_2}")
 except PermissionError:
-    print(f"Aviso: {OUTPUT_DIR_2.name} en presentacion/ esta abierto. Cierralo en PowerPoint para sobrescribirlo.")
+    print(f"Avis: {OUTPUT_DIR_2.name} a presentacion/ esta obert en PowerPoint.")

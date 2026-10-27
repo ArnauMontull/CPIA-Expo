@@ -100,51 +100,51 @@ diapo('Limitaciones (preguntas probables)', [
 for nombre in ('Matías', 'Martí'):
     diapo(f'Problema de {nombre}', pendiente='título, datos, método, resultado, figuras')
 
-# --- Parte de Uriel: Clasificación de Materiales Eléctricos con DBSCAN ---
-diapo('Problema: 3 familias y firmas térmicas', [
-    'Conducción según la estructura cuántica de bandas',
-    'Variación térmica: ρ(T) = ρ₀ · [1 + α·(T - T₀)]',
-    'Coeficiente térmico: α = (1 / ρ₀) · (dρ / dT)₃₀₀K',
-    'Metales (α > 0) · Semiconductores (α < 0) · Aislantes (α ≈ 0)'],
+# --- Part d\'Uriel: Classificació de Materials Elèctrics amb DBSCAN ---
+diapo('Problema: 3 famílies i signatures tèrmiques', [
+    'Conducció segons l\'estructura quàntica de bandes',
+    'Variació tèrmica: ρ(T) = ρ₀ · [1 + α·(T - T₀)]',
+    'Coeficient tèrmic: α = (1 / ρ₀) · (dρ / dT)₃₀₀K',
+    'Metalls (α > 0) · Semiconductors (α < 0) · Aïllants (α ≈ 0)'],
     'esquema_bandas_materiales.png', 7.2,
-    notas='Estructura de bandas y variación térmica: el signo y magnitud de alfa delatan la física microscópica.')
+    notas='Estructura de bandes i variació tèrmica: el signe i la magnitud d\'alfa delaten la física microscòpica.')
 
-diapo('Dataset y espacio (log₁₀ρ, α)', [
-    '57 materiales reales recopilados experimentalmente',
-    '30 órdenes de magnitud en resistividad (10⁻⁸ a 10²² Ω·m)',
-    'Escala lineal colapsa en el origen; log₁₀(ρ) separa las fases',
-    'Clustering no supervisado: descubrir las clases sin etiquetas'],
+diapo('Dataset i espai (log₁₀ρ, α)', [
+    '57 materials reals recopilats experimentalment',
+    '30 ordres de magnitud en resistivitat (10⁻⁸ a 10²² Ω·m)',
+    'Escala lineal col·lapsa a l\'origen; log₁₀(ρ) separa les fases',
+    'Clustering no supervisat: descobrir les classes sense etiquetes'],
     'distribucion_escala_rho.png', 7.2,
-    notas='Comparativa de escala: la compresión logarítmica es imprescindible para que los metales y aislantes coexistan.')
+    notas='Comparativa d\'escala: la compressió logarítmica és imprescindible perquè metalls i aïllants coexisteixin.')
 
-diapo('¿Por qué DBSCAN frente a K-Means?', [
-    '✖ K-Means: asume esfericidad, fractura aislantes y no aísla ruido',
-    '✔ DBSCAN: conecta por densidad local y tolera densidades desiguales',
-    'Metales hiperdensos vs aislantes extendidos en 12 órdenes',
-    'DBSCAN detecta anomalías de forma nativa (etiqueta -1)'],
+diapo('Per què DBSCAN enfront de K-Means?', [
+    '✖ K-Means: assumeix esfericitat, fractura aïllants i no aïlla soroll',
+    '✔ DBSCAN: connecta per densitat local i tolera densitats desiguals',
+    'Metalls hiperdensos vs aïllants estesos en 12 ordres',
+    'DBSCAN detecta anomalies de manera nativa (etiqueta -1)'],
     'comparativa_kmeans_dbscan.png', 7.2,
-    notas='K-Means asume varianzas similares y falla; DBSCAN conecta por densidad y respeta la dispersión natural.')
+    notas='K-Means assumeix variàncies similars i falla; DBSCAN connecta per densitat i respecta la dispersió natural.')
 
-diapo('Metodología: Fórmulas y parámetros', [
-    'Estandarización manual Z-Score con NumPy: Z = (X - μ) / σ',
-    'Vecindad: N_ε(p) = { q | d(p, q) ≤ ε }',
-    'Núcleo (Core Point): |N_ε(p)| ≥ min_samples',
-    'Parámetros fijados: ε = 0,65 (codo k-NN) y min_samples = 3 (d = 2)'])
+diapo('Metodologia: Fórmules i paràmetres', [
+    'Estandardització manual Z-Score amb NumPy: Z = (X - μ) / σ',
+    'Veïnat: N_ε(p) = { q | d(p, q) ≤ ε }',
+    'Nucli (Core Point): |N_ε(p)| ≥ min_samples',
+    'Paràmetres fixats: ε = 0,65 (colze k-NN) i min_samples = 3 (d = 2)'])
 
-diapo('Resultado: DBSCAN en 57 materiales', [
-    '3 clusters puros descubiertos por densidad: 0 ruido',
-    'Cluster 0 (ámbar): 35 metales conductores (Cu, Ag, Au...)',
-    'Cluster 1 (azul): 10 aislantes dieléctricos (vidrio, teflón...)',
-    'Cluster 2 (verde): 10 semiconductores (Si, Ge, GaAs...)',
-    'Frontera α = 0: fonones vs activación térmica'],
+diapo('Resultat: DBSCAN en 57 materials', [
+    '3 clústers purs descoberts per densitat: 0 soroll',
+    'Clúster 0 (ambre): 35 metalls conductors (Cu, Ag, Au...)',
+    'Clúster 1 (blau): 10 aïllants dielèctrics (vidre, tefló...)',
+    'Clúster 2 (verd): 10 semiconductors (Si, Ge, GaAs...)',
+    'Frontera α = 0: fonons vs activació tèrmica'],
     'clusters_materiales_dbscan.png', 7.2,
-    notas='Resultado gráfico: el plano 2D muestra la separación nítida de las tres clases.')
+    notas='Resultat gràfic: el pla 2D mostra la separació nítida de les tres classes.')
 
-diapo('Validación física: Matriz de contingencia', [
-    'Conductores: 35 de 35 (100 % pureza en Cluster 0)',
-    'Aislantes: 10 de 10 (100 % pureza en Cluster 1)',
-    'Semiconductores: 10 de 12 (83,3 % pureza en Cluster 2; 2 semimetales en cluster 0)',
-    'Silhouette Score complementario: 0,7858 (alta cohesión interna)'])
+diapo('Validació física: Matriu de contingència', [
+    'Conductors: 35 de 35 (100 % puresa al Clúster 0)',
+    'Aïllants: 10 de 10 (100 % puresa al Clúster 1)',
+    'Semiconductors: 10 de 12 (83,3 % puresa al Clúster 2; 2 semimetalls al clúster 0)',
+    'Silhouette Score complementari: 0,7858 (alta cohesió interna)'])
 
 diapo('Conclusiones', pendiente='comparativa del equipo: qué algoritmo funcionó mejor y por qué')
 diapo('Preguntas', ['Código y documento de descripción entregados en Atenea'])
