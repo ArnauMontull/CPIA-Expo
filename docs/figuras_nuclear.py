@@ -32,11 +32,23 @@ cl = clusters(df, P['eps_km'], P['vmin'])
 det = sospechosos(df, cl, P['dmin'], P['dmax'])
 
 # 1. Catalogo: terremotos vs explosiones
+terremoto = df['tipo'] == 'earthquake'
+otros_tipos = [('volcanic eruption', 'Erupciones volcánicas', 'darkorange', '^'),
+               ('explosion', 'Explosiones (otras)', 'blue', 's'),
+               ('mine collapse', 'Colapsos de mina', 'saddlebrown', 'D'),
+               ('rock burst', 'Estallidos de roca', 'magenta', 'P'),
+               ('landslide', 'Deslizamientos', 'green', 'v'),
+               ('quarry blast', 'Voladura de cantera', 'cyan', 'X'),
+               ('other event', 'Otro evento', 'black', '*')]
 fig, ax = plt.subplots(figsize=(9, 4.5))
-ax.scatter(df[~expl].longitude, df[~expl].latitude, s=1, c='lightgray', label=f'Terremotos ({(~expl).sum():,})')
+ax.scatter(df[terremoto].longitude, df[terremoto].latitude, s=1, c='lightgray', label=f'Terremotos ({terremoto.sum():,})')
+for tipo, nombre, color, marcador in otros_tipos:
+    sel = df['tipo'] == tipo
+    ax.scatter(df[sel].longitude, df[sel].latitude, s=28, c=color, marker=marcador, edgecolors='white', linewidths=.3,
+               label=f'{nombre} ({sel.sum()})')
 ax.scatter(df[expl].longitude, df[expl].latitude, s=6, c='red', label=f'Explosiones nucleares ({expl.sum()})')
 ax.set(xlabel='Longitud (°)', ylabel='Latitud (°)', xlim=(-180, 180), ylim=(-90, 90))
-ax.legend(loc='lower left', markerscale=4); ax.grid(alpha=.3)
+ax.legend(loc='lower left', markerscale=1.5, fontsize=7, ncol=2); ax.grid(alpha=.3)
 fig.tight_layout(); fig.savefig(OUT / 'catalogo.png', dpi=170); plt.close(fig)
 
 # 2. Profundidad: la pista fisica
