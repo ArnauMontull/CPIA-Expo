@@ -200,6 +200,51 @@ text(s, 8.8, 2.5, 3.9, 3.8, [
     'Els terratrèmols es reparteixen per tot el rang.',
     'La finestra s\'aplica a la mediana de cada clúster, no a cada esdeveniment.'], 18, INK, espai=12)
 
+# ---------------------------------------------------------------- 6b. Com funciona DBSCAN (1): punts centrals, frontera i soroll
+s = diapo('Com funciona DBSCAN: tres tipus de punts', """DBSCAN agrupa per densitat i només té dos paràmetres: un radi, epsilon, i un nombre mínim de veïns dins d'aquest radi.
+Amb això, cada punt es classifica en un de tres tipus. Punt central, en blau: té com a mínim el nombre mínim de veïns dins del radi. Punt frontera, en vermell: no arriba al mínim, però és dins del radi d'un punt central. I soroll, en negre: no és cap de les dues coses.
+Aquesta captura és d'una demo en línia de Philippe Fournier-Viger, amb epsilon igual a 1 i mínim de 3 veïns. Una nota: a la demo el veïnat no compta el punt mateix, i a scikit-learn sí. Per això el nostre v_min igual a 2 equival al MinPts igual a 1 de la demo.""")
+figura(s, 'dbscan_demo_eps1.png', 0.6, 1.5, 5.5, 5.05)
+text(s, 0.6, 6.6, 5.5, 0.3, 'Captura: demo de Ph. Fournier-Viger, ε = 1, MinPts = 3', 10, GRIS)
+text(s, 6.6, 1.55, 6.1, 0.5, 'Dos paràmetres', 22, NAVY, True)
+text(s, 6.6, 2.1, 6.1, 0.8, [[('ε', True, TARONJA), (' (radi del veïnat) i ', False, INK), ('MinPts', True, TARONJA), (' (veïns mínims dins del radi)', False, INK)]], 18)
+tipus = [(RGBColor(0x1F, 0x3A, 0xE8), 'Punt central', 'Té com a mínim MinPts veïns dins del radi ε.'),
+         (RGBColor(0xE0, 0x1B, 0x1B), 'Punt frontera', 'No arriba al mínim, però és dins del radi d\'un punt central.'),
+         (INK, 'Soroll', 'No és central ni és a prop de cap punt central.')]
+for i, (color, cap, cos) in enumerate(tipus):
+    y = 3.0 + i * 1.12
+    targeta(s, 6.6, y, 6.1, 0.98)
+    cercle(s, 6.85, y + 0.26, 0.46, color, '', 12)
+    text(s, 7.55, y + 0.1, 5.0, 0.4, cap, 18, NAVY, True)
+    text(s, 7.55, y + 0.5, 5.0, 0.45, cos, 14, GRIS)
+text(s, 6.6, 6.45, 6.1, 0.5, 'A la demo, el veïnat no compta el propi punt; a scikit-learn sí. El nostre v_min = 2 equival a MinPts = 1 de la demo.', 11, GRIS)
+
+# ---------------------------------------------------------------- 6c. Com funciona DBSCAN (2): efecte de eps
+s = diapo('L\'efecte del radi ε', """Aquí es veu què passa quan canviem el radi sobre els mateixos punts.
+Amb epsilon igual a 0,5, el radi és tan petit que cap punt arriba al mínim de veïns: tot és soroll. Amb epsilon igual a 1 apareixen dos grups centrals. Amb epsilon igual a 2, els cercles creixen, es toquen i els grups s'ajunten, i queda menys soroll.
+Un epsilon massa petit deixa tot com a soroll, i un de massa gran fon grups diferents. Per això en el nostre problema hem validat el radi provant-ne molts valors.""")
+tres = [('dbscan_demo_eps05.png', 'ε = 0,5', 'Massa petit: tot és soroll.'),
+        ('dbscan_demo_eps1.png', 'ε = 1', 'Apareixen grups centrals.'),
+        ('dbscan_demo_eps2.png', 'ε = 2', 'Els grups creixen i s\'ajunten.')]
+for i, (nom, cap, cos) in enumerate(tres):
+    x = 0.6 + i * 4.15
+    figura(s, nom, x, 1.5, 3.85, 3.95)
+    text(s, x + 0.1, 5.55, 3.7, 0.5, cap, 22, TARONJA, True)
+    text(s, x + 0.1, 6.05, 3.7, 0.4, cos, 16, INK)
+text(s, 0.6, 6.55, 12.1, 0.3, 'Captures: demo de Ph. Fournier-Viger (philippe-fournier-viger.com/tools/dbscan_clusters_demo.php), MinPts = 3', 10, GRIS)
+
+# ---------------------------------------------------------------- 6d. Com funciona DBSCAN (3): de punts a clusters
+s = diapo('De punts a clústers', """Un clúster es forma així: els punts centrals que estan a menys d'un radi l'un de l'altre queden al mateix grup, i el grup creix de punt en punt, com una cadena. Els punts frontera s'hi afegeixen, i el soroll queda fora.
+A l'esquerra, la classificació; a la dreta, el resultat final, amb cada clúster d'un color i el soroll amagat.
+En el nostre problema, cada sisme és un punt amb latitud i longitud, la distància és la de haversine sobre l'esfera, el radi és de 25 km i el mínim és de 2.""")
+figura(s, 'dbscan_demo_eps1.png', 0.6, 1.5, 4.6, 4.3)
+cercle(s, 5.35, 3.35, 0.6, TARONJA, '→', 24)
+figura(s, 'dbscan_demo_clusters.png', 6.1, 1.5, 4.6, 4.3)
+text(s, 0.6, 5.9, 4.6, 0.4, 'Classificació dels punts', 15, GRIS, alineacio=PP_ALIGN.CENTER)
+text(s, 6.1, 5.9, 4.6, 0.4, 'Clústers (el soroll s\'amaga)', 15, GRIS, alineacio=PP_ALIGN.CENTER)
+text(s, 11.0, 1.7, 1.8, 3.9, [[('Al nostre cas', True, TARONJA)], 'Punt = sisme', 'Distància: haversine', 'ε = 25 km', 'v_min = 2'], 14, INK, espai=8)
+text(s, 0.6, 6.45, 12.1, 0.3, 'Captures: demo de Ph. Fournier-Viger (philippe-fournier-viger.com/tools/dbscan_clusters_demo.php), ε = 1, MinPts = 3', 10, GRIS)
+
 # ---------------------------------------------------------------- 7. Com funciona
 s = diapo('Com funciona: quatre passos', """El mètode té quatre passos.
 Primer, DBSCAN agrupa els esdeveniments que estan a prop, mesurant la distància sobre l'esfera amb la fórmula de haversine. Un grup és una cadena d'esdeveniments a menys de 25 km l'un de l'altre; els que estan sols són soroll.
@@ -220,6 +265,31 @@ for i, (gran, petit) in enumerate(parametres):
     x = 1.0 + i * 3.9
     text(s, x, 5.35, 3.6, 0.6, gran, 28, TARONJA, True)
     text(s, x, 6.0, 3.6, 0.4, petit, 14, RGBColor(0xC9, 0xD1, 0xDB))
+
+# ---------------------------------------------------------------- 7b. Precisio, recall i F1
+s = diapo('Com mesurem: precisió, recall i F₁', """Per saber si el detector funciona, comptem quatre coses. Encert, o vertader positiu: l'hem marcat i és una explosió. Fals positiu: l'hem marcat però no ho és. Fals negatiu: és una explosió i no l'hem marcat. I vertader negatiu: no l'hem marcat i no ho és.
+La precisió respon a: de tot el que marquem, quant és explosió? El recall: de totes les explosions, quantes trobem? I la F1 és la mitjana harmònica de les dues, de manera que només és alta si totes dues ho són.
+No fem servir l'exactitud, perquè les classes estan molt desequilibrades: un detector que no marqués mai res encertaria el 99,8 %.""")
+quadrats = [('Encert (TP)', 'Marcat i és explosió', '551', VERD), ('Fals positiu (FP)', 'Marcat, però no és explosió', '57', TARONJA),
+            ('Fals negatiu (FN)', 'Explosió que no marquem', '63', NAVY), ('Vertader negatiu (TN)', 'No marcat i no és explosió', '297 456', GRIS)]
+for i, (cap, cos, num, color) in enumerate(quadrats):
+    x = 0.6 + (i % 2) * 3.0
+    y = 1.6 + (i // 2) * 2.4
+    targeta(s, x, y, 2.85, 2.25)
+    text(s, x + 0.25, y + 0.2, 2.4, 0.9, num, 32, color, True, ancora=MSO_ANCHOR.BOTTOM)
+    text(s, x + 0.25, y + 1.15, 2.4, 0.4, cap, 15, NAVY, True)
+    text(s, x + 0.25, y + 1.55, 2.4, 0.6, cos, 12, GRIS)
+definicions = [('Precisió', 'TP / (TP + FP)', 'De tot el que marquem, quant és explosió?', '90,6 %', NAVY),
+               ('Recall', 'TP / (TP + FN)', 'De totes les explosions, quantes trobem?', '89,7 %', NAVY),
+               ('F₁', '2·TP / (2·TP + FP + FN)', 'Mitjana harmònica: només és alta si les dues ho són.', '0,902', TARONJA)]
+for i, (cap, formula, cos, valor, color) in enumerate(definicions):
+    y = 1.6 + i * 1.62
+    targeta(s, 6.85, y, 5.85, 1.48)
+    text(s, 7.1, y + 0.15, 2.6, 0.45, cap, 20, color, True)
+    text(s, 7.1, y + 0.62, 3.4, 0.4, formula, 15, INK, True)
+    text(s, 7.1, y + 1.0, 3.7, 0.45, cos, 12, GRIS)
+    text(s, 10.8, y, 1.7, 1.48, valor, 28, color, True, alineacio=PP_ALIGN.RIGHT, ancora=MSO_ANCHOR.MIDDLE)
+text(s, 0.6, 6.55, 12.1, 0.4, 'No usem l\'exactitud: un detector que no marqués mai res encertaria el 99,8 %.', 15, INK, True)
 
 # ---------------------------------------------------------------- 8. Nevada
 s = diapo('Exemple: el polígon de Nevada', """Aquí hi ha un zoom al polígon de Nevada. A l'esquerra, els epicentres tal com els veu l'algorisme, sense etiquetes. A la dreta, els clústers: en blau els no sospitosos i en taronja els sospitosos, perquè la seva mediana de profunditat és menor de 2,5 km.
@@ -274,12 +344,37 @@ for i, (cap, cos) in enumerate(cartes):
     text(s, x + 0.3, 5.82, 3.3, 0.4, cap, 18, TARONJA, True)
     text(s, x + 0.3, 6.25, 3.3, 0.55, cos, 14, INK)
 
+# ---------------------------------------------------------------- 12b. Explosions nuclears civils sovietiques
+s = diapo('Les explosions nuclears civils soviètiques', """Entre els falsos negatius hi ha un grup que cal explicar: les explosions nuclears pacífiques o civils de la Unió Soviètica. Era un programa civil, separat dels assajos militars, que va durar aproximadament de 1965 a 1988, amb un centenar llarg d'explosions; la xifra habitual és d'unes 120.
+S'utilitzaven per crear cavitats subterrànies on emmagatzemar gas, com les 15 d'Astracan que sí que detectem; per estimular jaciments de petroli i de gas; per fer sondeigs sísmics profunds; per excavar canals i embassaments; i fins i tot per apagar focs de pous de gas.
+Per què ens afecten? Perquè no es feien als polígons militars sinó en llocs aïllats de Sibèria, dels Urals i del Kazakhstan. Amb v_min igual a 2, una explosió que és sola en un radi de 25 km és soroll. Cal ser prudents: dedueixo que moltes de les 40 explosions aïllades són d'aquest programa pel lloc on són, però no ho he comprovat explosió per explosió.""")
+text(s, 0.6, 1.55, 3.6, 0.9, '~120', 66, TARONJA, True, ancora=MSO_ANCHOR.BOTTOM)
+text(s, 0.6, 2.5, 3.6, 0.9, 'explosions civils, de 1965 a 1988 (xifra habitual)', 15, GRIS)
+text(s, 0.6, 3.6, 3.6, 1.6, 'Un programa civil, separat dels assajos militars.', 17, INK, True)
+usos = [('Emmagatzemar gas', 'Doms de sal. Les 15 d\'Astracan sí que es detecten.', NAVY),
+        ('Estimular jaciments', 'Petroli i gas.', BLAU),
+        ('Sondeig sísmic profund', 'Explorar l\'escorça terrestre.', NAVY),
+        ('Canals i embassaments', 'Moure grans volums de terra.', BLAU),
+        ('Apagar focs de pous', 'De gas.', NAVY)]
+for i, (cap, cos, color) in enumerate(usos):
+    x = 4.5 + (i % 2) * 4.15
+    y = 1.55 + (i // 2) * 1.3
+    ample = 3.95 if i < 4 else 8.1
+    targeta(s, x, y, ample, 1.18)
+    cercle(s, x + 0.25, y + 0.29, 0.6, color, str(i + 1), 20)
+    text(s, x + 1.1, y + 0.14, ample - 1.3, 0.4, cap, 17, NAVY, True)
+    text(s, x + 1.1, y + 0.6, ample - 1.3, 0.55, cos, 14, GRIS)
+targeta(s, 0.6, 5.65, 12.1, 1.2, color=NAVY, vora=None)
+text(s, 1.0, 5.65, 5.6, 1.2, 'Per què ens afecten?', 24, TARONJA, True, ancora=MSO_ANCHOR.MIDDLE)
+text(s, 5.4, 5.65, 7.1, 1.2, 'No es feien als polígons militars, sinó en llocs aïllats de Sibèria, els Urals i el Kazakhstan: amb v_min = 2, una explosió sola en 25 km és soroll.',
+     15, BLANC, ancora=MSO_ANCHOR.MIDDLE)
+
 # ---------------------------------------------------------------- 13. On falla
 s = diapo('On falla el mètode', """Els 63 falsos negatius tenen explicació.
-Quaranta són explosions aïllades, sobretot civils soviètiques a Rússia i el Kazakhstan: com que estan soles en 25 km, amb v_min igual a 2 són soroll.
+Quaranta són explosions aïllades, probablement civils soviètiques a Rússia i el Kazakhstan: com que estan soles en 25 km, amb v_min igual a 2 són soroll.
 Divuit són de Lop Nur, a la Xina: caiguts al costat de terratrèmols del Tian Shan, la mediana del clúster puja a 15,7 km i es perd tot el grup.
 La Bomba Tsar va ser una explosió aèria a 4 km d'altura, i el catàleg la registra a menys 4 km, per sobre de la superfície: queda fora de la finestra. I l'assaig Shoal del 1963, a Fallon, es va fer enmig d'una zona amb terratrèmols reals.""")
-cartes = [('40 de 63', 'Explosions aïllades', 'Assajos sols en 25 km, sobretot civils soviètics: queden com a soroll.', NAVY),
+cartes = [('40 de 63', 'Explosions aïllades', 'Assajos sols en 25 km, probablement civils soviètics: queden com a soroll.', NAVY),
           ('18 de 63', 'Lop Nur (Xina)', 'Barrejades amb 29 terratrèmols del Tian Shan: la mediana del clúster és de 15,7 km.', TARONJA),
           ('1961', 'Bomba Tsar', 'Explosió aèria a 4 km d\'altura: el catàleg la posa a −4 km, fora de la finestra.', BLAU),
           ('1963', 'Assaig Shoal (Fallon)', '12 kt en granit, enmig d\'una zona amb terratrèmols reals.', GRIS)]
@@ -316,5 +411,11 @@ estadistica(s, 4.8, 3.7, 3.6, '57', 'falsos positius', BLANC, 48, RGBColor(0xC9,
 estadistica(s, 8.8, 3.7, 3.6, '551 / 614', 'explosions detectades', BLANC, 48, RGBColor(0xC9, 0xD1, 0xDB))
 text(s, 0.8, 5.8, 11.8, 1.0, 'Pistes per investigar, no veredictes. Gràcies, preguntes?', 24, RGBColor(0xC9, 0xD1, 0xDB))
 
-prs.save(AQUI / 'expo_arnau.pptx')
-print('guardat', AQUI / 'expo_arnau.pptx', len(prs.slides._sldIdLst), 'diapositives')
+desti = AQUI / 'expo_arnau.pptx'
+try:
+    prs.save(desti)
+except PermissionError:
+    # El fitxer esta obert a PowerPoint: es desa amb un altre nom
+    desti = AQUI / 'expo_arnau_nou.pptx'
+    prs.save(desti)
+print('guardat', desti, len(prs.slides._sldIdLst), 'diapositives')
