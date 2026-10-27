@@ -189,19 +189,19 @@ distància al $k$-èsim veí.
 \section{Problema d'Arnau Montull: detecció d'explosions nuclears amb DBSCAN}
 % ==========================================
 
-\subsection{Plantejament i originalitat}
-Els sismògrafs registren igual terremotos i explosions nuclears. Ens preguntem si un clustering que no mira l'etiqueta pot
+\subsection{Plantejament}
+Els sismògrafs registren igual terratrèmols i explosions nuclears. Ens preguntem si un clustering que no mira l'etiqueta pot
 assenyalar les explosions només amb la posició i la profunditat de l'esdeveniment. L'agrupament (DBSCAN) és no supervisat i la
 finestra de profunditat es fixa amb un criteri físic, sense optimitzar-la contra l'etiqueta; aquesta només s'utilitza per
 avaluar (vegeu les limitacions). La idea física és doble: les proves nuclears es repeteixen als mateixos polígons d'assaig
 (Nevada, Semipalatinsk, Nova Zembla, Lop Nur, Mururoa\ldots), de manera que formen agrupacions espacials molt compactes, i
-passen gairebé a la superfície, mentre que els terremotos del catàleg tenen una profunditat mediana de 33 km i només el
+passen gairebé a la superfície, mentre que els terratrèmols del catàleg tenen una profunditat mediana de 33 km i només el
 0,25\,\% és a menys de 2,5 km.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figuras/fuentes.png}
-\caption{Tall vertical esquemàtic. Un terremoto s'origina quan una falla llisca en profunditat (mediana del catàleg, 33 km) i
+\caption{Tall vertical esquemàtic. Un terratrèmol s'origina quan una falla llisca en profunditat (mediana del catàleg, 33 km) i
 emet ones P i S. Una explosió nuclear subterrània és un pols de pressió gairebé a la superfície i emet sobretot ones P. Els
 sismògrafs (triangles) registren tots dos esdeveniments; aquí només es fa servir la profunditat del focus que dona el catàleg.}
 \end{figure}
@@ -251,7 +251,7 @@ d = 2R\arcsin\sqrt{\sin^2\!\tfrac{\Delta\varphi}{2}+\cos\varphi_1\cos\varphi_2\s
 \cite{pedregosa2011} (\texttt{metric='haversine'}, amb $\varepsilon$ en radiants, $\varepsilon_{\mathrm{rad}}=\varepsilon_{\mathrm{km}}/R$).
 Aquí el clustering només agrupa per posició; el criteri físic (la profunditat) és el que etiqueta cada grup.
 
-Com que les classes estan molt desequilibrades (614 explosions davant de gairebé 300\,000 terremotos), l'exactitud no serveix:
+Com que les classes estan molt desequilibrades (614 explosions davant de gairebé 300\,000 terratrèmols), l'exactitud no serveix:
 un detector que no marqués mai res encertaria el 99,8\,\%. S'utilitzen la precisió $P=\mathrm{TP}/(\mathrm{TP}+\mathrm{FP})$, el
 recall $R=\mathrm{TP}/(\mathrm{TP}+\mathrm{FN})$ i la seva mitjana harmònica, $F_1=2PR/(P+R)=2\,\mathrm{TP}/(2\,\mathrm{TP}+\mathrm{FP}+\mathrm{FN})$.
 
@@ -303,10 +303,10 @@ de \texttt{nukeDBSCAN\_arnau.py}, que \texttt{nukeval.py} importa.
 
 \begin{itemize}
   \item \textbf{Finestra de profunditat $[0;\,2{,}5)$ km:} criteri físic. Una explosió nuclear soterrada és a menys d'uns
-        pocs km de la superfície; els terremotos tectònics són, majoritàriament, molt més profunds.
+        pocs km de la superfície; els terratrèmols tectònics són, majoritàriament, molt més profunds.
   \item \textbf{$\varepsilon=25$ km:} de l'ordre de la mida d'un polígon d'assaig. És el valor amb menys falsos positius dels
-        provats (de 5 a 100 km, vegeu la validació): amb menys radi els terremotos superficials queden en grups solts i amb
-        més radi els grups d'explosions es fonen amb terremotos més profunds. Aquí sí que es mira l'etiqueta.
+        provats (de 5 a 100 km, vegeu la validació): amb menys radi els terratrèmols superficials queden en grups solts i amb
+        més radi els grups d'explosions es fonen amb terratrèmols més profunds. Aquí sí que es mira l'etiqueta.
   \item \textbf{$v_{\min}=1$:} amb $v_{\min}=3$ empitjora (vegeu les limitacions).
 \end{itemize}
 L'script \texttt{nuke\_optimizar.py} (cerca de la finestra i de $\varepsilon$ per $F_1$) es va provar, però no es fa servir per
@@ -368,8 +368,8 @@ $\varepsilon$ (km) & Clústers & Silueta & FP & FN \\
         densitat, DBSCAN uneix cadenes allargades de sismes i la silueta \cite{rousseeuw}, que premia grups compactes i
         separats, el penalitza. Tampoc el gràfic de distàncies al 4t veí no mostra un colze clar entre 20 i 30 km.
   \item \textbf{El que sí que limita $\varepsilon$ és la profunditat:} els FP baixen quan $\varepsilon$ creix fins a un mínim
-        de 115 a 25 km (amb $\varepsilon$ petit molts terremotos superficials queden en grups solts); a partir de 40--50 km els
-        grups d'explosions es fonen amb terremotos més profunds: els FP pugen a 483 amb 50 km i els FN passen de 28 a 261 amb
+        de 115 a 25 km (amb $\varepsilon$ petit molts terratrèmols superficials queden en grups solts); a partir de 40--50 km els
+        grups d'explosions es fonen amb terratrèmols més profunds: els FP pugen a 483 amb 50 km i els FN passen de 28 a 261 amb
         75 km, perquè la mediana deixa de ser superficial.
   \item \textbf{Estabilitat:} l'ARI \cite{hubert} (val 1 si dues particions coincideixen i 0 si s'assemblen com dues a l'atzar)
         entre el clustering de tot el catàleg i el d'una mostra aleatòria del 50\,\% (5 llavors, $\varepsilon=25$ km) val entre
@@ -412,13 +412,13 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
   \item \textbf{Nevada.} És el polígon on els Estats Units van fer la majoria dels seus assajos: 928 (100 atmosfèrics i 828
         subterranis) segons la llista oficial del Departament d'Energia \cite{doe2015}; des del juliol de 1962 tots van ser
         subterranis. Al catàleg ($M\ge4{,}5$) en queden 230, tan junts que DBSCAN els encadena en un únic clúster. També és
-        el que aporta més falsos positius: els 26 esdeveniments del clúster que no són explosions nuclears (16 terremotos, 6
+        el que aporta més falsos positius: els 26 esdeveniments del clúster que no són explosions nuclears (16 terratrèmols, 6
         \texttt{explosion}, 3 esfondraments i 1 voladura) es marquen amb ell. Després d'un assaig subterrani, el sostre de la
         cavitat es pot enfonsar i aquest esfondrament genera el seu propi senyal sísmic, de tipus implosiu \cite{ford2009};
         alguns d'aquests esdeveniments podrien ser-ho, o bé proves que l'USGS va registrar amb una altra etiqueta.
   \item \textbf{Semipalatinsk.} Al polígon soviètic del Kazakhstan s'hi van fer 456 explosions nuclears fins al 1989
         \cite{yang2003}. Apareix partit en dos clústers separats per uns 60 km: Balapan, amb assajos en pous verticals, i el
-        massís de Degelen, amb assajos en galeries. Són 178 explosions amb mediana de profunditat 0 i gairebé cap terremoto
+        massís de Degelen, amb assajos en galeries. Són 178 explosions amb mediana de profunditat 0 i gairebé cap terratrèmol
         al voltant: el cas més fàcil.
   \item \textbf{Mururoa.} França va fer 147 assajos subterranis entre 1975 i 1996, 137 a Mururoa i 10 a Fangataufa
         \cite{iaea1998}. Lluny de qualsevol zona sísmica, el clúster de Mururoa conté 74 explosions i només 2 esdeveniments més.
@@ -429,7 +429,7 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
         finestra $[0;\,2{,}5)$ i és un dels 28 falsos negatius.
   \item \textbf{Lop Nur.} La Xina hi va fer els seus 45 assajos entre 1964 i 1996 \cite{yang2003}, al costat del Tian Shan,
         una serralada amb molta sismicitat natural. És la gran fallada del mètode: les 18 explosions del clúster cauen al costat
-        de 29 terremotos, amb mediana de 24,5 km, i diverses explosions figuren a 33 km, una profunditat fixa que el catàleg
+        de 29 terratrèmols, amb mediana de 24,5 km, i diverses explosions figuren a 33 km, una profunditat fixa que el catàleg
         feia servir quan no la podia resoldre. La mediana del clúster puja a 15,7 km i es perd tot el grup: són 18 dels 28 FN.
         Dels 28, 10 tenen aquesta profunditat de 33 km.
   \item \textbf{Astracan i Iacútia.} Clústers petits a Rússia sense cap polígon militar. Corresponen a explosions nuclears amb
@@ -439,11 +439,11 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
         inferior i queda per sota del tall. El del 3 de setembre de 2017, de magnitud 6,3, és l'explosió més gran del segle
         \textsc{xxi} al catàleg. Uns 8,5 minuts després, el sostre de la cavitat es va enfonsar i va produir un segon
         esdeveniment de magnitud propera a 4 \cite{tian2018}, que no entra al nostre catàleg per magnitud.
-  \item \textbf{Un assaig amagat entre terremotos.} El 26 d'octubre de 1963, els Estats Units van fer l'assaig \emph{Shoal},
+  \item \textbf{Un assaig amagat entre terratrèmols.} El 26 d'octubre de 1963, els Estats Units van fer l'assaig \emph{Shoal},
         de 12 kt, en granit a prop de Fallon (Nevada), lluny del polígon \cite{doe2015}. Formava part del programa Vela
-        Uniform, que estudiava com detectar assajos subterranis, i es va fer en una zona amb terremotos reals: la seqüència
+        Uniform, que estudiava com detectar assajos subterranis, i es va fer en una zona amb terratrèmols reals: la seqüència
         del 1954 de Rainbow Mountain, Fairview Peak i Dixie Valley \cite{slemmons1957}. DBSCAN l'agrupa amb aquests
-        terremotos i la mediana deixa de ser superficial: el mètode falla just on l'explosió s'assembla a la sismicitat natural.
+        terratrèmols i la mediana deixa de ser superficial: el mètode falla just on l'explosió s'assembla a la sismicitat natural.
 \end{itemize}
 
 \paragraph{Limitacions i honestedat del resultat.}
@@ -457,10 +457,10 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
   \item \textbf{Generalització:} no hi ha cap subconjunt de prova separat: s'ajusta i s'avalua en el mateix catàleg.
   \item \textbf{Convenció del catàleg:} el 85\,\% de les explosions figura amb profunditat exactament $0{,}0$ km. Una finestra
         més estreta, $[0;\,0{,}1)$, donaria $F_1=0{,}931$ però mesuraria aquesta convenció de l'USGS i no la física.
-  \item \textbf{Falsos positius:} terremotos molt superficials (anys 80 a Washington, Califòrnia i Alaska) i altres
+  \item \textbf{Falsos positius:} terratrèmols molt superficials (anys 80 a Washington, Califòrnia i Alaska) i altres
         esdeveniments no sísmics. Dels 115 FP, 24 són d'un altre tipus: 16 \texttt{explosion}, 5 esfondraments de mina, 1
         voladura de pedrera, 1 esclat de roca i 1 esllavissada; cap de les 71 erupcions volcàniques no es marca. Si es
-        descartessin els altres 100 esdeveniments no sísmics (només terremotos i explosions nuclears), serien 91 FP i
+        descartessin els altres 100 esdeveniments no sísmics (només terratrèmols i explosions nuclears), serien 91 FP i
         $F_1=0{,}908$. Algunes proves oficials de Nevada figuren a l'USGS com a \texttt{earthquake}; aquest error és de
         l'etiqueta, no del mètode.
   \item \textbf{Biaix d'època:} no es fan servir l'any ni el nombre d'estacions com a variables, perquè delaten l'època del
