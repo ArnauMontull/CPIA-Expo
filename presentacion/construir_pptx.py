@@ -1,13 +1,16 @@
 # Genera presentacion/expo_cpia.pptx: parte de Arnau y Uriel completas y diapositivas con hueco para los demas
 from pathlib import Path
 import shutil
+import copy
+import io
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
-from generar_presentacion_uriel import agregar_diapositivas_uriel
+from pptx.oxml import parse_xml
 
 AQUI = Path(__file__).resolve().parent
 FIG = AQUI.parent / 'docs' / 'figuras'
+PPTX_URIEL = AQUI / 'presentacion_materiales_uriel.pptx'
 
 prs = Presentation()
 prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
@@ -41,6 +44,29 @@ def diapo(titulo, lineas=(), figura=None, ancho_fig=7.2, pendiente=None, notas=N
     if notas:
         s.notes_slide.notes_text_frame.text = notas
     return s
+
+
+def clonar_slides_uriel(prs_dst, ruta_pptx):
+    """Clona exactament les diapositives de la presentació d'Uriel."""
+    prs_src = Presentation(ruta_pptx)
+    blank_layout = prs_dst.slide_layouts[6]
+    for src_slide in prs_src.slides:
+        dst_slide = prs_dst.slides.add_slide(blank_layout)
+        rId_map = {}
+        for rel_id, rel in src_slide.part.rels.items():
+            if "image" in rel.reltype:
+                image_blob = rel.target_part.blob
+                image_file = io.BytesIO(image_blob)
+                image_part, new_rel_id = dst_slide.part.get_or_add_image_part(image_file)
+                rId_map[rel_id] = new_rel_id
+
+        for shape in src_slide.shapes:
+            new_el = copy.deepcopy(shape.element)
+            xml_str = new_el.xml
+            for old_rid, new_rid in rId_map.items():
+                xml_str = xml_str.replace(f'r:embed="{old_rid}"', f'r:embed="{new_rid}"')
+            new_el = parse_xml(xml_str)
+            dst_slide.shapes._spTree.append(new_el)
 
 
 # Portada
@@ -103,7 +129,8 @@ for nombre in ('Matías', 'Martí'):
     diapo(f'Problema de {nombre}', pendiente='título, datos, método, resultado, figuras')
 
 # --- Part d'Uriel: Classificació de Materials Elèctrics mitjançant DBSCAN ---
-agregar_diapositivas_uriel(prs)
+if PPTX_URIEL.exists():
+    clonar_slides_uriel(prs, PPTX_URIEL)
 
 diapo('Conclusiones', pendiente='comparativa del equipo: qué algoritmo funcionó mejor y por qué')
 diapo('Preguntas', ['Código y documento de descripción entregados en Atenea'])
