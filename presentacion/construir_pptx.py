@@ -117,7 +117,7 @@ diapo('Dataset i espai (log₁₀ρ, α)', [
     'materiales_antes_clustering.png', 7.2,
     notas='Comparativa d\'escala: la compressió logarítmica és imprescindible perquè metalls i aïllants coexisteixin.')
 
-diapo('Per què DBSCAN enfront de K-Means?', [
+diapo('DBSCAN vs. K-Means?', [
     '✖ K-Means: assumeix esfericitat, fractura aïllants i no aïlla soroll',
     '✔ DBSCAN: connecta per densitat local i tolera densitats desiguals',
     'Metalls hiperdensos vs aïllants estesos en 12 ordres',

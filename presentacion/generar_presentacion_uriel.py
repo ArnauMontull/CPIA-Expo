@@ -34,7 +34,6 @@ LATEX_COORDENADAS = LATEX_DIR / "formula_coordenadas.png"
 LATEX_ZSCORE = LATEX_DIR / "formula_zscore.png"
 LATEX_NUCLEO = LATEX_DIR / "formula_nucleo.png"
 LATEX_PARAMETROS = LATEX_DIR / "formula_parametros.png"
-LATEX_SILHOUETTE = LATEX_DIR / "formula_silhouette.png"
 
 OUTPUT_DIR_1 = BASE_DIR / "problemas" / "5_Materials_Uriel" / "presentacion_materiales_uriel.pptx"
 OUTPUT_DIR_2 = BASE_DIR / "presentacion" / "presentacion_materiales_uriel.pptx"
@@ -105,7 +104,7 @@ p.font.color.rgb = COLOR_NEGRO
 sub_box = s1.shapes.add_textbox(Inches(1.3), Inches(3.6), Inches(10.7), Inches(1.0))
 tf_sub = sub_box.text_frame
 p = tf_sub.paragraphs[0]
-p.text = "Descobriment No Supervisat de Fases Quàntiques (Conductors, Semiconductors i Aïllants)"
+p.text = "Classificació de materials Conductors, Semiconductors i Aïllants"
 p.font.size = Pt(17)
 p.font.color.rgb = COLOR_NEGRO
 
@@ -186,7 +185,7 @@ d_items = [
     ("57 Materials reals:", " Metalls purs, aliatges, semiconductors i dielèctrics."),
     ("30 ordres de magnitud:", " De conductors (~10⁻⁸ Ω·m) a tefló (> 10²² Ω·m)."),
     ("Compressió logarítmica:", " Evita el col·lapse numèric a l'origen."),
-    ("Signatura quàntica:", " α delata l'origen microscòpic del transport."),
+    ("Signatura quàntica:", " α indica l'origen microscòpic del transport."),
     ("Dades sense etiquetar:", " L'algorisme ha de descobrir l'estructura sol.")
 ]
 for i, (tit, desc) in enumerate(d_items):
@@ -210,10 +209,10 @@ set_speaker_notes(s3,
 )
 
 # ==============================================================================
-# SLIDE 4: PER QUÈ DBSCAN I NO K-MEANS? (LLISTA AVANTATGES/INCONVENIENTS + FIGURA)
+# SLIDE 4: DBSCAN vs. K-MEANS? (LLISTA AVANTATGES/INCONVENIENTS + FIGURA)
 # ==============================================================================
 s4 = prs.slides.add_slide(blank_layout)
-add_header(s4, "Per què DBSCAN i no K-Means?")
+add_header(s4, "DBSCAN vs. K-Means?")
 
 add_card(s4, 0.8, 1.6, 4.8, 5.3)
 b_vs = s4.shapes.add_textbox(Inches(1.0), Inches(1.75), Inches(4.4), Inches(5.0))
@@ -263,7 +262,7 @@ if FIG_COMPARATIVA.exists():
 
 set_speaker_notes(s4,
     "GUIÓ SLIDE 4:\n"
-    "Pregunta clau: per què DBSCAN i no K-Means?\n"
+    "DBSCAN vs. K-Means:\n"
     "Al gràfic de la dreta es veu clar: K-Means imposa fronteres esfèriques forçades. "
     "En tenir metalls ultra concentrats i aïllants dispersos, K-Means falla. "
     "DBSCAN segueix els camins de densitat natural i aïlla punts atípics com a soroll."
@@ -419,119 +418,106 @@ s7 = prs.slides.add_slide(blank_layout)
 add_header(s7, "Validació Experimental: Matriu de Contingència Física")
 
 w_card7 = 3.65
-h_card7 = 3.4
+h_card7 = 5.2
 y_card7 = 1.6
 
 # Conductors
 add_card(s7, 0.8, y_card7, w_card7, h_card7)
-bc = s7.shapes.add_textbox(Inches(1.0), Inches(y_card7 + 0.2), Inches(w_card7 - 0.4), Inches(3.0))
+bc = s7.shapes.add_textbox(Inches(1.0), Inches(y_card7 + 0.35), Inches(w_card7 - 0.4), Inches(4.5))
 tfc = bc.text_frame
 tfc.word_wrap = True
 p = tfc.paragraphs[0]
 p.text = "Conductors (Metalls)"
-p.font.size = Pt(16)
+p.font.size = Pt(18)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
 p_num = tfc.add_paragraph()
 p_num.text = "35 / 35"
-p_num.font.size = Pt(32)
+p_num.font.size = Pt(36)
 p_num.font.bold = True
 p_num.font.color.rgb = COLOR_NEGRO
 p_num.alignment = PP_ALIGN.CENTER
 
 p_p = tfc.add_paragraph()
 p_p.text = "100 % Puresa"
-p_p.font.size = Pt(16)
+p_p.font.size = Pt(18)
 p_p.font.bold = True
 p_p.font.color.rgb = COLOR_NEGRO
 p_p.alignment = PP_ALIGN.CENTER
 
 p_sub = tfc.add_paragraph()
 p_sub.text = "\nAssignats íntegrament al Clúster 0. Zero falsos negatius."
-p_sub.font.size = Pt(11)
+p_sub.font.size = Pt(13)
 p_sub.font.color.rgb = COLOR_NEGRO
 
 # Aïllants
 add_card(s7, 4.85, y_card7, w_card7, h_card7)
-ba = s7.shapes.add_textbox(Inches(5.05), Inches(y_card7 + 0.2), Inches(w_card7 - 0.4), Inches(3.0))
+ba = s7.shapes.add_textbox(Inches(5.05), Inches(y_card7 + 0.35), Inches(w_card7 - 0.4), Inches(4.5))
 tfa = ba.text_frame
 tfa.word_wrap = True
 p = tfa.paragraphs[0]
 p.text = "Aïllants (Dielèctrics)"
-p.font.size = Pt(16)
+p.font.size = Pt(18)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
 p_num = tfa.add_paragraph()
 p_num.text = "10 / 10"
-p_num.font.size = Pt(32)
+p_num.font.size = Pt(36)
 p_num.font.bold = True
 p_num.font.color.rgb = COLOR_NEGRO
 p_num.alignment = PP_ALIGN.CENTER
 
 p_p = tfa.add_paragraph()
 p_p.text = "100 % Puresa"
-p_p.font.size = Pt(16)
+p_p.font.size = Pt(18)
 p_p.font.bold = True
 p_p.font.color.rgb = COLOR_NEGRO
 p_p.alignment = PP_ALIGN.CENTER
 
 p_sub = tfa.add_paragraph()
 p_sub.text = "\nAssignats íntegrament al Clúster 1. Coincidència total amb la física."
-p_sub.font.size = Pt(11)
+p_sub.font.size = Pt(13)
 p_sub.font.color.rgb = COLOR_NEGRO
 
 # Semiconductors
 add_card(s7, 8.9, y_card7, w_card7, h_card7)
-bs = s7.shapes.add_textbox(Inches(9.1), Inches(y_card7 + 0.2), Inches(w_card7 - 0.4), Inches(3.0))
+bs = s7.shapes.add_textbox(Inches(9.1), Inches(y_card7 + 0.35), Inches(w_card7 - 0.4), Inches(4.5))
 tfs = bs.text_frame
 tfs.word_wrap = True
 p = tfs.paragraphs[0]
 p.text = "Semiconductors"
-p.font.size = Pt(16)
+p.font.size = Pt(18)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
 p_num = tfs.add_paragraph()
 p_num.text = "10 / 12"
-p_num.font.size = Pt(32)
+p_num.font.size = Pt(36)
 p_num.font.bold = True
 p_num.font.color.rgb = COLOR_NEGRO
 p_num.alignment = PP_ALIGN.CENTER
 
 p_p = tfs.add_paragraph()
 p_p.text = "83.3 % Puresa"
-p_p.font.size = Pt(16)
+p_p.font.size = Pt(18)
 p_p.font.bold = True
 p_p.font.color.rgb = COLOR_NEGRO
 p_p.alignment = PP_ALIGN.CENTER
 
 p_sub = tfs.add_paragraph()
 p_sub.text = "\n10 al Clúster 2. 2 semimetalls classificats al clúster 0 per conducció cuasimetàl·lica."
-p_sub.font.size = Pt(10.5)
+p_sub.font.size = Pt(12)
 p_sub.font.color.rgb = COLOR_NEGRO
-
-# Barra inferior amb la silueta en LaTeX
-add_card(s7, 0.8, 5.25, 11.733, 1.55)
-b_sil = s7.shapes.add_textbox(Inches(1.1), Inches(5.35), Inches(11.1), Inches(0.35))
-p = b_sil.text_frame.paragraphs[0]
-p.text = "Mètrica Matemàtica Complementària (No Supervisada):"
-p.font.size = Pt(11.5)
-p.font.bold = True
-p.font.color.rgb = COLOR_NEGRO
-
-if LATEX_SILHOUETTE.exists():
-    s7.shapes.add_picture(str(LATEX_SILHOUETTE), Inches(2.2), Inches(5.75), width=Inches(8.8))
 
 set_speaker_notes(s7,
     "GUIÓ SLIDE 7:\n"
     "Pel que fa a validació, la prova reina és la Matriu de Contingència Física:\n"
     "- 100% de puresa en conductors (35 de 35 metalls al clúster 0).\n"
     "- 100% de puresa en aïllants (10 de 10 dielèctrics al clúster 1).\n"
-    "- En semiconductors, els 10 materials tecnològics purs formen el clúster 2. "
-    "Els dos restants són semimetalls amb transport cuasimetàl·lic a 300 K.\n"
-    "I com a mètrica matemàtica complementària, la fórmula de Silhouette Score dona 0.7858."
+    "- En semiconductors, 10 de 12 materials purs formen el clúster 2. "
+    "Els dos restants són semimetalls amb transport cuasimetàl·lic a 300 K."
 )
 
 # ==============================================================================
