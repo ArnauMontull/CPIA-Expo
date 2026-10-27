@@ -149,5 +149,31 @@ ax.set(xlabel='Longitud (°)', ylabel='Latitud (°)', xlim=(-180, 180), ylim=(-9
 ax.legend(loc='lower left', markerscale=2); ax.grid(alpha=.3)
 fig.tight_layout(); fig.savefig(OUT / 'resultado.png', dpi=170); plt.close(fig)
 
+# 5b. Mapa de los poligonos de ensayo: cada cluster con explosiones, detectado o no
+sitios = [  # numero, nombre, (lon min, lon max, lat min, lat max) del cluster, posicion del texto
+    (1, 'Nevada', (-117.5, -115, 36, 38), (-150, 12)),
+    (2, 'Fallon (Shoal, 1963)', (-118.6, -118.2, 39, 39.4), (-150, 62)),
+    (3, 'Semipalatinsk', (77, 80, 49, 51), (62, 22)),
+    (4, 'Astracan', (47.5, 49, 46, 48), (14, 24)),
+    (5, 'Nova Zembla', (52, 56, 70, 75), (24, 79)),
+    (6, 'Lop Nur', (88, 89.5, 41, 42), (96, 12)),
+    (7, 'Punggye-ri', (128.5, 129.5, 41, 42), (132, 52)),
+    (8, 'Mururoa', (-139.5, -138, -23, -21.5), (-100, -50)),
+]
+fig, ax = plt.subplots(figsize=(11, 5.4))
+ax.scatter(df[~expl].longitude, df[~expl].latitude, s=1, c='lightgray', zorder=1)
+ax.scatter(df[expl & det].longitude, df[expl & det].latitude, s=12, c='green', zorder=3, label=f'Explosió detectada ({(expl & det).sum()})')
+ax.scatter(df[expl & ~det].longitude, df[expl & ~det].latitude, s=16, c='black', marker='X', zorder=4, label=f'Explosió no detectada ({(expl & ~det).sum()})')
+for num, nombre, (x0, x1, y0, y1), (tx, ty) in sitios:
+    m = expl & df.longitude.between(x0, x1) & df.latitude.between(y0, y1)
+    cx, cy = df[m].longitude.mean(), df[m].latitude.mean()
+    ax.scatter([cx], [cy], s=260, facecolors='none', edgecolors='darkorange', linewidths=1.6, zorder=5)
+    ax.annotate(f'{num}. {nombre}', xy=(cx, cy), xytext=(tx, ty), fontsize=9, ha='center',
+                arrowprops=dict(arrowstyle='-', color='darkorange', lw=.8), zorder=6,
+                bbox=dict(boxstyle='round,pad=0.2', fc='white', ec='darkorange', lw=.8))
+ax.set(xlabel='Longitud (°)', ylabel='Latitud (°)', xlim=(-180, 180), ylim=(-90, 90))
+ax.legend(loc='lower right', markerscale=1.5, fontsize=9); ax.grid(alpha=.3)
+fig.tight_layout(); fig.savefig(OUT / 'mapa_clusters.png', dpi=170); plt.close(fig)
+
 tp, fp, fn = (det & expl).sum(), (det & ~expl).sum(), (~det & expl).sum()
 print(f'TP={tp} FP={fp} FN={fn} precision={tp/(tp+fp):.3f} recall={tp/(tp+fn):.3f} F1={2*tp/(2*tp+fp+fn):.4f}')

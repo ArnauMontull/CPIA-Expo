@@ -419,6 +419,15 @@ Amb els paràmetres fixos: 551 encerts, 57 FP i 63 FN, és a dir, precisió del 
 \subsection{Què hi ha darrere de cada clúster}
 DBSCAN no en sap res, d'història, però els clústers que troba són els polígons d'assaig de la Guerra Freda. De les 614 explosions, 574 cauen en 19 clústers i 40 queden com a soroll (sismes aïllats); la taula mostra els clústers més grans, amb el lloc que dona el mateix catàleg de l'USGS.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figuras/mapa_clusters.png}
+\caption{Les explosions nuclears del catàleg sobre el mapa de tots els terratrèmols (gris). Els cercles taronja marquen els polígons
+d'assaig i els clústers de DBSCAN dels quals parlen els punts següents. En verd, les explosions que
+es detecten (551); amb una creu negra, les que no (63): les de Lop Nur, la Bomba Tsar, l'assaig de Fallon i les explosions
+aïllades de Rússia i del Kazakhstan, que queden com a soroll.}
+\end{figure}
+
 \begin{table}[H]
 \centering\small
 \begin{tabular}{@{}llrrrl@{}}
@@ -516,7 +525,7 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
 % ==========================================
 \section{Problema de Matías: terratrèmols, patrons i anomalies amb K-Means}
 % ==========================================
-Material a \texttt{problemas/3\_Sismes\_Matias/} (\texttt{presentation\_matias\_FINAL.py}, \texttt{validacio\_FINAL.py},
+Material a \texttt{problemas/3\_Sismes\_Matias/} (\texttt{presentacio\_MATIAS.py}, \texttt{validacio\_MATIAS.py},
 \texttt{earthquakes.csv}, README i informe propi \texttt{informe\_sismes.tex}) i a \texttt{presentacion/matias/}
 (presentació). El text i els resultats que segueixen són els de la presentació de Matías (Matías Stein Niell), també a la presentació comuna del grup.
 
@@ -697,12 +706,12 @@ profunditat, acolorit per clúster (figura de Matías, de la presentació comuna
 \end{figure}
 
 \subsection{Com reproduir l'anàlisi}
-Els dos scripts separen l'anàlisi principal de la validació del model. \texttt{presentation\_matias\_FINAL.py} carrega i neteja
+Els dos scripts separen l'anàlisi principal de la validació del model. \texttt{presentacio\_MATIAS.py} carrega i neteja
 \texttt{earthquakes.csv}, normalitza les quatre variables, ajusta K-Means amb $K=3$, calcula les distàncies als veïns i dibuixa el
-gràfic. \texttt{validacio\_FINAL.py} prova $K=2\dots8$, calcula la inèrcia i la silueta, compara les llavors amb l'ARI i desa el
+gràfic. \texttt{validacio\_MATIAS.py} prova $K=2\dots8$, calcula la inèrcia i la silueta, compara les llavors amb l'ARI i desa el
 mapa geogràfic com \texttt{fig\_mapa.png}. Les dependències principals són pandas, numpy, matplotlib i scikit-learn; cal tenir el
-CSV al mateix directori que els scripts. Execució: \texttt{python presentation\_matias\_FINAL.py} i
-\texttt{python validacio\_FINAL.py}.
+CSV al mateix directori que els scripts. Execució: \texttt{python presentacio\_MATIAS.py} i
+\texttt{python validacio\_MATIAS.py}.
 
 \subsection{Aplicacions, limitacions i conclusions}
 \paragraph{Aplicacions.} L'anàlisi és un suport per explorar dades, no un sistema d'alerta: serveix per a l'exploració científica
