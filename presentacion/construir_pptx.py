@@ -1,8 +1,10 @@
 # Genera presentacion/expo_cpia.pptx: parte de Arnau y Uriel completas y diapositivas con hueco para los demas
 from pathlib import Path
+import shutil
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
+from generar_presentacion_uriel import agregar_diapositivas_uriel
 
 AQUI = Path(__file__).resolve().parent
 FIG = AQUI.parent / 'docs' / 'figuras'
@@ -100,51 +102,8 @@ diapo('Limitaciones (preguntas probables)', [
 for nombre in ('Matías', 'Martí'):
     diapo(f'Problema de {nombre}', pendiente='título, datos, método, resultado, figuras')
 
-# --- Part d\'Uriel: Classificació de Materials Elèctrics amb DBSCAN ---
-diapo('Problema: 3 famílies i signatures tèrmiques', [
-    'Conducció segons l\'estructura quàntica de bandes',
-    'Variació tèrmica: ρ(T) = ρ₀ · [1 + α·(T - T₀)]',
-    'Coeficient tèrmic: α = (1 / ρ₀) · (dρ / dT)₃₀₀K',
-    'Metalls (α > 0) · Semiconductors (α < 0) · Aïllants (α ≈ 0)'],
-    'esquema_bandas_materiales.png', 7.2,
-    notas='Estructura de bandes i variació tèrmica: el signe i la magnitud d\'alfa delaten la física microscòpica.')
-
-diapo('Dataset i espai (log₁₀ρ, α)', [
-    '57 materials reals recopilats experimentalment',
-    '30 ordres de magnitud en resistivitat (10⁻⁸ a 10²² Ω·m)',
-    'Escala lineal col·lapsa a l\'origen; log₁₀(ρ) separa les fases',
-    'Clustering no supervisat: descobrir les classes sense etiquetes'],
-    'materiales_antes_clustering.png', 7.2,
-    notas='Comparativa d\'escala: la compressió logarítmica és imprescindible perquè metalls i aïllants coexisteixin.')
-
-diapo('DBSCAN vs. K-Means?', [
-    '✖ K-Means: assumeix esfericitat, fractura aïllants i no aïlla soroll',
-    '✔ DBSCAN: connecta per densitat local i tolera densitats desiguals',
-    'Metalls hiperdensos vs aïllants estesos en 12 ordres',
-    'DBSCAN detecta anomalies de manera nativa (etiqueta -1)'],
-    'comparativa_kmeans_dbscan.png', 7.2,
-    notas='K-Means assumeix variàncies similars i falla; DBSCAN connecta per densitat i respecta la dispersió natural.')
-
-diapo('Metodologia: Fórmules i paràmetres', [
-    'Estandardització manual Z-Score amb NumPy: Z = (X - μ) / σ',
-    'Veïnat: N_ε(p) = { q | d(p, q) ≤ ε }',
-    'Nucli (Core Point): |N_ε(p)| ≥ min_samples',
-    'Paràmetres fixats: ε = 0,65 (colze k-NN) i min_samples = 3 (d = 2)'])
-
-diapo('Resultat: DBSCAN en 57 materials', [
-    '3 clústers purs descoberts per densitat: 0 soroll',
-    'Clúster 0 (ambre): 35 metalls conductors (Cu, Ag, Au...)',
-    'Clúster 1 (blau): 10 aïllants dielèctrics (vidre, tefló...)',
-    'Clúster 2 (verd): 10 semiconductors (Si, Ge, GaAs...)',
-    'Frontera α = 0: fonons vs activació tèrmica'],
-    'comparativa_abans_despres_dbscan.png', 7.2,
-    notas='Resultat gràfic: el pla 2D mostra la separació nítida de les tres classes.')
-
-diapo('Validació física: Matriu de contingència', [
-    'Conductors: 35 de 35 (100 % puresa al Clúster 0)',
-    'Aïllants: 10 de 10 (100 % puresa al Clúster 1)',
-    'Semiconductors: 10 de 12 (83,3 % puresa al Clúster 2; 2 semimetalls al clúster 0)',
-    'Silhouette Score complementari: 0,7858 (alta cohesió interna)'])
+# --- Part d'Uriel: Classificació de Materials Elèctrics mitjançant DBSCAN ---
+agregar_diapositivas_uriel(prs)
 
 diapo('Conclusiones', pendiente='comparativa del equipo: qué algoritmo funcionó mejor y por qué')
 diapo('Preguntas', ['Código y documento de descripción entregados en Atenea'])
@@ -162,3 +121,11 @@ aplicar_fuente_arial(prs)
 
 prs.save(AQUI / 'expo_cpia.pptx')
 print('guardado', AQUI / 'expo_cpia.pptx')
+
+# Sincronitzar amb arrel de CPIA i Descàrregues si és possible
+for dest in [AQUI.parent.parent / 'expo_cpia.pptx', Path.home() / 'Downloads' / 'expo_cpia.pptx']:
+    try:
+        shutil.copy2(AQUI / 'expo_cpia.pptx', dest)
+        print(f"Copia actualitzada a: {dest}")
+    except Exception as e:
+        print(f"Avís en copiar a {dest}: {e}")
