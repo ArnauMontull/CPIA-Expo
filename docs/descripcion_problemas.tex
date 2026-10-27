@@ -191,13 +191,31 @@ distància al $k$-èsim veí.
 \section{Problema d'Arnau Montull: detecció d'explosions nuclears amb DBSCAN}
 % ==========================================
 
-\subsection{Plantejament}
-Els sismògrafs registren igual terratrèmols i explosions nuclears. Ens preguntem si un clustering que no mira l'etiqueta pot
-assenyalar les explosions només amb la posició i la profunditat de l'esdeveniment. L'agrupament (DBSCAN) és no supervisat i la
-finestra de profunditat es fixa amb un criteri físic, sense optimitzar-la contra l'etiqueta; aquesta només s'utilitza per
-avaluar (vegeu les limitacions). La idea física és doble: les proves nuclears es repeteixen als mateixos polígons d'assaig
-(Nevada, Semipalatinsk, Nova Zembla, Lop Nur, Mururoa\ldots), de manera que formen agrupacions espacials molt compactes, i
-passen gairebé a la superfície, mentre que els terratrèmols del catàleg tenen una profunditat mediana de 33 km i només el
+\subsection{Interès del problema}
+El desenvolupament de l'armament nuclear ha donat lloc a un període de pau sense precedents entre les grans potències.
+La possibilitat d'una destrucció mútua assegurada ha dissuadit qualsevol guerra a gran escala entre potències nuclears
+des de la Segona Guerra Mundial. Alhora, aquestes potències han procurat que el nombre d'estats amb accés a aquesta
+tecnologia sigui el més reduït possible, i ho han fet mitjançant tractats com el de No Proliferació (1968) i el Tractat de
+Prohibició Completa dels Assaigs Nuclears (CTBT, 1996), que encara no ha entrat en vigor.
+
+Els fets recents mostren que aquest equilibri és fràgil. L'enriquiment d'urani per part de l'Iran, que s'acosta a l'ús
+militar, ha alarmat Occident i ha desencadenat un conflicte armat a l'Orient Mitjà entre l'Iran, d'una banda, i Israel i els
+Estats Units, de l'altra, amb implicació dels seus aliats del golf Pèrsic.
+
+L'últim estat que ha entrat al club nuclear és Corea del Nord, que va fer el seu primer assaig el 2006, fa pocs anys en
+termes històrics. Amb l'arma, Pyongyang ha blindat el seu règim autoritari davant de qualsevol intent d'intervenció
+exterior. Corea del Nord va anunciar els seus assaigs, però les xarxes sísmiques globals els van registrar de manera
+independent i en van permetre la localització i l'estimació de la mida \cite{tian2018}. Aquesta capacitat de verificar a
+distància, només amb dades sísmiques, és la que dona sentit als tractats anteriors. En aquest treball en provem una versió
+simple: veure si un algorisme no supervisat pot assenyalar les explosions d'un catàleg sísmic sense llegir-ne l'etiqueta.
+
+\subsection{Plantejament de la solució}
+Els sismògrafs registren igual terratrèmols i explosions nuclears. Utilitzem el catàleg de l'USGS i només dues variables
+de cada esdeveniment: la posició i la profunditat. L'agrupament (DBSCAN) és no supervisat i la finestra de profunditat es
+fixa amb un criteri físic, sense optimitzar-la contra l'etiqueta; aquesta només s'utilitza per avaluar (vegeu les
+limitacions). La idea física és doble: les proves nuclears es repeteixen als mateixos polígons d'assaig (Nevada,
+Semipalatinsk, Nova Zembla, Lop Nur, Mururoa\ldots), de manera que formen agrupacions espacials molt compactes, i passen
+gairebé a la superfície, mentre que els terratrèmols del catàleg tenen una profunditat mediana de 33 km i només el
 0,25\,\% és a menys de 2,5 km.
 
 \begin{figure}[H]
