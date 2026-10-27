@@ -73,7 +73,7 @@ diapo('Cómo se detecta', [
     '2. Mediana de profundidad de cada cluster',
     '3. Sospechoso si mediana en [dmin, dmax)',
     '4. Comparar con la etiqueta: aciertos, falsos positivos (FP) y falsos negativos (FN)'], 'deteccion_nevada.png', 7.2,
-    notas='Zoom en Nevada: a la izquierda los epicentros, a la derecha los clusters; en morado los sospechosos.')
+    notas='Zoom en Nevada: a la izquierda los epicentros, a la derecha los clusters; en naranja los sospechosos y con un círculo negro las explosiones reales.')
 
 diapo('Elegir y validar los parámetros', [
     'Parámetros fijos: eps = 25 km, vmin = 1, profundidad mediana en [0; 2,5) km (criterio físico)',

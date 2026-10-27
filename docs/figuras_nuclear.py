@@ -126,12 +126,15 @@ z = df[(df.latitude.between(35.5, 38.5)) & (df.longitude.between(-118.5, -114))]
 cz = cl[z.index]
 medz = z['depth'].groupby(cz).median()
 fig, ax = plt.subplots(1, 2, figsize=(11, 4.6), sharex=True, sharey=True)
-ax[0].scatter(z.longitude, z.latitude, s=8, c='lightgray', edgecolors='k', linewidths=.2)
+ax[0].scatter(z.longitude, z.latitude, s=14, c='lightgray', edgecolors='k', linewidths=.3)
 ax[0].set_title('1) Epicentros M ≥ 4,5 (sin etiquetas)')
-col = np.where(det[z.index], 'purple', 'steelblue')
-ax[1].scatter(z.longitude, z.latitude, s=8, c=col, edgecolors='none')
-ax[1].scatter(z[expl[z.index]].longitude, z[expl[z.index]].latitude, s=40, facecolors='none', edgecolors='red', linewidths=.8)
-ax[1].set_title('2) DBSCAN eps=25 km (morado: sospechoso)')
+sosp = det[z.index]
+real = expl[z.index]
+ax[1].scatter(z[~sosp].longitude, z[~sosp].latitude, s=24, c='steelblue', edgecolors='none', label='Cluster no sospechoso')
+ax[1].scatter(z[sosp].longitude, z[sosp].latitude, s=24, c='darkorange', edgecolors='none', label='Cluster sospechoso (mediana < 2,5 km)')
+ax[1].scatter(z[real].longitude, z[real].latitude, s=7, facecolors='none', edgecolors='black', linewidths=.5, label='Explosión real (etiqueta USGS)')
+ax[1].set_title('2) DBSCAN con eps = 25 km')
+ax[1].legend(loc='upper right', fontsize=7.5, framealpha=.95)
 for a in ax:
     a.set_xlabel('Longitud (°)'); a.grid(alpha=.3)
 ax[0].set_ylabel('Latitud (°)')
