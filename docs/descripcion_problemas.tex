@@ -145,7 +145,50 @@
 \clearpage
 
 % ==========================================
-\section{Equip i repartiment dels problemes}
+\section{Equip i plantejament dels problemes}
+\label{sec:equip}
+% ==========================================
+
+El present treball conjunt s'emmarca en l'assignatura \textbf{\assignatura} del Grau en Enginyeria Física de la Universitat Politècnica de Catalunya (\escola). L'objectiu global de l'equip és explorar, avaluar i contrastar les capacitats de l'\textbf{aprenentatge no supervisat} (\emph{unsupervised learning}) i la \textbf{detecció d'anomalies} per descobrir estructures intrínseques en quatre dominis físics i experimentals completament diferenciats, sense utilitzar cap etiqueta de classe durant el modelatge.
+
+L'equip de treball està format per quatre estudiants, cadascun responsable d'un domini físic, un conjunt de dades real i una estratègia algorítmica específica:
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.8cm}@{}}
+\toprule
+\textbf{Membre de l'equip} & \textbf{Problema Físic / Aplicació} & \textbf{Domini i Dades} & \textbf{Algorisme} \\
+\midrule
+\textbf{Arnau Montull} & Detecció d'explosions nuclears & Catàleg sísmic global (USGS / ComCat) & DBSCAN (Haversine) \\
+\addlinespace
+\textbf{Matías Stein} & Patrons sísmics i anomalies & Catàleg sísmic global (USGS ComCat) & $K$-Means + kNN \\
+\addlinespace
+\textbf{Martí Canut} & Expressió gènica i leucèmia & Microarrays RNA (Golub et al.) & Jeràrquic (HAC) \\
+\addlinespace
+\textbf{Uriel Martínez} & Classificació de materials elèctrics & Transport d'estat sòlid (CRC / Kittel) & DBSCAN (Z-score) \\
+\bottomrule
+\end{tabularx}
+\caption{Repartiment de problemes, dominis físics i algorismes entre els membres de l'equip.}
+\label{tab:repartiment}
+\end{table}
+
+\subsection{Plantejament integrat dels problemes}
+
+Cada integrant ha abordat un repte científic que posa a prova les propietats geomètriques i topològiques dels algorismes de clustering:
+
+\begin{enumerate}
+    \item \textbf{Problema d'Arnau Montull (Secció~\ref{sec:arnau_nuclear}):} Detecció d'assaigs nuclears històrics en el catàleg sísmic global mitjançant DBSCAN amb distància esfèrica de Haversine. Demostra la capacitat de DBSCAN per agrupar detonacions repetides en polígons d'assaig compactes i discriminar-les per profunditat superficial enfront de terratrèmols tectònics naturals.
+
+    \item \textbf{Problema de Matías Stein (Secció~\ref{sec:matias_sismes}):} Descobriment de patrons globals i detecció d'esdeveniments atípics mitjançant $K$-Means combinat amb la distància als $k$ veïns més propers (kNN). Analitza críticament com la cobertura instrumental de les xarxes sísmiques regionals enfront de les globals condiciona la partició, i identifica terratrèmols de subducció ultraprofunds ($>300\text{ km}$).
+
+    \item \textbf{Problema de Martí Canut (Secció~\ref{sec:marti_rnaseq}):} Estratificació no supervisada de pacients de leucèmia aguda (ALL vs. AML) a partir de perfils d'expressió de $7\,129$ gens mitjançant clustering jeràrquic aglomeratiu i \emph{clustermaps}. Avalua com la distància de correlació i l'enllaç mitjà permeten descobrir subtipus biomèdics sense biaix supervisat.
+
+    \item \textbf{Problema d'Uriel Martínez (Secció~\ref{sec:uriel_materials}):} Classificació autònoma de les tres grans fases de conducció de la matèria condensada (conductors metàl·lics, semiconductors i aïllants) a l'espai bidimensional $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$. Demostra la superioritat de DBSCAN sobre $K$-Means davant de variàncies que abasten més de 30 ordres de magnitud i densitats espacials heterogènies.
+\end{enumerate}
+
+
 \clearpage
 % ==========================================
 \section{Fonaments comuns de l'aprenentatge no supervisat i el clustering}
@@ -295,26 +338,43 @@ En absència d'etiquetes externes supervisades, la qualitat i la idoneïtat dels
     Val $1$ per a particions idèntiques i $\approx 0$ per a associacions a l'atzar. S'utilitza per comprovar l'estabilitat dels models davant de diferents llavors aleatòries o submostreigs.
 \end{itemize}
 
-\subsection{Taula comparativa dels mètodes de clustering}
+\subsection{Comparativa visual i taula resum dels mètodes de clustering}
+
+A la Figura~\ref{fig:comparativa_clustering_teoria} s'il·lustra empíricament la resposta de cada paradigma davant de diferents geometries bidimensionals, evidenciant les limitacions dels models basats en centroides o convexitat enfront de la flexibilitat dels mètodes de densitat i jeràrquics.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figuras/comparativa_metodes_clustering.png}
+\caption{Comparativa del comportament dels quatre grans paradigmes de clustering ($K$-Means, DBSCAN, Jeràrquic aglomeratiu i Models de Mescles Gaussianes / GMM) davant de diferents topologies espacials: anells concèntrics (formes no convexes), mitges llunes entrellaçades (varietats no lineals), cúmuls amb densitats heterogènies i dades esferoïdals amb soroll uniforme de fons. S'observa la incapacitat de $K$-Means i GMM per resoldre geometries no convexes o densitats desiguals, enfront de la flexibilitat de DBSCAN i l'enllaç jeràrquic.}
+\label{fig:comparativa_clustering_teoria}
+\end{figure}
 
 A la Taula~\ref{tab:comparativa_clustering_teoria} es sintetitzen les propietats diferencials dels mètodes d'agrupament analitzats i la seva correspondència amb els problemes de l'exposició.
 
 \begin{table}[H]
 \centering
-\small
-\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}Xcc@{}}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{@{}
+  >{\raggedright\arraybackslash\bfseries}p{1.9cm}
+  >{\raggedright\arraybackslash}p{2.3cm}
+  >{\raggedright\arraybackslash}p{2.3cm}
+  >{\raggedright\arraybackslash}X
+  >{\raggedright\arraybackslash}p{2.5cm}
+  >{\raggedright\arraybackslash}p{1.8cm}@{}}
 \toprule
 \textbf{Algorisme} & \textbf{Paradigma} & \textbf{Hiperparàmetres} & \textbf{Geometria i Formes} & \textbf{Gestió Soroll} & \textbf{Problema} \\
 \midrule
-\textbf{K-Means} & Particional basat en centroides & Nombre de grups $K$ & Esferoïdal i convexa; mides homogènies & Nul·la (força assignació) & Matías / Martí \\
+K-Means & Particional basat en centroides & Nombre de grups $K$ & Esferoïdal i convexa; isovariàncies & Nul·la (força assignació) & Matías / Martí \\
 \addlinespace
-\textbf{DBSCAN} & Basat en connectivitat de densitat & Radi $\varepsilon$, mostres mínimes $v_{\min}$ & Arbitrària (anells, línies, meandres) & Nativa (etiqueta soroll $-1$) & Arnau / Uriel \\
+DBSCAN & Basat en connectivitat de densitat & Radi $\varepsilon$, mostres mínimes $v_{\min}$ & Arbitrària (anells, corbes, meandres) & Nativa (etiqueta soroll $-1$) & Arnau / Uriel \\
 \addlinespace
-\textbf{Jeràrquic (HAC)} & Aglomeratiu ascendent (arbre) & Criteri d'enllaç, mètrica de distància & Adaptable segons l'enllaç utilitzat & Nul·la (tot punt en arbre) & Martí \\
+Jeràrquic (HAC) & Aglomeratiu ascendent (arbre) & Criteri d'enllaç, mètrica de distància & Adaptable segons l'enllaç utilitzat & Nul·la (tot punt en arbre) & Martí \\
 \addlinespace
-\textbf{kNN Anomaly} & Veïnatge geomètric de distàncies & Nombre de veïns $k$ & Sense forma prèvia (densitat local) & Especialitzat en atípics & Matías \\
+kNN Anomaly & Veïnatge geomètric de distàncies & Nombre de veïns $k$ & Sense forma prèvia (densitat local) & Especialitzat en atípics & Matías \\
 \addlinespace
-\textbf{GMM} & Model generatiu probabilístic & Nombre de components $K$, tipus de $\boldsymbol{\Sigma}$ & El·lipsoïdal (covariàncies lliures) & Assignació suau probabilística & Teòric \\
+GMM & Model generatiu probabilístic & Components $K$, matriu $\boldsymbol{\Sigma}$ & El·lipsoïdal (covariàncies lliures) & Assignació tova probabilística & Teòric \\
 \bottomrule
 \end{tabularx}
 \caption{Resum comparatiu dels paradigmes de clustering i detecció d'anomalies de l'exposició.}
@@ -322,10 +382,10 @@ A la Taula~\ref{tab:comparativa_clustering_teoria} es sintetitzen les propietats
 \end{table}
 
 
-
 \clearpage
 % ==========================================
 \section{Problema d'Arnau Montull: detecció d'explosions nuclears amb DBSCAN}
+\label{sec:arnau_nuclear}
 % ==========================================
 
 \subsection{Interès del problema}
@@ -872,6 +932,7 @@ Entorn: Python 3.12.3, scikit-learn 1.8.0, pandas 3.0.2, matplotlib 3.10.8, NumP
 
 \clearpage
 \section{Problema de Martí: expressió gènica i clustering jeràrquic (leucèmia ALL/AML)}
+\label{sec:marti_rnaseq}
 Material a \texttt{problemas/4\_RNAseq\_Marti/} (codi \texttt{clustering\_marti.py}, proves \texttt{test\_clustering.py}, \texttt{README.txt}, figures i informe propi \texttt{informe\_curt.tex}). El text que segueix és l'informe de Martí tal com l'ha escrit ell.
 
 \paragraph{Resum.}
@@ -1085,32 +1146,33 @@ El signe i la magnitud d'$\alpha$ constitueixen un distinitiu de l'estructura de
 
 La justificació que els materials formin agrupacions denses i segregades en el pla $(x_1, x_2) = (\log_{10}\rho_{300\mathrm{K}}, \alpha)$ prové directament dels mecanismes microscòpics de transport:
 
-\begin{enumerate}
-    \item \textbf{Conductors (Metalls):}
-    \begin{itemize}
-        \item \emph{Estructura quàntica:} Posseeixen una banda de valència parcialment plena o un solapament directe entre bandes de valència i conducció ($E_g = 0$). El nivell de Fermi $E_F$ talla una banda permesa, garantint una densitat gegantina d'electrons lliures ($n \approx 10^{28}\ \text{m}^{-3}$) al mar de Fermi.
-        \item \emph{Efecte tèrmic:} Com que tots els portadors ja estan disponibles, elevar la temperatura no genera electrons addicionals; per contra, incrementa l'amplitud quadràtica mitjana de vibració de la xarxa cristal·lina (\emph{fonons}). L'augment en la secció eficaç de dispersió electró-fonó redueix el temps de relaxació $\tau$, augmentant la resistivitat segons la regla de Matthiessen.
-        \item \emph{Signatura al pla:} $\mathbf{\alpha > 0}$ de forma estricta (típicament $+0.003$ a $+0.006\ \text{K}^{-1}$) i resistivitats extremadament baixes ($\log_{10}\rho \approx -8$ a $-6$). Formen un cúmul ultradens i compacte.
-    \end{itemize}
+\subsubsection{Conductors (Metalls)}
+\label{sec:conductors}
+\begin{itemize}
+    \item \emph{Estructura quàntica:} Posseeixen una banda de valència parcialment plena o un solapament directe entre bandes de valència i conducció ($E_g = 0$). El nivell de Fermi $E_F$ talla una banda permesa, garantint una densitat gegantina d'electrons lliures ($n \approx 10^{28}\ \text{m}^{-3}$) al mar de Fermi.
+    \item \emph{Efecte tèrmic:} Com que tots els portadors ja estan disponibles, elevar la temperatura no genera electrons addicionals; per contra, incrementa l'amplitud quadràtica mitjana de vibració de la xarxa cristal·lina (\emph{fonons}). L'augment en la secció eficaç de dispersió electró-fonó redueix el temps de relaxació $\tau$, augmentant la resistivitat segons la regla de Matthiessen.
+    \item \emph{Signatura al pla:} $\mathbf{\alpha > 0}$ de forma estricta (típicament $+0.003$ a $+0.006\ \text{K}^{-1}$) i resistivitats extremadament baixes ($\log_{10}\rho \approx -8$ a $-6$). Formen un cúmul ultradens i compacte.
+\end{itemize}
 
-    \item \textbf{Semiconductors:}
-    \begin{itemize}
-        \item \emph{Estructura quàntica:} Presenten una banda de valència plena separada d'una banda de conducció buida per un interval prohibit (\emph{bandgap}) moderat ($E_g \approx 0.2$ a $2.0\ \text{eV}$, ex.\ Si: $1.12\ \text{eV}$, Ge: $0.66\ \text{eV}$, GaAs: $1.42\ \text{eV}$).
-        \item \emph{Efecte tèrmic:} L'energia tèrmica disponible $k_B T \approx 0.026\ \text{eV}$ a $300\ \text{K}$ és del mateix ordre de magnitud que $E_g$. En escalfar, els electrons són promoguts exponencialment a la banda de conducció segons l'estadística de Maxwell-Boltzmann o Fermi-Dirac:
-        \begin{equation}
-            n(T) \propto T^{3/2} \exp\left(-\frac{E_g}{2 k_B T}\right).
-        \end{equation}
-        L'allau de nous portadors lliures domina sobre la dispersió per fonons, provocant que la resistivitat disminueixi dràsticament en augmentar la temperatura.
-        \item \emph{Signatura al pla:} $\mathbf{\alpha < 0}$ fortament negatiu (típicament $-0.015$ a $-0.075\ \text{K}^{-1}$) i resistivitats intermèdies ($\log_{10}\rho \approx -2$ a $+4$). Se situen clarament al semiplà inferior delimitat per la frontera física $\alpha = 0$.
-    \end{itemize}
+\subsubsection{Semiconductors}
+\label{sec:semiconductors}
+\begin{itemize}
+    \item \emph{Estructura quàntica:} Presenten una banda de valència plena separada d'una banda de conducció buida per un interval prohibit (\emph{bandgap}) moderat ($E_g \approx 0.2$ a $2.0\ \text{eV}$, ex.\ Si: $1.12\ \text{eV}$, Ge: $0.66\ \text{eV}$, GaAs: $1.42\ \text{eV}$).
+    \item \emph{Efecte tèrmic:} L'energia tèrmica disponible $k_B T \approx 0.026\ \text{eV}$ a $300\ \text{K}$ és del mateix ordre de magnitud que $E_g$. En escalfar, els electrons són promoguts exponencialment a la banda de conducció segons l'estadística de Maxwell-Boltzmann o Fermi-Dirac:
+    \begin{equation}
+        n(T) \propto T^{3/2} \exp\left(-\frac{E_g}{2 k_B T}\right).
+    \end{equation}
+    L'allau de nous portadors lliures domina sobre la dispersió per fonons, provocant que la resistivitat disminueixi dràsticament en augmentar la temperatura.
+    \item \emph{Signatura al pla:} $\mathbf{\alpha < 0}$ fortament negatiu (típicament $-0.015$ a $-0.075\ \text{K}^{-1}$) i resistivitats intermèdies ($\log_{10}\rho \approx -2$ a $+4$). Se situen clarament al semiplà inferior delimitat per la frontera física $\alpha = 0$.
+\end{itemize}
 
-    \item \textbf{Aïllants (Dielèctrics):}
-    \begin{itemize}
-        \item \emph{Estructura quàntica:} Posseeixen un bandgap molt gran ($E_g > 5$ a $9\ \text{eV}$, ex.\ quars fos: $\approx 9\ \text{eV}$, tefló: $> 8\ \text{eV}$).
-        \item \emph{Efecte tèrmic:} A $300\ \text{K}$, la probabilitat d'excitació tèrmica $e^{-E_g / 2k_BT} \approx e^{-170} \approx 10^{-74}$ és estrictament nul·la. No existeixen portadors lliures pràctics.
-        \item \emph{Signatura al pla:} $\mathbf{\alpha \approx 0}\ \text{K}^{-1}$ a efectes pràctics i resistivitats gegants ($\log_{10}\rho \ge 11$). Formen un grup ampli i molt dispers al llarg de l'eix de resistivitat.
-    \end{itemize}
-\end{enumerate}
+\subsubsection{Aïllants (Dielèctrics)}
+\label{sec:aillants}
+\begin{itemize}
+    \item \emph{Estructura quàntica:} Posseeixen un bandgap molt gran ($E_g > 5$ a $9\ \text{eV}$, ex.\ quars fos: $\approx 9\ \text{eV}$, tefló: $> 8\ \text{eV}$).
+    \item \emph{Efecte tèrmic:} A $300\ \text{K}$, la probabilitat d'excitació tèrmica $e^{-E_g / 2k_BT} \approx e^{-170} \approx 10^{-74}$ és estrictament nul·la. No existeixen portadors lliures pràctics.
+    \item \emph{Signatura al pla:} $\mathbf{\alpha \approx 0}\ \text{K}^{-1}$ a efectes pràctics i resistivitats gegants ($\log_{10}\rho \ge 11$). Formen un grup ampli i molt dispers al llarg de l'eix de resistivitat.
+\end{itemize}
 
 \begin{table}[H]
 \centering
