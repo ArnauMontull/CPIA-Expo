@@ -483,7 +483,10 @@ Paràmetres fixos de filtratge i densitat: $\varepsilon=25$ km, $v_{\min}=2$, $d
 \end{itemize}
 Una exploració numèrica de la finestra i de $\varepsilon$ maximitzant directament la mètrica $F_1$ es va avaluar, però no es fa servir per als paràmetres finals: el seu òptim, $[0;\,0{,}1)$ km, queda a la vora de la seva graella i aprofita que l'USGS registra amb
 profunditat exactament $0{,}0$ km el 85\,\% de les explosions (521 de 614) i només 154 dels 297\,513 esdeveniments que no són
-explosions nuclears. Això mesura com cataloga l'USGS i no la física. La taula compara finestres amb $\varepsilon=25$ km.
+explosions nuclears. Això mesura com cataloga l'USGS i no la física. La taula compara finestres amb $\varepsilon=25$ km. També hem provat de permetre
+profunditats negatives (per sobre de la superfície), amb la finestra $[-5;\,2{,}5)$ km: no es guanya cap explosió, perquè l'única
+explosió amb profunditat negativa del catàleg és la Bomba Tsar, que està aïllada i és soroll, i els FP pugen de 57 a 150, perquè
+els clústers de terratrèmols i d'erupcions volcàniques d'altiplans i volcans tenen la mediana negativa.
 
 \begin{table}[H]
 \centering
@@ -493,6 +496,7 @@ Finestra (km) & TP & FP & FN & $F_1$ \\
 \midrule
 $[0;\,0{,}1)$ (la que triava l'optimitzador) & 551 & 30 & 63 & 0,922 \\
 $[0;\,2{,}5)$ (la utilitzada) & 551 & 57 & 63 & 0,902 \\
+$[-5;\,2{,}5)$ (amb profunditats negatives) & 551 & 150 & 63 & 0,838 \\
 $[0;\,5)$ & 552 & 259 & 62 & 0,775 \\
 $[0;\,10)$ & 552 & 2\,581 & 62 & 0,295 \\
 \bottomrule
