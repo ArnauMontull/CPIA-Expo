@@ -31,6 +31,61 @@ def sospechosos(d, c, dmin, dmax):
 cl = clusters(df, P['eps_km'], P['vmin'])
 det = sospechosos(df, cl, P['dmin'], P['dmax'])
 
+# 0. Fuentes: corte vertical de un terremoto y de una explosion (esquema estatico, estilo LaTeX)
+from matplotlib.patches import Arc
+
+
+def frente(ax, foco, r, **kw):
+    # Frente de onda de radio r, solo la parte bajo el suelo (profundidad >= 0)
+    if r <= foco:
+        ax.add_patch(Arc((0, foco), 2 * r, 2 * r, **kw))
+    else:
+        a = np.degrees(np.arcsin(foco / r))
+        ax.add_patch(Arc((0, foco), 2 * r, 2 * r, theta1=-a, theta2=180 + a, **kw))
+
+
+
+plt.rcParams.update({'font.family': 'serif', 'font.serif': ['STIXGeneral'], 'mathtext.fontset': 'stix'})
+prof_terremoto = df.loc[df['tipo'] == 'earthquake', 'depth'].median()
+fig, ejes = plt.subplots(1, 2, figsize=(10, 3.6), sharey=True)
+for ax, titulo, foco, color in [(ejes[0], 'Terremoto', prof_terremoto, 'black'),
+                                (ejes[1], 'Explosión nuclear', 0.8, 'firebrick')]:
+    ax.axhspan(0, 60, color='0.94', zorder=0)
+    ax.axhline(0, color='black', lw=1)
+    for xe in (-40, 40):
+        ax.plot(xe, -1.6, marker='v', color='black', ms=7, clip_on=False)
+    # frentes de onda P (continua) y, solo en el terremoto, S (discontinua, mas lenta)
+    for r in (12, 24, 36):
+        frente(ax, foco, r, color=color, lw=1)
+    if titulo == 'Terremoto':
+        for r in (7, 14, 21):
+            frente(ax, foco, r, color='0.45', lw=1, ls='--')
+        ax.plot([-9, 9], [foco + 9, foco - 9], color='black', lw=2)          # falla
+        ax.annotate('', (-5, foco + 2.5), (1, foco - 3.5), arrowprops=dict(arrowstyle='->', lw=.8))
+        ax.annotate('', (5, foco - 2.5), (-1, foco + 3.5), arrowprops=dict(arrowstyle='->', lw=.8))
+        ax.text(10, foco - 10, 'falla', fontsize=10)
+    else:
+        for ang in np.radians(np.arange(200, 341, 35)):
+            ax.annotate('', (7 * np.cos(ang), foco - 7 * np.sin(ang)), (2 * np.cos(ang), foco - 2 * np.sin(ang)),
+                        arrowprops=dict(arrowstyle='->', lw=.8, color=color))
+    ax.plot(0, foco, marker='*', color=color, ms=13, zorder=5)
+    ax.annotate('', (-47, foco), (-47, 0), arrowprops=dict(arrowstyle='<->', lw=.7))
+    ax.text(-45.5, foco / 2 if foco > 3 else 4, f'{foco:.0f} km' if foco > 3 else '< 1 km', fontsize=10, va='center')
+    ax.set_title(titulo, fontsize=12)
+    ax.set(xlim=(-50, 50), ylim=(55, -6), xticks=[], aspect='equal')
+    for lado in ('top', 'right', 'bottom'):
+        ax.spines[lado].set_visible(False)
+ejes[0].set_ylabel('profundidad (km)', fontsize=10)
+ejes[0].plot([], [], color='black', lw=1, label='onda P (compresión)')
+ejes[0].plot([], [], color='0.45', lw=1, ls='--', label='onda S (cizalla)')
+ejes[0].plot([], [], 'kv', ms=6, ls='none', label='sismógrafo')
+fig.tight_layout(rect=(0, 0.08, 1, 1))
+fig.legend(loc='lower center', ncol=3, fontsize=9.5, frameon=False)
+fig.savefig(OUT / 'fuentes.png', dpi=200)
+plt.close(fig)
+plt.rcdefaults()
+matplotlib.use('Agg')
+
 # 1. Catalogo: terremotos vs explosiones
 terremoto = df['tipo'] == 'earthquake'
 otros_tipos = [('volcanic eruption', 'Erupciones volcánicas', 'darkorange', '^'),

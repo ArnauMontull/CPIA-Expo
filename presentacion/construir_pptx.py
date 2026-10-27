@@ -61,7 +61,7 @@ diapo('Problema: ¿terremoto o explosión nuclear?', [
     'Sismógrafos: mismos registros para terremotos y explosiones',
     'Sin usar la etiqueta, ¿puede un clustering señalarlas?',
     'Pista 1: las pruebas se repiten en los mismos polígonos',
-    'Pista 2: ocurren casi en la superficie (mediana 0 km frente a 22 km)'], 'catalogo.png')
+    'Pista 2: ocurren casi en la superficie (mediana 0 km frente a 33 km)'], 'catalogo.png')
 
 diapo('Datos', [
     'Catálogo USGS, M ≥ 4,5, 1951-2025, todos los tipos de evento',
