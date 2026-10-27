@@ -103,7 +103,8 @@
 
 % ---- extras de este documento ----
 \lstset{language=Python, inputencoding=utf8, extendedchars=true,
-  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {Á}{{\'A}}1 {°}{{$^\circ$}}1 {–}{{--}}1 {—}{{---}}1}
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {Á}{{\'A}}1 {°}{{$^\circ$}}1 {–}{{--}}1 {—}{{---}}1
+  {è}{{\`e}}1 {ï}{{\"i}}1 {·}{{$\cdot$}}1 {α}{{$\alpha$}}1 {μ}{{$\mu$}}1 {ρ}{{$\rho$}}1 {σ}{{$\sigma$}}1}
 \usepackage{float}
 \newcommand{\pendiente}[1]{\textcolor{red!70!black}{\textbf{[PENDIENTE: #1]}}}
 
@@ -701,7 +702,7 @@ Material a \texttt{problemas/5\_Materials\_Uriel/} (\texttt{materiales\_uriel.py
 \paragraph{Objectiu.} Descobrir i classificar de forma totalment no supervisada les tres famílies quàntiques de l'estat sòlid (conductors metàl·lics, semiconductors tecnològics i aïllants dielèctrics) a partir de l'espai bidimensional $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$, sense utilitzar etiquetes prèvies.
 
 \paragraph{Fonament físic.} 
-La resistivitat elèctrica $\rho_{300\mathrm{K}}$ abasta més de 30 ordres de magnitud (des de la plata a $1.6\times 10^{-8}\ \Omega\cdot\mathrm{m}$ fins al tefló a $>10^{22}\ \Omega\cdot\mathrm{m}$), exigint compressió logarítmica per evitar que el $99\,\%$ dels materials col·lapsin a l'origen. El coeficient tèrmic $\alpha = \frac{1}{\rho_0}\frac{d\rho}{dT}$ delata l'estructura quàntica de bandes:
+La resistivitat elèctrica $\rho_{300\mathrm{K}}$ abasta més de 30 ordres de magnitud (des de la plata a $1.6\times 10^{-8}\ \Omega\cdot\mathrm{m}$ fins al tefló a $>10^{22}\ \Omega\cdot\mathrm{m}$), exigint compressió logarítmica per evitar que el 99\,\% dels materials col·lapsin a l'origen. El coeficient tèrmic $\alpha = \frac{1}{\rho_0}\frac{d\rho}{dT}$ delata l'estructura quàntica de bandes:
 \begin{itemize}
   \item \textbf{Conductors (metalls):} $\alpha > 0$ (+0.003 a +0.006 $\text{K}^{-1}$) per dispersió amb fonons al mar d'electrons lliures. Cúmul ultradens a $\log_{10}\rho \approx -8$.
   \item \textbf{Semiconductors:} $\alpha < 0$ ($-0.01$ a $-0.07$ $\text{K}^{-1}$) per activació tèrmica exponencial segons Boltzmann ($n \propto e^{-E_g/2k_BT}$). Cúmul intermedi delimitat per la frontera física $\alpha = 0$.
@@ -722,7 +723,7 @@ La resistivitat elèctrica $\rho_{300\mathrm{K}}$ abasta més de 30 ordres de ma
 \paragraph{Resultats.}
 \begin{itemize}
   \item \textbf{Clústers descoberts:} 3 clústers purs; 0 punts de soroll.
-  \item \textbf{Puresa experimental:} $100\,\%$ de puresa en conductors (35/35) i $100\,\%$ en aïllants (10/10). En semiconductors, 10 de 12 s'agrupen al Clúster 2; 2 semimetalls amb resistència cuasimetàl·lica a 300 K es van assignar al Clúster 0.
+  \item \textbf{Puresa experimental:} 100\,\% de puresa en conductors (35/35) i 100\,\% en aïllants (10/10). En semiconductors, 10 de 12 s'agrupen al Clúster 2; 2 semimetalls amb resistència cuasimetàl·lica a 300 K es van assignar al Clúster 0.
   \item \textbf{Silhouette Score:} $S = 0.7858$, que certifica una separació espacial forta i contundent sense supervisió.
 \end{itemize}
 
