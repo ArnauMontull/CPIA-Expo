@@ -210,6 +210,16 @@ Tras quitar los eventos sin latitud, longitud, profundidad o magnitud quedan 298
 \texttt{explosion}, 6 colapsos de mina, 3 estallidos de roca, 2 deslizamientos, 1 voladura de cantera y 1 \texttt{other event}).
 La columna \texttt{tipo} \emph{solo se usa para evaluar}, nunca para entrenar.
 
+\texttt{nukedatos.py} pide a la API del USGS un año cada vez (cada consulta devuelve como máximo 20\,000 eventos), reintenta
+si falla la red y guarda el resultado cambiando el nombre de la columna \texttt{type} por \texttt{tipo}. El código completo
+está en el Anexo.
+
+\lstinputlisting[firstline=13,lastline=23,firstnumber=13,caption={\texttt{nukedatos.py}: descarga de un año del catálogo, con reintentos.},label={lst:datos-descarga}]{../problemas/2_Nuclear/nukedatos.py}
+
+\texttt{nukeDBSCAN\_arnau.py} carga el CSV y se queda con los eventos que tienen posición, profundidad y magnitud.
+
+\lstinputlisting[firstline=18,lastline=22,firstnumber=18,caption={\texttt{nukeDBSCAN\_arnau.py}: carga y limpieza de los datos.},label={lst:datos-carga}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.92\textwidth]{figuras/catalogo.png}
@@ -249,6 +259,19 @@ recall $R=\mathrm{TP}/(\mathrm{TP}+\mathrm{FN})$ y su media armónica, $F_1=2PR/
         explosión. Falso negativo (FN): explosión no detectada.
 \end{enumerate}
 
+El paso 1 es la función \texttt{agrupar}: pasa las coordenadas a radianes, divide $\varepsilon$ entre el radio terrestre y
+llama a DBSCAN con la métrica \emph{haversine}.
+
+\lstinputlisting[firstline=25,lastline=33,firstnumber=25,caption={\texttt{agrupar}: DBSCAN con distancia haversine.},label={lst:agrupar}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
+
+Los pasos 2 y 3 son \texttt{nukeDBSCAN}: la mediana de profundidad de cada cluster y la selección de los que caen en la ventana.
+
+\lstinputlisting[firstline=36,lastline=48,firstnumber=36,caption={\texttt{nukeDBSCAN}: clusters sospechosos por la mediana de profundidad.},label={lst:nukedbscan}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
+
+El paso 4 es \texttt{errores}, que cuenta FP y FN con la etiqueta \texttt{tipo}.
+
+\lstinputlisting[firstline=51,lastline=59,firstnumber=51,caption={\texttt{errores}: falsos positivos y falsos negativos.},label={lst:errores}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{figuras/deteccion_nevada.png}
@@ -263,7 +286,11 @@ los clusters sospechosos por profundidad; círculos rojos: explosiones reales (e
 \end{figure}
 
 \subsection{Elección de parámetros}
-Parámetros fijos: $\varepsilon=25$ km, $v_{\min}=1$, $d_{\min}=0$ y $d_{\max}=2{,}5$ km.
+Parámetros fijos: $\varepsilon=25$ km, $v_{\min}=1$, $d_{\min}=0$ y $d_{\max}=2{,}5$ km. Están en un único diccionario al
+principio de \texttt{nukeDBSCAN\_arnau.py}, que \texttt{nukeval.py} importa.
+
+\lstinputlisting[firstline=12,lastline=16,firstnumber=12,caption={\texttt{nukeDBSCAN\_arnau.py}: parámetros fijos.},label={lst:parametros}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
+
 \begin{itemize}
   \item \textbf{Ventana de profundidad $[0;\,2{,}5)$ km:} criterio físico. Una explosión nuclear enterrada está a menos de
         unos pocos km de la superficie; los terremotos tectónicos están, en su mayoría, mucho más profundos.
@@ -296,6 +323,12 @@ $[0;\,10)$ & 588 & 2\,897 & 26 & 0,287 \\
 Siguiendo el esquema de validación del temario (silueta, codo y estabilidad), \texttt{nukeval.py} evalúa $\varepsilon$
 con $v_{\min}=1$ y la ventana $[0;\,2{,}5)$ km. Para cada $\varepsilon$ cuenta los clusters, calcula la silueta con
 distancia haversine sobre una muestra de 2\,000 sismos (sin etiquetas) y los FP y FN (con etiquetas).
+
+\lstinputlisting[firstline=18,lastline=46,firstnumber=18,caption={\texttt{nukeval.py}: silueta de unos clusters y tabla para cada $\varepsilon$ probado.},label={lst:val-eps}]{../problemas/2_Nuclear/nukeval.py}
+
+La estabilidad compara los clusters del catálogo completo con los de cinco muestras aleatorias del 50\,\% mediante el ARI.
+
+\lstinputlisting[firstline=59,lastline=70,firstnumber=59,caption={\texttt{nukeval.py}: estabilidad con el Adjusted Rand Index.},label={lst:val-ari}]{../problemas/2_Nuclear/nukeval.py}
 
 \begin{table}[H]
 \centering
@@ -387,11 +420,6 @@ recall 95,4\,\% y $F_1=0{,}891$.
   \item Las figuras de este documento: \texttt{python docs/figuras\_nuclear.py}.
 \end{enumerate}
 
-\subsection{Código fuente}
-\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeDBSCAN\_arnau.py}}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
-
-\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeval.py}}]{../problemas/2_Nuclear/nukeval.py}
-
 % ==========================================
 \section{Problema de Matías: agrupación de sismos y detección de anomalías}
 % ==========================================
@@ -461,6 +489,27 @@ se sabe de antemano qué genes funcionan juntos: es un problema de alta dimensio
 \section{Conclusiones del equipo}
 \pendiente{comparativa de los cuatro problemas, qué algoritmo funcionó mejor y por qué.}
 \comentarios[4cm]
+
+\clearpage
+\thispagestyle{empty}
+\null
+\vspace*{\fill}
+\begin{center}
+{\fontsize{48}{58}\selectfont\bfseries Anexo}
+\end{center}
+\vspace*{\fill}
+\clearpage
+
+\section*{Anexo: código completo del problema de Arnau}
+\addcontentsline{toc}{section}{Anexo: código completo del problema de Arnau}
+Los tres programas del problema de las explosiones nucleares, tal como se ejecutaron. Cada sección del informe cita solo las
+líneas que explican en ese punto.
+
+\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukedatos.py}: descarga del catálogo.},label={lst:anexo-datos}]{../problemas/2_Nuclear/nukedatos.py}
+
+\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeDBSCAN\_arnau.py}: detección y globo interactivo.},label={lst:anexo-nuke}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
+
+\lstinputlisting[caption={\texttt{problemas/2\_Nuclear/nukeval.py}: validación de $\varepsilon$ y estabilidad.},label={lst:anexo-val}]{../problemas/2_Nuclear/nukeval.py}
 
 \begin{thebibliography}{9}
 \bibitem{ester1996} Ester, M., Kriegel, H.-P., Sander, J., \& Xu, X. (1996). A density-based algorithm for discovering
