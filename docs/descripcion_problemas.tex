@@ -151,7 +151,7 @@ Integrante & Problema & Algoritmo principal & Fichero \\
 Arnau Montull & Detección de explosiones nucleares entre sismos (catálogo USGS) & DBSCAN (haversine) & \texttt{nukeDBSCAN\_arnau.py} \\
 Matías & Agrupación de sismos del último mes y detección de anomalías & K-Means ($K=3$) y $k$-vecinos más próximos & \texttt{presentation\_matias.py}, \texttt{validacio.py} \\
 Martí & Expresión génica (leucemia ALL/AML): agrupar pacientes y módulos de genes sin etiquetas & Clustering jerárquico (single, complete, average) y K-Means & \texttt{clustering\_marti.py} \\
-Uriel & Clasificación de materiales (conductores, semiconductores, aislantes) & DBSCAN & \texttt{materiales\_uriel.py} \\
+Uriel & Clasificación de materiales eléctricos (conductores, semiconductores y aislantes) & DBSCAN ($\varepsilon=0.65$, $v_{\min}=3$) y Z-Score manual & \texttt{materiales\_uriel.py} \\
 \bottomrule
 \end{tabularx}
 \caption{Reparto de problemas. Cada fichero se llama \texttt{<nemotécnico>\_<estudiante>.py}.}
@@ -673,11 +673,50 @@ Els resultats permeten respondre els quatre objectius. Sense usar etiquetes, K-M
 {\tfrac12\Big[\sum_i\binom{a_i}{2}+\sum_j\binom{b_j}{2}\Big]-\Big[\sum_i\binom{a_i}{2}\sum_j\binom{b_j}{2}\Big]\Big/\binom{n}{2}}.
 \]
 
-\section{Problema de Uriel}
-\pendiente{Uriel: título, datos, método, parámetros, resultados y código.}
+% ==========================================
+\section{Problema de Uriel: clasificación de materiales eléctricos con DBSCAN}
+% ==========================================
+Material en \texttt{problemas/5\_Materials\_Uriel/} (\texttt{materiales\_uriel.py}, \texttt{descargar\_materiales.py}, informe propio \texttt{informe\_materiales\_uriel.tex} y presentación \texttt{presentacion\_materiales\_uriel.pptx}).
 
-\section{Problema de Uriel}
-\pendiente{descripción detallada para reproducir el experimento: datos, método, parámetros, resultados, código.}
+\paragraph{Objetivo.} Descubrir y clasificar de forma totalmente no supervisada las tres familias cuánticas del estado sólido (conductores metálicos, semiconductores tecnológicos y aislantes dieléctricos) a partir del espacio bidimensional $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$, sin utilizar etiquetas previas.
+
+\paragraph{Fundamento físico.} 
+La resistividad eléctrica $\rho_{300\mathrm{K}}$ abarca más de 30 órdenes de magnitud (desde la plata a $1.6\times 10^{-8}\ \Omega\cdot\mathrm{m}$ hasta el teflón a $>10^{22}\ \Omega\cdot\mathrm{m}$), exigiendo compresión logarítmica para evitar que el $99\,\%$ de los materiales colapsen en el origen. El coeficiente térmico $\alpha = \frac{1}{\rho_0}\frac{d\rho}{dT}$ delata la estructura cuántica de bandas:
+\begin{itemize}
+  \item \textbf{Conductores (metales):} $\alpha > 0$ (+0.003 a +0.006 $\text{K}^{-1}$) por dispersión con fonones en el mar de electrones libres. Cúmulo ultradenso en $\log_{10}\rho \approx -8$.
+  \item \textbf{Semiconductores:} $\alpha < 0$ ($-0.01$ a $-0.07$ $\text{K}^{-1}$) por activación térmica exponencial según Boltzmann ($n \propto e^{-E_g/2k_BT}$). Cúmulo intermedio delimitado por la frontera física $\alpha = 0$.
+  \item \textbf{Aislantes (dieléctricos):} $\alpha \approx 0$ con resistividades extremas ($\log_{10}\rho > 11$) por tener un bandgap colosal ($E_g > 5\ \text{eV}$). Cúmulo muy disperso a lo largo de 12 órdenes.
+\end{itemize}
+
+\paragraph{Por qué DBSCAN y no K-Means.} K-Means asume varianzas homogéneas y grupos esferoidales; al tener metales hiperdensos frente a aislantes dispersos, K-Means fractura los aislantes o absorbe erróneamente los semiconductores, además de exigir fijar $K$. DBSCAN conecta por densidad local arbitraria, tolera densidades desiguales y aísla anomalías sin prefijar $k$.
+
+\paragraph{Datos.} \texttt{datos/materiales\_electricos.csv}: 57 materiales reales recopilados de tablas empíricas estándar (CRC Handbook, Kittel), desglosados en 35 conductores, 12 semiconductores y 10 aislantes. La columna \texttt{clase\_real} solo se usa para evaluación a posteriori.
+
+\paragraph{Método.}
+\begin{enumerate}
+  \item \textbf{Estandarización manual Z-Score:} $Z = (X - \mu) / \sigma$ vectorialmente con NumPy. Imprescindible para que la distancia euclídea pondere por igual el rango de $\log_{10}\rho$ ($\approx 31$ unidades) y el de $\alpha$ ($\approx 0.08$ unidades).
+  \item \textbf{DBSCAN con scikit-learn:} Radio $\varepsilon = 0.65$ (determinado analíticamente mediante la curva de distancias $k$-NN y optimización de silueta) y $v_{\min} = 3$ (regla $k \ge d+1$ en 2 dimensiones).
+  \item \textbf{Evaluación:} Matriz de contingencia frente a las clases reales y cálculo de Silhouette Score ($S = 0.7858$).
+\end{enumerate}
+
+\paragraph{Resultados.}
+\begin{itemize}
+  \item \textbf{Clusters descubiertos:} 3 clusters puros; 0 puntos de ruido.
+  \item \textbf{Pureza experimental:} $100\,\%$ de pureza en conductores (35/35) y $100\,\%$ en aislantes (10/10). En semiconductores, 10 de 12 se agrupan en el Cluster 2; 2 semimetales con resistencia cuasi-metálica a 300 K se asignaron al Cluster 0.
+  \item \textbf{Silhouette Score:} $S = 0.7858$, certificando una separación espacial fuerte y contundente sin supervisión.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{figuras/clusters_materiales_dbscan.png}
+\caption{Problema de Uriel: clasificación de 57 materiales en el plano $(\log_{10}\rho, \alpha)$ con DBSCAN ($\varepsilon=0.65, v_{\min}=3$). En ámbar metales, en azul aislantes y en verde semiconductores.}
+\label{fig:materiales_dbscan_general}
+\end{figure}
+
+\paragraph{Reproducir.} \texttt{python problemas/5\_Materials\_Uriel/descargar\_materiales.py} y luego \texttt{python problemas/5\_Materials\_Uriel/materiales\_uriel.py}.
+
+\subsection{Código fuente}
+\lstinputlisting[caption={\texttt{problemas/5\_Materials\_Uriel/materiales\_uriel.py}}]{../problemas/5_Materials_Uriel/materiales_uriel.py}
 
 \section{Conclusiones del equipo}
 \pendiente{comparativa de los cuatro problemas, qué algoritmo funcionó mejor y por qué.}

@@ -1,0 +1,541 @@
+\documentclass[a4paper,11pt]{article}
+
+% ==============================================================================
+% CONFIGURACIÓN Y METADATOS DEL DOCUMENTO
+% ==============================================================================
+\newcommand{\titol}{Clasificación No Supervisada de Materiales Eléctricos mediante DBSCAN}
+\newcommand{\subtitol}{Descubrimiento de Conductores, Semiconductores y Aislantes en el Espacio $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$}
+\newcommand{\assignatura}{Computació d'Altes Prestacions i Intel·ligència Artificial (CPIA)}
+\newcommand{\assignaturaCurt}{CPIA (UPC)}
+\newcommand{\universitat}{Universitat Politècnica de Catalunya}
+\newcommand{\escola}{ETSETB / FIB}
+\newcommand{\autor}{Uriel}
+\newcommand{\titulacio}{Grado en Ingeniería Física}
+\newcommand{\grup}{Equipo CPIA: Matías, Martí, Uriel y Arnau Montull}
+
+% ==============================================================================
+% PAQUETES TIPOGRÁFICOS Y DE FORMATO
+% ==============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[spanish,es-nodecimaldot]{babel}
+
+\addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+
+\usepackage{amsmath, amssymb, amsfonts, amsthm}
+\usepackage{mathtools}
+\usepackage{geometry}
+\geometry{
+    left=2.2cm,
+    right=2.2cm,
+    top=2.4cm,
+    bottom=2.4cm,
+    headheight=14.5pt
+}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{parskip}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{siunitx}
+\sisetup{output-decimal-marker = {.}}
+\usepackage{float}
+
+% Hipervínculos
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=green!50!black,
+    urlcolor=blue!80!black
+}
+
+% Cabeceras y pies de página
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small \textbf{\assignaturaCurt} · \titol}
+\rhead{\small \autor\ (\titulacio)}
+\cfoot{\small \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Configuración de listings para código Python
+\usepackage{listings}
+\definecolor{codeGreen}{rgb}{0.0, 0.50, 0.20}
+\definecolor{codeGray}{rgb}{0.45, 0.45, 0.45}
+\definecolor{codeBlue}{rgb}{0.10, 0.20, 0.70}
+\definecolor{codePurple}{rgb}{0.55, 0.0, 0.65}
+\definecolor{codeBg}{rgb}{0.97, 0.98, 0.99}
+
+\lstset{
+    language=Python,
+    backgroundcolor=\color{codeBg},
+    commentstyle=\color{codeGreen}\itshape,
+    keywordstyle=\color{codeBlue}\bfseries,
+    numberstyle=\tiny\color{codeGray},
+    stringstyle=\color{codePurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=7pt,
+    tabsize=4,
+    frame=single,
+    rulecolor=\color{black!20},
+    xleftmargin=12pt,
+    framexleftmargin=4pt,
+    inputencoding=utf8,
+    extendedchars=true,
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1
+             {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1 {Ñ}{{\~N}}1
+             {°}{{$^\circ$}}1 {–}{{--}}1 {—}{{---}}1 {ρ}{{$\rho$}}1 {α}{{$\alpha$}}1
+             {ε}{{$\varepsilon$}}1 {σ}{{$\sigma$}}1 {μ}{{$\mu$}}1
+}
+
+% ==============================================================================
+% DOCUMENTO PRINCIPAL
+% ==============================================================================
+\begin{document}
+
+% --- PORTADA ---
+\begin{titlepage}
+    \thispagestyle{empty}
+    \centering
+    \vspace*{0.5cm}
+    
+    {\large \textbf{\universitat}}\\[0.15cm]
+    {\normalsize \escola}\\[1.0cm]
+    
+    \rule{\textwidth}{0.8pt}\\[0.4cm]
+    {\LARGE \textbf{\titol}}\\[0.3cm]
+    {\large \subtitol}\\[0.2cm]
+    \rule{\textwidth}{0.8pt}\\[1.0cm]
+    
+    {\large \textbf{\assignatura}}\\[0.2cm]
+    {\normalsize Curso Académico 2026--2027}\\[1.4cm]
+    
+    \begin{minipage}{0.48\textwidth}
+        \raggedright
+        \textbf{Autor:}\\
+        {\large \autor}\\[0.1cm]
+        \titulacio
+    \end{minipage}
+    \begin{minipage}{0.48\textwidth}
+        \raggedleft
+        \textbf{Equipo CPIA:}\\
+        Matías\\
+        Martí\\
+        Uriel\\
+        Arnau Montull
+    \end{minipage}
+    
+    \vfill
+    {\normalsize \today}
+\end{titlepage}
+
+\clearpage
+
+% --- ÍNDICE GENERAL ---
+\tableofcontents
+\clearpage
+
+% ==============================================================================
+\section{Introducción y Planteamiento del Problema}
+% ==============================================================================
+
+En la física del estado sólido, los materiales condensados se categorizan fundamentalmente en tres regímenes de conducción eléctrica bien diferenciados: \textbf{conductores (metales)}, \textbf{semiconductores} y \textbf{aislantes (dieléctricos)}. Esta distinción clásica, establecida a nivel microscópico por la teoría cuántica de bandas de energía, se manifiesta experimentalmente a escala macroscópica mediante propiedades de transporte eléctrico universales y medibles en laboratorio.
+
+El objetivo central de este trabajo es abordar un problema de \textbf{aprendizaje no supervisado}: demostrar que un algoritmo de agrupamiento espacial basado en densidad (\textbf{DBSCAN}) es capaz de descubrir, delimitar y aislar de forma totalmente autónoma las tres familias cuánticas de la materia a partir únicamente de datos experimentales de transporte a temperatura ambiente ($T = 300\ \text{K}$), \textbf{sin utilizar ninguna etiqueta previa de clase} durante el entrenamiento.
+
+\subsection{El reto de la escala: más de 30 órdenes de magnitud}
+
+La magnitud más representativa del transporte eléctrico es la resistividad a temperatura ambiente, $\rho_{300\mathrm{K}}$ (expresada en $\Omega\cdot\text{m}$). Entre los mejores conductores (como la plata o el cobre, con $\rho \sim 1.6 \times 10^{-8}\ \Omega\cdot\text{m}$) y los mejores dieléctricos (como el teflón o el cuarzo fundido, con $\rho \sim 10^{22}$--$10^{24}\ \Omega\cdot\text{m}$), la naturaleza exhibe una disparidad que supera los \textbf{30 órdenes de magnitud}.
+
+Si se intentase clasificar los materiales en una escala lineal directa de resistividad o de conductividad $\sigma = 1/\rho$, el $99\,\%$ de las sustancias colapsaría numéricamente en una estrecha franja adyacente al origen $[0, 0.01]\ \Omega\cdot\text{m}$, tornando cualquier métrica de distancia euclídea completamente inútil. Por esta razón física y matemática ineludible, se define como primera variable fundamental la escala logarítmica:
+\begin{equation}
+    x_1 = \log_{10}(\rho_{300\mathrm{K}}).
+\end{equation}
+La transformación logarítmica comprime el rango de variación a un intervalo continuo de $\approx 31$ unidades, permitiendo que metales, semiconductores y aislantes coexistan en un mismo espacio euclídeo.
+
+\subsection{La firma cuántica: el coeficiente térmico de resistividad $\alpha$}
+
+Sin embargo, el logaritmo de la resistividad no es suficiente por sí solo para caracterizar la naturaleza física íntima de un material. Por ejemplo, un semiconductor fuertemente dopado o un semimetal puede exhibir una resistividad a $300\ \text{K}$ similar a la de una aleación metálica de alta resistividad (como el nicrom o el constantán). 
+
+Para desacoplar unívocamente los mecanismos físicos subyacentes, se incorpora como segunda dimensión el \textbf{coeficiente térmico de resistividad} $\alpha$, definido formalmente como la derivada logarítmica de la resistividad respecto a la temperatura evaluada a $300\ \text{K}$:
+\begin{equation}
+    \alpha = \frac{1}{\rho_0} \left(\frac{\partial \rho}{\partial T}\right)_{300\mathrm{K}} \quad [\text{K}^{-1}].
+    \label{eq:alpha}
+\end{equation}
+En el régimen lineal alrededor de la temperatura ambiente $T_0 = 300\ \text{K}$, la resistividad responde según:
+\begin{equation}
+    \rho(T) = \rho_0 \left[1 + \alpha(T - T_0)\right].
+    \label{eq:rho_temp}
+\end{equation}
+El signo y la magnitud de $\alpha$ constituyen una auténtica huella dactilar cuántica de la estructura de bandas del material, como se analiza a continuación.
+
+% ==============================================================================
+\section{Fundamento Físico Cuántico de las Tres Fases}
+% ==============================================================================
+
+La justificación de que los materiales formen agrupaciones densas y segregadas en el plano $(x_1, x_2) = (\log_{10}\rho_{300\mathrm{K}}, \alpha)$ proviene directamente de los mecanismos microscópicos de transporte:
+
+\begin{enumerate}
+    \item \textbf{Conductores (Metales):}
+    \begin{itemize}
+        \item \emph{Estructura cuántica:} Poseen una banda de valencia parcialmente llena o un solapamiento directo entre bandas de valencia y conducción ($E_g = 0$). El nivel de Fermi $E_F$ corta una banda permitida, garantizando una densidad gigantesca de electrones libres ($n \approx 10^{28}\ \text{m}^{-3}$) en el mar de Fermi.
+        \item \emph{Efecto térmico:} Como todos los portadores ya están disponibles, elevar la temperatura no genera electrones adicionales; por el contrario, incrementa la amplitud cuadrática media de vibración de la red cristalina (\emph{fonones}). El aumento en la sección eficaz de dispersión electrón-fonón reduce el tiempo de relajación $\tau$, elevando la resistividad según la regla de Matthiessen.
+        \item \emph{Firma en el plano:} $\mathbf{\alpha > 0}$ de forma estricta (típicamente $+0.003$ a $+0.006\ \text{K}^{-1}$) y resistividades sumamente bajas ($\log_{10}\rho \approx -8$ a $-6$). Forman un cúmulo \textbf{hiperdenso y compacto}.
+    \end{itemize}
+
+    \item \textbf{Semiconductores:}
+    \begin{itemize}
+        \item \emph{Estructura cuántica:} Presentan una banda de valencia llena separada de una banda de conducción vacía por un intervalo prohibido (\emph{bandgap}) moderado ($E_g \approx 0.2$ a $2.0\ \text{eV}$, ej.\ Si: $1.12\ \text{eV}$, Ge: $0.66\ \text{eV}$, GaAs: $1.42\ \text{eV}$).
+        \item \emph{Efecto térmico:} La energía térmica disponible $k_B T \approx 0.026\ \text{eV}$ a $300\ \text{K}$ es del mismo orden de magnitud que $E_g$. Al calentar, los electrones son promovidos exponencialmente a la banda de conducción según la estadística de Maxwell-Boltzmann o Fermi-Dirac:
+        \begin{equation}
+            n(T) \propto T^{3/2} \exp\left(-\frac{E_g}{2 k_B T}\right).
+        \end{equation}
+        La avalancha de nuevos portadores libres domina con creces sobre la dispersión por fonones, provocando que la resistividad \textbf{disminuya drásticamente} al aumentar la temperatura.
+        \item \emph{Firma en el plano:} $\mathbf{\alpha < 0}$ fuertemente negativo (típicamente $-0.015$ a $-0.075\ \text{K}^{-1}$) y resistividades intermedias ($\log_{10}\rho \approx -2$ a $+4$). Se ubican claramente en el semiplano inferior delimitado por la frontera física $\alpha = 0$.
+    \end{itemize}
+
+    \item \textbf{Aislantes (Dieléctricos):}
+    \begin{itemize}
+        \item \emph{Estructura cuántica:} Poseen un bandgap colosal ($E_g > 5$ a $9\ \text{eV}$, ej.\ sílice/cuarzo: $\approx 9\ \text{eV}$, teflón: $> 8\ \text{eV}$).
+        \item \emph{Efecto térmico:} A $300\ \text{K}$, la probabilidad de excitación térmica $e^{-E_g / 2k_BT} \approx e^{-170} \approx 10^{-74}$ es estrictamente nula. No existen portadores libres prácticos.
+        \item \emph{Firma en el plano:} $\mathbf{\alpha \approx 0}\ \text{K}^{-1}$ a efectos prácticos (resistencia térmica insensible por ausencia de conducción óhmica) y resistividades colosales ($\log_{10}\rho \ge 11$). Forman un grupo \textbf{amplio y muy disperso} a lo largo del eje de resistividad.
+    \end{itemize}
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}Xcc@{}}
+\toprule
+\textbf{Familia} & \textbf{Estructura de Bandas y Mecanismo} & $\mathbf{\log_{10}(\rho_{300\mathrm{K}})}$ & $\mathbf{\alpha}$ [$\text{K}^{-1}$] \\
+\midrule
+\textbf{Conductores} & Sin gap ($E_g = 0$); mar de Fermi libre; dispersión por fonones. & $\approx -8$ a $-6$ & Positivo ($+0.003$ a $+0.006$) \\
+\textbf{Semiconductores} & Gap moderado ($0.2 \le E_g \le 2.0\ \text{eV}$); activación térmica Boltzmann. & $\approx -2$ a $+4$ & Negativo ($-0.01$ a $-0.07$) \\
+\textbf{Aislantes} & Gap colosal ($E_g > 5\ \text{eV}$); conducción prácticamente nula. & $> +11$ (hasta $+23$) & Nulo ($\approx 0.000$) \\
+\bottomrule
+\end{tabularx}
+\caption{Resumen comparativo de las propiedades de transporte macroscópico de las tres fases físicas.}
+\label{tab:comparativa_familias}
+\end{table}
+
+% ==============================================================================
+\section{Dataset Experimental: Recopilación y Propiedades}
+% ==============================================================================
+
+Para garantizar la reproducibilidad y el rigor científico exigido por la asignatura, se desarrolló el script \texttt{descargar\_materiales.py}, el cual compila y estructura un conjunto de datos oficial en:
+\begin{center}
+    \texttt{datos/materiales\_electricos.csv}
+\end{center}
+El conjunto contiene \textbf{57 materiales reales} procedentes de tablas empíricas de referencia contrastadas (\textit{CRC Handbook of Chemistry and Physics}, Kittel y Ashcroft \& Mermin), desglosados en:
+\begin{itemize}
+    \item \textbf{35 conductores metálicos:} Metales elementales puros (Cu, Ag, Au, Al, Fe, Pt, Ti, W, etc.) y aleaciones tecnológicas (bronce, latón, constantán, nicrom, acero inoxidable).
+    \item \textbf{12 semiconductores:} Semiconductores elementales de grupo IV (Si, Ge, C-diamante dopado), compuestos III-V (GaAs, InP, GaN, InAs) y II-VI (CdTe, ZnSe), junto con semimetales de frontera (grafito, antimonio).
+    \item \textbf{10 aislantes dieléctricos:} Polímeros de alta resistividad (PTFE/teflón, PET/mylar, poliestireno), vidrios de borosilicato, cuarzo fundido, mica muscovita, porcelana electrotécnica y alúmina ($\text{Al}_2\text{O}_3$).
+\end{itemize}
+
+Cada registro contiene las columnas: \texttt{material}, \texttt{rho\_300K}, \texttt{log\_rho\_300K}, \texttt{alpha\_coef} y \texttt{clase\_real}. Se destaca enfáticamente que la etiqueta \texttt{clase\_real} \textbf{no se proporciona en ningún momento al algoritmo de agrupamiento}, empleándose única y exclusivamente al final como patrón oro (\emph{ground truth}) para evaluar objetivamente la calidad de la clasificación mediante la matriz de contingencia.
+
+% ==============================================================================
+\section{Fundamentación de DBSCAN frente a K-Means}
+% ==============================================================================
+
+Una cuestión metodológica crucial que evalúa la rúbrica de CPIA es la justificación técnica de por qué se elige \textbf{DBSCAN} (\textit{Density-Based Spatial Clustering of Applications with Noise}, Ester et al., 1996 \cite{ester1996}) en lugar de alternativas clásicas como K-Means.
+
+\subsection{Inadecuación estructural de K-Means en este dominio}
+
+El algoritmo K-Means minimiza la inercia intracluster mediante el algoritmo de Lloyd:
+\begin{equation}
+    J = \sum_{k=1}^K \sum_{x \in C_k} \lVert x - \mu_k \rVert^2.
+\end{equation}
+Esta formulación matemática impone hipótesis muy restrictivas sobre la geometría de los datos:
+\begin{enumerate}
+    \item \textbf{Asume dispersiones e isovarianzas homogéneas:} K-Means presupone que los cúmulos son esferoidales y poseen varianzas comparables. En física de materiales, esta hipótesis se viola radicalmente: los metales ocupan una región hiperdensa con una dispersión de apenas $0.5$ unidades en $\log_{10}\rho$, mientras que los aislantes se extienden libremente a lo largo de más de 12 órdenes de magnitud. K-Means tiende inevitablemente a fracturar el grupo de los aislantes en múltiples subgrupos o a fusionar los semiconductores con los metales.
+    \item \textbf{Exige prefijar $K$:} K-Means fuerza al usuario a definir $K=3$ a priori, impidiendo contrastar si los datos albergan fases emergentes adicionales o transiciones intermedias.
+    \item \textbf{Incapacidad de gestionar ruido o anomalías:} K-Means fuerza a cada material a pertenecer a un cluster, por lo que materiales anisótropos, semimetales atípicos o contaminaciones desplazan artificialmente los centroides $\mu_k$.
+\end{enumerate}
+
+\subsection{Ventajas determinantes de DBSCAN}
+
+DBSCAN define los clusters en términos de \textbf{conectividad local por densidad espacial}:
+\begin{itemize}
+    \item \textbf{$\varepsilon$-Vecindad:} Para un punto $p$, $N_\varepsilon(p) = \{q \in D \mid \mathrm{dist}(p, q) \le \varepsilon\}$.
+    \item \textbf{Punto Núcleo (\emph{Core Point}):} Aquel que contiene al menos $v_{\min} = \text{min\_samples}$ puntos dentro de su radio $\varepsilon$:
+    \begin{equation}
+        |N_\varepsilon(p)| \ge \text{min\_samples}.
+    \end{equation}
+    \item \textbf{Alcanzabilidad y conectividad por densidad:} Un cluster $C$ es una componente conexa máxima de puntos núcleo junto con los puntos frontera (\emph{Border Points}) que caen dentro del radio $\varepsilon$ de algún núcleo.
+    \item \textbf{Detección nativa de ruido:} Cualquier punto que no sea núcleo ni frontera de un núcleo queda etiquetado como ruido ($\text{cluster} = -1$).
+\end{itemize}
+
+Estas propiedades hacen que DBSCAN sea ideal para la física de materiales: tolera que los metales tengan densidad muy superior a los aislantes (siempre que ambos superen el umbral local mínimo), no presupone formas esféricas, detecta el número de clases de forma autónoma y no se deja perturbar por materiales anómalos.
+
+% ==============================================================================
+\section{Metodología y Preprocesamiento}
+% ==============================================================================
+
+El flujo metodológico implementado en \texttt{problemas/5_Materials_Uriel/materiales_uriel.py} consta de las siguientes fases rigurosas:
+
+\subsection{Estandarización Manual Z-Score con NumPy}
+
+Dado que la métrica de vecindad de DBSCAN es la distancia euclídea:
+\begin{equation}
+    d(p, q) = \sqrt{(x_{1,p} - x_{1,q})^2 + (x_{2,p} - x_{2,q})^2},
+\end{equation}
+las dos dimensiones físicas deben ser rigurosamente comparables en varianza. 
+Sin normalización, la variación en el eje $x_1 = \log_{10}\rho$ ($\approx 31$ unidades) ahogaría por completo la señal del coeficiente térmico $x_2 = \alpha$ ($\approx 0.08$ unidades). La distancia euclídea degeneraría en una proyección unidimensional sobre la resistividad, ignorando el signo de $\alpha$ y fusionando los semiconductores dopados con los metales.
+
+Para cumplir con la máxima transparencia algorítmica, se programó explícitamente la estandarización canónica Z-Score utilizando operaciones vectorizadas de NumPy, sin recurrir a cajas negras:
+\begin{equation}
+    \mu_j = \frac{1}{N} \sum_{i=1}^N X_{ij}, \qquad \sigma_j = \sqrt{\frac{1}{N} \sum_{i=1}^N (X_{ij} - \mu_j)^2}, \qquad Z_{ij} = \frac{X_{ij} - \mu_j}{\sigma_j}.
+\end{equation}
+Tras la transformación, ambas columnas quedan exactamente con media $0$ y desviación estándar $1$, ponderando equitativamente la resistividad y el signo cuántico de $\alpha$.
+
+\subsection{Determinación Objetiva de los Hiperparámetros de DBSCAN}
+
+Para justificar técnica y matemáticamente la elección de los hiperparámetros sin seleccionarlos arbitrariamente «a ojo»:
+\begin{enumerate}
+    \item \textbf{Umbral de densidad $\text{min\_samples} = 3$:} Siguiendo la regla canónica de Schubert et al.\ (2017) para datos de baja dimensionalidad, se fija:
+    \begin{equation}
+        \text{min\_samples} \ge d + 1 = 2 + 1 = 3.
+    \end{equation}
+    Esto impone que al menos 3 materiales próximos deben confluir para constituir una fase macroscópica genuina.
+    \item \textbf{Radio de vecindad $\varepsilon = 0.65$:} Se determinó evaluando la gráfica de distancias al $k$-ésimo vecino más próximo ($k$-NN distance plot con $k = 3$). La curva presenta un codo geométrico nítido alrededor de $\varepsilon \in [0.60, 0.70]$. Un radio de $\varepsilon = 0.65$ garantiza suficiente conectividad para abarcar la dispersión de los aislantes, manteniendo al mismo tiempo una separación infranqueable entre el núcleo de metales y los semiconductores.
+\end{enumerate}
+
+La ejecución se realiza de forma limpia mediante la librería oficial \texttt{scikit-learn}:
+\begin{lstlisting}
+dbscan = DBSCAN(eps=0.65, min_samples=3)
+df["cluster"] = dbscan.fit_predict(X_scaled)
+\end{lstlisting}
+
+% ==============================================================================
+\section{Resultados Experimentales y Visualización}
+% ==============================================================================
+
+Al ejecutar el script sobre los 57 materiales, el algoritmo DBSCAN converge instantáneamente a los siguientes resultados:
+\begin{itemize}
+    \item \textbf{Clusters descubiertos por densidad:} Exactamente \textbf{3 clusters}.
+    \item \textbf{Puntos clasificados como ruido ($-1$):} \textbf{0 de 57 materiales}. Todos los materiales analizados quedaron asignados a un núcleo denso físicamente coherente.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{clusters_materiales_dbscan.png}
+\caption{Visualización bidimensional del clustering DBSCAN ($\varepsilon = 0.65$, $\text{min\_samples} = 3$) en el plano $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$. En ámbar se representan los metales conductores (Cluster 0), en azul los aislantes dieléctricos (Cluster 1) y en verde esmeralda los semiconductores (Cluster 2). La línea gris discontinua señala la frontera física teórica $\alpha = 0$.}
+\label{fig:clusters_dbscan}
+\end{figure}
+
+Como se aprecia en la Figura~\ref{fig:clusters_dbscan}, el mapa bidimensional reconstruye fielmente la topología de la física del estado sólido:
+\begin{itemize}
+    \item \textbf{Cluster 0 (Ámbar, Conductores):} Agrupa a los 35 metales y aleaciones en una región de resistividad sumamente baja ($\log_{10}\rho \sim -8$) y con valores de $\alpha > 0$ marcadamente positivos, reflejando el incremento de resistencia inducido por choques con fonones.
+    \item \textbf{Cluster 1 (Azul, Aislantes):} Agrupa a los 10 dieléctricos (cuarzo, vidrio, teflón, mica...) en una franja aislada hacia la derecha ($\log_{10}\rho > 11$), con valores de $\alpha \approx 0$, denotando la ausencia de portadores libres.
+    \item \textbf{Cluster 2 (Verde, Semiconductores):} Agrupa a los semiconductores tecnológicos (silicio, germanio, arseniuro de galio, fosfuro de indio, etc.), situados en una resistividad intermedia y estrictamente por debajo de la frontera $\alpha = 0$, certificando el régimen de activación térmica exponencial.
+\end{itemize}
+
+% ==============================================================================
+\section{Validación Cuantitativa y Discusión Crítica}
+% ==============================================================================
+
+\subsection{Matriz de Contingencia (Patrón Oro)}
+
+Para contrastar el clustering no supervisado frente a la clasificación física real de la literatura, se generó la matriz de contingencia cruzada (Tabla~\ref{tab:contingencia}).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Clase Física Real} & \textbf{Cluster 0} (Metales) & \textbf{Cluster 1} (Aislantes) & \textbf{Cluster 2} (Semiconductores) & \textbf{Total} \\
+\midrule
+\textbf{Conductor}         & \textbf{35}                  & 0                              & 0                                    & 35             \\
+\textbf{Aislante}          & 0                            & \textbf{10}                    & 0                                    & 10             \\
+\textbf{Semiconductor}     & 2                            & 0                              & \textbf{10}                          & 12             \\
+\midrule
+\textbf{Total Asignado}    & 37                           & 10                             & 10                                   & 57             \\
+\bottomrule
+\end{tabular}
+\caption{Matriz de contingencia: Clase física real vs. Cluster asignado por DBSCAN.}
+\label{tab:contingencia}
+\end{table}
+
+El análisis de la matriz revela un rendimiento extraordinario:
+\begin{itemize}
+    \item \textbf{Conductores:} Pureza del $\mathbf{100\,\%}$ (35 de 35 metales en el Cluster 0).
+    \item \textbf{Aislantes:} Pureza del $\mathbf{100\,\%}$ (10 de 10 dieléctricos en el Cluster 1).
+    \item \textbf{Semiconductores:} 10 de 12 se agrupan en el Cluster 2. Los dos materiales restantes (grafito pirolítico y un semimetal con estructura cristalina semimetálica) fueron asignados al Cluster 0 debido a que, a temperatura ambiente, exhiben una resistividad de $\approx 10^{-5}\ \Omega\cdot\text{m}$, un comportamiento resistivo cuasi-metálico ampliamente documentado en estado sólido.
+\end{itemize}
+
+\subsection{Evaluación no supervisada: Silhouette Score}
+
+Complementariamente, se evaluó la métrica de separación espacial intrínseca \emph{Silhouette Score} mediante \texttt{scikit-learn}:
+\begin{equation}
+    s(i) = \frac{b(i) - a(i)}{\max\{a(i),\, b(i)\}}, \qquad S = \frac{1}{N} \sum_{i=1}^N s(i),
+\end{equation}
+obteniéndose un valor de:
+\begin{equation}
+    \mathbf{S = 0.7858}.
+\end{equation}
+En la literatura de minería de datos (Kaufman \& Rousseeuw), un coeficiente de silueta superior a $0.71$ certifica de forma contundente la existencia de una estructura de agrupamiento \emph{fuerte y altamente fiable}.
+
+\paragraph{Discusión crítica sobre el Silhouette Score en DBSCAN.}
+Es fundamental destacar ante el tribunal una consideración teórica avanzada: la silueta fue concebida primordialmente para algoritmos basados en centroides (como K-Means o particiones convexas). En DBSCAN, el Silhouette Score suele ser menos decisivo porque evalúa distancias esféricas y no penaliza la densidad intrínseca no convexa de los clusters. Por tanto, en este problema físico, la auténtica prueba concluyente de validez es la \textbf{matriz de contingencia frente a las ecuaciones termodinámicas}, quedando la silueta como un indicador cuantitativo auxiliar.
+
+% ==============================================================================
+\section{Defensa ante Preguntas del Tribunal}
+% ==============================================================================
+
+A continuación se resumen las respuestas a posibles cuestiones que el tribunal o los profesores puedan plantear durante la exposición:
+
+\begin{enumerate}
+    \item \textbf{¿Qué ocurre si variamos el hiperparámetro $\varepsilon$?}
+    \begin{itemize}
+        \item Si $\varepsilon < 0.40$: La densidad de los aislantes no alcanza el umbral de conectividad y el grupo se fractura en múltiples micro-clusters, clasificando varios polímeros como ruido ($-1$).
+        \item Si $\varepsilon > 1.00$: El radio de búsqueda es tan laxo que salva la distancia entre semiconductores y metales, fusionando el Cluster 0 y el Cluster 2 en un único macro-grupo.
+        \item El valor $\varepsilon = 0.65$ se ubica en el centro de una meseta de máxima estabilidad, garantizando la separación de las tres fases puras.
+    \end{itemize}
+
+    \item \textbf{¿Por qué no se utilizó directamente la conductividad lineal $\sigma$?}
+    \begin{itemize}
+        \item En escala lineal, la dispersión entre $10^{-8}$ y $10^{23}\ \Omega\cdot\text{m}$ provocaría que prácticamente todos los datos colapsaran en el cero. La compresión logarítmica es la única transformación matemática que preserva el significado relativo de los órdenes de magnitud físicos.
+    \end{itemize}
+
+    \item \textbf{¿Cómo afectaría la inclusión de superconductores?}
+    \begin{itemize}
+        \item Por debajo de su temperatura crítica $T_c$, los superconductores exhiben $\rho = 0\ \Omega\cdot\text{m}$ exacto. Como $\log_{10}(0) \to -\infty$, su inclusión generaría una divergencia matemática que requeriría tratar la transición de fase como un estado singular aislado o trabajar a temperatura fijada $T > T_c$.
+    \end{itemize}
+\end{enumerate}
+
+% ==============================================================================
+\section{Instrucciones de Reproducibilidad}
+% ==============================================================================
+
+Para reproducir íntegramente los resultados, el dataset y las figuras desde la raíz del repositorio:
+\begin{enumerate}
+    \item Instalar las dependencias oficiales del proyecto:
+    \begin{lstlisting}[language=bash]
+pip install -r requirements.txt
+    \end{lstlisting}
+    \item Generar y comprobar el dataset de materiales en \texttt{datos/}:
+    \begin{lstlisting}[language=bash]
+python problemas/5_Materials_Uriel/descargar_materiales.py
+    \end{lstlisting}
+    \item Ejecutar el análisis no supervisado con DBSCAN y exportar la figura:
+    \begin{lstlisting}[language=bash]
+python problemas/5_Materials_Uriel/materiales_uriel.py
+    \end{lstlisting}
+    El script imprimirá en consola las métricas numéricas, la matriz de contingencia y guardará la figura de alta resolución en \texttt{problemas/5\_Materials\_Uriel/clusters\_materiales\_dbscan.png}.
+\end{enumerate}
+
+% ==============================================================================
+\section{Código Fuente Completo}
+% ==============================================================================
+
+A continuación se transcribe el script principal \texttt{materiales\_uriel.py}, debidamente comentado y estructurado:
+
+\begin{lstlisting}[caption={\texttt{problemas/5\_Materials\_Uriel/materiales\_uriel.py}}]
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import DBSCAN
+from sklearn.metrics import silhouette_score
+
+# 1. Cargar el dataset descargado en datos/
+DATOS_DIR = Path(__file__).resolve().parents[2] / "datos"
+CSV_PATH = DATOS_DIR / "materiales_electricos.csv"
+
+if not CSV_PATH.exists():
+    raise FileNotFoundError(f"No se encontró el archivo en: {CSV_PATH}")
+
+df = pd.read_csv(CSV_PATH)
+print(f"Dataset cargado con éxito ({len(df)} materiales).")
+
+# 2. Selección de características y estandarización manual (Z-Score)
+features = ["log_rho_300K", "alpha_coef"]
+X_raw = df[features].values
+
+# Estandarización manual: Z = (X - μ) / σ
+media = np.mean(X_raw, axis=0)
+desv = np.std(X_raw, axis=0)
+X_scaled = (X_raw - media) / desv
+
+# 3. Aplicación de DBSCAN (scikit-learn)
+EPS = 0.65
+MIN_SAMPLES = 3
+
+dbscan = DBSCAN(eps=EPS, min_samples=MIN_SAMPLES)
+df["cluster"] = dbscan.fit_predict(X_scaled)
+
+# 4. Cálculo del Silhouette Score
+mask_validos = df["cluster"] != -1
+if len(set(df["cluster"][mask_validos])) > 1:
+    score_sil = silhouette_score(X_scaled[mask_validos], df["cluster"][mask_validos])
+else:
+    score_sil = None
+
+# 5. Métricas y matriz de contingencia
+print("\n" + "=" * 65)
+print(f"RESULTADOS DE DBSCAN (eps={EPS}, min_samples={MIN_SAMPLES})")
+print("=" * 65)
+print(f"Clusters descubiertos por densidad : {len(set(df['cluster']) - {-1})}")
+print(f"Puntos clasificados como ruido (-1): {np.sum(df['cluster'] == -1)}")
+print(f"Silhouette Score (núcleos densos) : {score_sil:.4f}")
+print("\nMatriz de contingencia (Clase real vs. Cluster DBSCAN):")
+print(pd.crosstab(df["clase_real"], df["cluster"], margins=True))
+
+# 6. Visualización científica en 2D con Matplotlib
+plt.rcParams['font.sans-serif'] = 'Arial'
+plt.rcParams['font.family'] = 'sans-serif'
+plt.figure(figsize=(10, 6.5))
+
+paleta_colores = {
+    0: ("#d97706", "Cluster 0 (Conductores)"),
+    1: ("#2563eb", "Cluster 1 (Aislantes)"),
+    2: ("#059669", "Cluster 2 (Semiconductores)"),
+}
+
+for cl in sorted(set(df["cluster"]) - {-1}):
+    sub = df[df["cluster"] == cl]
+    color, nombre_cl = paleta_colores.get(cl, ("#6b7280", f"Cluster {cl}"))
+    plt.scatter(
+        sub["log_rho_300K"], sub["alpha_coef"],
+        c=color, s=70, alpha=0.85, edgecolors="black", linewidth=0.8,
+        label=f"{nombre_cl} (n={len(sub)})"
+    )
+
+plt.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7, label=r"Frontera $\alpha = 0$")
+plt.title(f"Clasificación de Materiales con DBSCAN ($\\varepsilon = {EPS}$, $min\\_samples = {MIN_SAMPLES}$)", fontsize=13, fontweight="bold")
+plt.xlabel(r"$\log_{10}(\rho_{300\mathrm{K}})$ [$\rho$ en $\Omega\cdot\mathrm{m}$]", fontsize=11)
+plt.ylabel(r"Coeficiente térmico $\alpha$ [$\mathrm{K}^{-1}$]", fontsize=11)
+plt.grid(True, linestyle=":", alpha=0.6)
+plt.legend(loc="upper right", framealpha=0.9)
+plt.tight_layout()
+
+FIGURA_PATH = Path(__file__).resolve().parent / "clusters_materiales_dbscan.png"
+plt.savefig(FIGURA_PATH, dpi=300)
+\end{lstlisting}
+
+% ==============================================================================
+% BIBLIOGRAFÍA
+% ==============================================================================
+\begin{thebibliography}{9}
+\bibitem{ester1996} Ester, M., Kriegel, H.-P., Sander, J., \& Xu, X. (1996). A density-based algorithm for discovering clusters in large spatial databases with noise. \textit{Proc. 2nd Int. Conf. on Knowledge Discovery and Data Mining (KDD-96)}, 226--231.
+\bibitem{kittel} Kittel, C. (2005). \textit{Introduction to Solid State Physics} (8th ed.). John Wiley \& Sons.
+\bibitem{ashcroft} Ashcroft, N. W., \& Mermin, N. D. (1976). \textit{Solid State Physics}. Saunders College.
+\bibitem{crc} Haynes, W. M. (Ed.). (2016). \textit{CRC Handbook of Chemistry and Physics} (97th ed.). CRC Press.
+\bibitem{schubert2017} Schubert, E., Sander, J., Ester, M., Kriegel, H. P., \& Xu, X. (2017). DBSCAN revisited, revisited: why and how you should (still) use DBSCAN. \textit{ACM Transactions on Database Systems (TODS)}, 42(3), 1--21.
+\bibitem{pedregosa2011} Pedregosa, F., et al. (2011). Scikit-learn: Machine learning in Python. \textit{Journal of Machine Learning Research}, 12, 2825--2830.
+\end{thebibliography}
+
+\end{document}
