@@ -6,6 +6,8 @@ Genera la presentacio PowerPoint (.pptx) en CATALÀ per a Uriel:
 - Sense barres/ratlles sota els títols.
 - Tot el text unificat en color NEGRE pur i font Arial.
 - Totes les fórmules matemàtiques en estil LaTeX Computer Modern incrustades com a imatges.
+- Inclou les imatges de l'abans (materiales_antes_clustering.png), el després (clusters_materiales_dbscan.png)
+  i el panell comparatiu (comparativa_abans_despres_dbscan.png).
 """
 
 from pathlib import Path
@@ -20,6 +22,8 @@ FIG_DIR = BASE_DIR / "docs" / "figuras"
 LATEX_DIR = FIG_DIR / "latex"
 
 FIG_CLUSTERS = BASE_DIR / "problemas" / "5_Materials_Uriel" / "clusters_materiales_dbscan.png"
+FIG_ANTES = BASE_DIR / "problemas" / "5_Materials_Uriel" / "materiales_antes_clustering.png"
+FIG_COMPARATIVA_ABANS_DESPRES = BASE_DIR / "problemas" / "5_Materials_Uriel" / "comparativa_abans_despres_dbscan.png"
 FIG_BANDAS = FIG_DIR / "esquema_bandas_materiales.png"
 FIG_COMPARATIVA = FIG_DIR / "comparativa_kmeans_dbscan.png"
 FIG_DATASET = FIG_DIR / "distribucion_escala_rho.png"
@@ -139,11 +143,9 @@ p.font.size = Pt(11.5)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
-# Incrustar formula LaTeX de transport centrada
 if LATEX_TRANSPORTE.exists():
     s2.shapes.add_picture(str(LATEX_TRANSPORTE), Inches(2.4), Inches(1.82), width=Inches(8.5))
 
-# Imatge d'estructura de bandes dels 3 materials a sota
 if FIG_BANDAS.exists():
     s2.shapes.add_picture(str(FIG_BANDAS), Inches(0.8), Inches(2.85), width=Inches(11.733))
 
@@ -157,7 +159,7 @@ set_speaker_notes(s2,
 )
 
 # ==============================================================================
-# SLIDE 3: DATASET I CLASSIFICACIÓ SENSE ETIQUETES (30 ORDRES DE MAGNITUD)
+# SLIDE 3: DATASET I CLASSIFICACIÓ SENSE ETIQUETES (FOTO ABANS DEL CLUSTERING)
 # ==============================================================================
 s3 = prs.slides.add_slide(blank_layout)
 add_header(s3, "Dataset Experimental i Espai de Treball (log₁₀ρ, α)")
@@ -185,7 +187,7 @@ d_items = [
     ("30 ordres de magnitud:", " De conductors (~10⁻⁸ Ω·m) a tefló (> 10²² Ω·m)."),
     ("Compressió logarítmica:", " Evita el col·lapse numèric a l'origen."),
     ("Signatura quàntica:", " α delata l'origen microscòpic del transport."),
-    ("Objectiu no supervisat:", " Descobrir les classes automàticament per densitat.")
+    ("Dades sense etiquetar:", " L'algorisme ha de descobrir l'estructura sol.")
 ]
 for i, (tit, desc) in enumerate(d_items):
     p = tf_d2.paragraphs[0] if i == 0 else tf_d2.add_paragraph()
@@ -194,14 +196,17 @@ for i, (tit, desc) in enumerate(d_items):
     p.font.color.rgb = COLOR_NEGRO
     p.space_after = Pt(7)
 
-if FIG_DATASET.exists():
+# Imatge del pla ABANS del clustering
+if FIG_ANTES.exists():
+    s3.shapes.add_picture(str(FIG_ANTES), Inches(5.6), Inches(1.6), width=Inches(6.9))
+elif FIG_DATASET.exists():
     s3.shapes.add_picture(str(FIG_DATASET), Inches(5.6), Inches(1.9), width=Inches(6.9))
 
 set_speaker_notes(s3,
     "GUIÓ SLIDE 3:\n"
     "Disposem de 57 materials reals al dataset.\n"
-    "Com s'aprecia al gràfic comparatiu: en escala lineal, el 99% dels materials s'aixafa al zero. "
-    "El logaritme de resistivitat és imprescindible per desplegar l'espai, i combinat amb alfa crea un pla ideal per al clustering."
+    "A la dreta veiem l'espai bidimensional físic ABANS d'aplicar cap algorisme: els materials en brut sense etiquetes. "
+    "El logaritme de resistivitat desplega els 30 ordres de magnitud i alfa separa els règims microscòpics."
 )
 
 # ==============================================================================
@@ -375,32 +380,36 @@ set_speaker_notes(s5,
 )
 
 # ==============================================================================
-# SLIDE 6: CLUSTERS EN GRAN (NOMÉS LA IMATGE)
+# SLIDE 6: COMPARATIVA DIRECTA ABANS I DESPRÉS DE L'AGRUPAMENT
 # ==============================================================================
 s6 = prs.slides.add_slide(blank_layout)
 
 t_box = s6.shapes.add_textbox(Inches(0.8), Inches(0.25), Inches(11.7), Inches(0.6))
 p = t_box.text_frame.paragraphs[0]
-p.text = "Resultat DBSCAN: Classificació 2D de Materials Elèctrics"
+p.text = "Resultat DBSCAN: Abans i Després de l'Agrupament"
 p.font.size = Pt(22)
 p.font.bold = True
 p.font.color.rgb = COLOR_NEGRO
 
 sub_t = t_box.text_frame.add_paragraph()
-sub_t.text = "ε = 0.65 · min_samples = 3  |  3 Clústers descoberts  |  0 Soroll"
+sub_t.text = "Dades Experimentals en Brut vs. 3 Clústers Purs Descoberts (ε = 0.65, min_samples = 3)"
 sub_t.font.size = Pt(13)
 sub_t.font.color.rgb = COLOR_NEGRO
 
-if FIG_CLUSTERS.exists():
+if FIG_COMPARATIVA_ABANS_DESPRES.exists():
+    s6.shapes.add_picture(str(FIG_COMPARATIVA_ABANS_DESPRES), Inches(0.8), Inches(1.3), width=Inches(11.733))
+elif FIG_CLUSTERS.exists():
     s6.shapes.add_picture(str(FIG_CLUSTERS), Inches(1.1), Inches(1.15), width=Inches(11.1))
 
 set_speaker_notes(s6,
     "GUIÓ SLIDE 6:\n"
-    "Aquest és el resultat gràfic final en pantalla gran:\n"
-    "- Clúster 0 (ambre): Metalls conductors (Cu, Ag, Au, Al) concentrats a dalt a l'esquerra amb alfa > 0.\n"
-    "- Clúster 1 (blau): Aïllants dielèctrics (Vidre, Quars, Tefló) a la dreta amb alfa centrat a zero.\n"
-    "- Clúster 2 (verd): Semiconductors (Silici, Germani, GaAs) a sota, clarament separats per alfa fortament negatiu.\n"
-    "La línia horitzontal d'alfa = 0 marca la divisió física fonamental entre xocs de fonons i generació tèrmica de portadors."
+    "Aquest és el panell comparatiu d'abans i després en pantalla gran:\n"
+    "- A l'esquerra: les 57 dades experimentals en brut tal com entren a l'algorisme, sense etiquetes de classe.\n"
+    "- A la dreta: el descobriment autònom de les 3 classes físiques pures per connectivitat de densitat amb DBSCAN:\n"
+    "  • Clúster 0 (ambre): 35 metalls conductors amb alfa > 0.\n"
+    "  • Clúster 1 (blau): 10 aïllants dielèctrics amb alfa proper a zero i resistivitat gegant.\n"
+    "  • Clúster 2 (verd): 10 semiconductors per sota de la frontera física alfa = 0.\n"
+    "- La línia d'alfa = 0 separa clarament la conducció per fonons de l'activació tèrmica."
 )
 
 # ==============================================================================
@@ -580,18 +589,13 @@ def aplicar_fuente_arial(presentation):
 aplicar_fuente_arial(prs)
 
 # ==============================================================================
-# GUARDAR PRESENTACIONS
+# GUARDAR PRESENTACIÓ EN AMBDUES UBICACIONS
 # ==============================================================================
-try:
-    OUTPUT_DIR_1.parent.mkdir(parents=True, exist_ok=True)
-    prs.save(str(OUTPUT_DIR_1))
-    print(f"Presentacio guardada a: {OUTPUT_DIR_1}")
-except PermissionError:
-    print(f"Avis: {OUTPUT_DIR_1.name} a problemas/ esta obert.")
+prs.save(OUTPUT_DIR_1)
+print(f"Presentacio guardada a: {OUTPUT_DIR_1}")
 
 try:
-    OUTPUT_DIR_2.parent.mkdir(parents=True, exist_ok=True)
-    prs.save(str(OUTPUT_DIR_2))
+    prs.save(OUTPUT_DIR_2)
     print(f"Presentacio guardada a: {OUTPUT_DIR_2}")
 except PermissionError:
-    print(f"Avis: {OUTPUT_DIR_2.name} a presentacion/ esta obert en PowerPoint.")
+    print(f"Avís: No s'ha pogut sobreescriure {OUTPUT_DIR_2} (pot estar obert a PowerPoint).")

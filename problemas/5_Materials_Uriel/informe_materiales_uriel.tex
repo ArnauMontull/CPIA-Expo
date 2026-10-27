@@ -243,6 +243,13 @@ El conjunt conté \textbf{57 materials reals} procedents de taules empíriques d
     \item \textbf{10 aïllants dielèctrics:} Polímers d'alta resistivitat (PTFE/tefló, PET/mylar, poliestirè), vidres de borosilicat, quars fos, mica moscovita, porcellana electrotècnica i alúmina ($\text{Al}_2\text{O}_3$).
 \end{itemize}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{materiales_antes_clustering.png}
+\caption{Distribució inicial dels 57 materials experimentals en brut a l'espai bidimensional $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$ abans de l'aplicació del clustering. S'evidencia la dispersió física natural de les dades i la línia física de demarcació $\alpha = 0$.}
+\label{fig:materiales_abans}
+\end{figure}
+
 % ==============================================================================
 \section{Fonamentació de DBSCAN enfront de K-Means}
 % ==============================================================================
@@ -321,6 +328,13 @@ En executar el script sobre els 57 materials, l'algorisme DBSCAN convergeix inst
     \item \textbf{Clústers descoberts per densitat:} Exactament \textbf{3 clústers}.
     \item \textbf{Punts classificats com a soroll ($-1$):} \textbf{0 de 57 materials}. Tots els materials analitzats van quedar assignats a un nucli dens físicament coherent.
 \end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{comparativa_abans_despres_dbscan.png}
+\caption{Comparativa directa de l'abans i el després de l'agrupament amb DBSCAN ($\varepsilon = 0.65$, $\text{min\_samples} = 3$). A l'esquerra: dades experimentals en brut sense cap informació de classe en l'espai $(\log_{10}\rho_{300\mathrm{K}}, \alpha)$. A la dreta: els 3 clústers descoberts de forma autònoma per connectivitat de densitat (Clúster 0 ambre: conductors; Clúster 1 blau: aïllants; Clúster 2 verd: semiconductors).}
+\label{fig:comparativa_abans_despres}
+\end{figure}
 
 \begin{figure}[H]
 \centering

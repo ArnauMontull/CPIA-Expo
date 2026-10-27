@@ -114,7 +114,7 @@ diapo('Dataset i espai (log₁₀ρ, α)', [
     '30 ordres de magnitud en resistivitat (10⁻⁸ a 10²² Ω·m)',
     'Escala lineal col·lapsa a l\'origen; log₁₀(ρ) separa les fases',
     'Clustering no supervisat: descobrir les classes sense etiquetes'],
-    'distribucion_escala_rho.png', 7.2,
+    'materiales_antes_clustering.png', 7.2,
     notas='Comparativa d\'escala: la compressió logarítmica és imprescindible perquè metalls i aïllants coexisteixin.')
 
 diapo('Per què DBSCAN enfront de K-Means?', [
@@ -137,7 +137,7 @@ diapo('Resultat: DBSCAN en 57 materials', [
     'Clúster 1 (blau): 10 aïllants dielèctrics (vidre, tefló...)',
     'Clúster 2 (verd): 10 semiconductors (Si, Ge, GaAs...)',
     'Frontera α = 0: fonons vs activació tèrmica'],
-    'clusters_materiales_dbscan.png', 7.2,
+    'comparativa_abans_despres_dbscan.png', 7.2,
     notas='Resultat gràfic: el pla 2D mostra la separació nítida de les tres classes.')
 
 diapo('Validació física: Matriu de contingència', [
