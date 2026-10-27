@@ -166,7 +166,8 @@ necesita una medida de similitud (distancia euclídea, haversine, correlación\l
 
 \paragraph{K-Means.} Divide los datos en $K$ grupos minimizando la suma de distancias cuadráticas de cada punto al centroide
 de su grupo, $J=\sum_{k=1}^{K}\sum_{x\in C_k}\lVert x-\mu_k\rVert^2$. Se resuelve con el algoritmo de Lloyd (asignar cada punto
-al centroide más cercano y recalcular centroides, hasta converger), inicializado con $K$-means++. Es un clustering \emph{duro}, supone grupos
+al centroide más cercano y recalcular centroides, hasta converger) \cite{macqueen1967,lloyd1982}, inicializado con
+$K$-means++ \cite{arthur2007}, que elige los centroides iniciales lejos unos de otros. Es un clustering \emph{duro}, supone grupos
 compactos y de tamaño parecido, y hay que fijar $K$.
 
 \paragraph{Cómo elegir $K$ sin etiquetas.} Método del codo (la inercia deja de bajar de forma apreciable), coeficiente de
@@ -179,7 +180,7 @@ quedan como ruido ($-1$). No necesita fijar el número de grupos y encuentra for
 
 \paragraph{Clustering jerárquico, mezclas gaussianas e Isolation Forest.} El jerárquico construye un dendrograma según
 el tipo de enlace (simple, medio, Ward) y se corta a una altura. Las mezclas gaussianas (\texttt{GaussianMixture}) dan una asignación
-blanda por probabilidad. Isolation Forest puntúa como anómalos los puntos que se aíslan con pocos cortes aleatorios.
+blanda por probabilidad. Isolation Forest \cite{liu2008} puntúa como anómalos los puntos que se aíslan con pocos cortes aleatorios.
 \pendiente{el equipo revisa y amplía este resumen con lo que se exponga.}
 
 % ==========================================
@@ -228,6 +229,9 @@ vecindad de radio $\varepsilon$ contiene al menos $v_{\min}$ puntos; dos puntos 
 pertenecen al mismo grupo (alcanzabilidad por densidad) y los puntos sin vecindad suficiente que no alcanza ningún punto
 central son ruido. Con $v_{\min}=1$ todo punto es central y los grupos son las componentes conexas del grafo que une
 los sismos a menos de $\varepsilon$; es equivalente al clustering jerárquico de enlace simple cortado a la altura $\varepsilon$.
+Schubert et al.\ \cite{schubert2017} revisan cómo elegir $\varepsilon$ y $v_{\min}$ y por qué valores bajos de $v_{\min}$
+acercan DBSCAN al enlace simple; para $\varepsilon$, el propio artículo original propone el gráfico de distancias al $k$-ésimo
+vecino ordenadas, que se usa en la validación.
 
 Los epicentros están sobre la esfera, así que la distancia correcta es la ortodrómica. La fórmula de \emph{haversine}
 \cite{sinnott1984},
@@ -351,13 +355,14 @@ $\varepsilon$ (km) & Clusters & Silueta & FP & FN \\
 
 \begin{itemize}
   \item \textbf{La silueta no elige $\varepsilon$:} es negativa y decrece al aumentar $\varepsilon$. Con distancia por
-        densidad, DBSCAN une cadenas alargadas de sismos y la silueta (que premia grupos compactos) lo penaliza. Tampoco el
+        densidad, DBSCAN une cadenas alargadas de sismos y la silueta \cite{rousseeuw}, que premia grupos compactos y
+        separados, lo penaliza. Tampoco el
         gráfico de distancias al 4.º vecino muestra un codo claro entre 20 y 30 km.
   \item \textbf{Lo que sí limita $\varepsilon$ es la profundidad:} los FP bajan al crecer $\varepsilon$ hasta un mínimo de 115 en
         25 km (con $\varepsilon$ pequeño muchos terremotos superficiales quedan en grupos sueltos); a partir de 40--50 km los
         grupos de explosiones se funden con terremotos más profundos: los FP suben a 483 con 50 km y los FN pasan de 28 a
         261 con 75 km, porque la mediana deja de ser superficial.
-  \item \textbf{Estabilidad:} el ARI entre el clustering de todo el catálogo y el de una muestra aleatoria del 50\,\% (5
+  \item \textbf{Estabilidad:} el ARI \cite{hubert} (vale 1 si dos particiones coinciden y 0 si se parecen como dos al azar) entre el clustering de todo el catálogo y el de una muestra aleatoria del 50\,\% (5
         semillas, $\varepsilon=25$ km) vale entre $0{,}54$ y $0{,}65$: moderado, porque al quitar sismos se rompen cadenas de DBSCAN.
 \end{itemize}
 
@@ -370,6 +375,59 @@ recall 95,4\,\% y $F_1=0{,}891$.
 \includegraphics[width=0.92\textwidth]{figuras/resultado.png}
 \caption{Resultado final: aciertos (verde), falsos positivos (naranja) y falsos negativos (negro).}
 \end{figure}
+
+\subsection{Qué hay detrás de cada cluster}
+DBSCAN no sabe nada de historia, pero los clusters que encuentra son los polígonos de ensayo de la Guerra Fría. Las 614
+explosiones caen en 59 clusters; la tabla muestra los más grandes, con el lugar que da el propio catálogo del USGS.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}llrrrl@{}}
+\toprule
+Polígono & Años en el catálogo & Explosiones & Eventos del cluster & Mediana (km) & ¿Detectado? \\
+\midrule
+Nevada (EE.\,UU.) & 1962--1992 & 230 & 256 & 0,0 & Sí \\
+Semipalatinsk, Balapan (Kazajistán) & 1973--1989 & 92 & 92 & 0,0 & Sí \\
+Semipalatinsk, Degelen (Kazajistán) & 1973--1989 & 86 & 87 & 0,0 & Sí \\
+Mururoa (Polinesia Francesa) & 1977--1996 & 74 & 76 & 0,0 & Sí \\
+Nueva Zembla norte (Rusia) & 1973--1990 & 20 & 21 & 0,0 & Sí \\
+Lop Nur (China) & 1976--1996 & 18 & 47 & 15,7 & No \\
+Astracán (Rusia) & 1980--1984 & 15 & 15 & 0,0 & Sí \\
+Punggye-ri (Corea del Norte) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
+\bottomrule
+\end{tabular}
+\caption{Clusters de DBSCAN con más explosiones ($\varepsilon=25$ km, $v_{\min}=1$).}
+\end{table}
+
+\begin{itemize}
+  \item \textbf{Nevada.} Es el polígono donde Estados Unidos hizo la mayoría de sus ensayos: 928 según la lista oficial del
+        Departamento de Energía \cite{doe2015}. En el catálogo ($M\ge4{,}5$) quedan 230, casi todos subterráneos y tan juntos que
+        DBSCAN los encadena en un único cluster. Es también el que más falsos positivos
+        aporta: los 26 eventos que no son explosiones nucleares de ese cluster (16 terremotos, 6 \texttt{explosion}, 3
+        colapsos y 1 voladura) se marcan con él. Algunos podrían ser colapsos de las cavidades que dejan los
+        propios ensayos o pruebas que el USGS registró con otra etiqueta.
+  \item \textbf{Semipalatinsk.} El polígono soviético de Kazajistán aparece partido en dos clusters, separados por unos
+        60 km: Balapan, donde se hacían los ensayos en pozos verticales, y el macizo de Degelen, con ensayos en galerías.
+        Son 178 explosiones con mediana de profundidad 0 y casi ningún terremoto alrededor: el caso más fácil.
+  \item \textbf{Mururoa.} Los ensayos subterráneos franceses en el atolón entre 1977 y 1996. Lejos de cualquier zona
+        sísmica, el cluster contiene 74 explosiones y solo 2 eventos más.
+  \item \textbf{Nueva Zembla.} El archipiélago ártico ruso da dos clusters pequeños (norte y sur). Allí está la explosión
+        más famosa del catálogo, la \emph{Bomba del Zar} del 30 de octubre de 1961, el mayor ensayo de la historia. Fue
+        atmosférica y el USGS la registra a $-4$ km, por encima de la superficie: queda fuera de la ventana $[0;\,2{,}5)$
+        y es uno de los 28 falsos negativos.
+  \item \textbf{Lop Nur.} Es el gran fallo del método. Las 18 explosiones chinas caen junto a 29 terremotos del Tian Shan,
+        con mediana de 24,5 km, y varias explosiones figuran a 33 km, una profundidad fija que el catálogo usaba cuando no
+        podía resolverla. La mediana del cluster sube a 15,7 km y todo el grupo se pierde: son 18 de los 28 FN. De los 28,
+        10 tienen esa profundidad de 33 km.
+  \item \textbf{Astracán y Yakutia.} Clusters pequeños en Rusia sin un polígono militar. Corresponden a explosiones
+        nucleares con fines civiles del programa soviético, por ejemplo para crear cavidades de almacenamiento de gas.
+  \item \textbf{Punggye-ri.} Los cinco ensayos norcoreanos con $M\ge4{,}5$ (2009--2017; el de 2006 queda por debajo del corte
+        de magnitud). El de septiembre de 2017, de magnitud 6,3, es la mayor explosión del siglo \textsc{xxi} en el catálogo.
+  \item \textbf{Un ensayo escondido entre terremotos.} El 26 de octubre de 1963, Estados Unidos hizo explotar una bomba
+        cerca de Fallon (Nevada), lejos del polígono, en una zona con terremotos reales (los de 1954 de Rainbow Mountain).
+        DBSCAN la agrupa con ellos y la mediana deja de ser superficial: el método falla justo donde la explosión se
+        parece a la sismicidad natural.
+\end{itemize}
 
 \paragraph{Limitaciones y honestidad del resultado.}
 \begin{itemize}
@@ -660,6 +718,16 @@ through September 1992}, DOE/NV-209 Rev. 16. \url{https://www.osti.gov/biblio/13
 \bibitem{rousseeuw} Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. \textit{Journal of Computational and Applied Mathematics}, 20, 53--65.
 \bibitem{hubert} Hubert, L., Arabie, P. (1985). Comparing partitions. \textit{Journal of Classification}, 2, 193--218.
 \bibitem{sklearn} Pedregosa, F. et al. (2011). Scikit-learn: machine learning in Python. \textit{Journal of Machine Learning Research}, 12, 2825--2830.
+\bibitem{macqueen1967} MacQueen, J. (1967). Some methods for classification and analysis of multivariate observations.
+\textit{Proc. 5th Berkeley Symposium on Mathematical Statistics and Probability}, 1, 281--297.
+\bibitem{lloyd1982} Lloyd, S. P. (1982). Least squares quantization in PCM. \textit{IEEE Transactions on Information Theory},
+28(2), 129--137. \url{https://doi.org/10.1109/TIT.1982.1056489}
+\bibitem{arthur2007} Arthur, D., \& Vassilvitskii, S. (2007). k-means++: the advantages of careful seeding. \textit{Proc. 18th
+Annual ACM-SIAM Symposium on Discrete Algorithms}, 1027--1035.
+\bibitem{schubert2017} Schubert, E., Sander, J., Ester, M., Kriegel, H.-P., \& Xu, X. (2017). DBSCAN revisited, revisited: why
+and how you should (still) use DBSCAN. \textit{ACM Transactions on Database Systems}, 42(3), 19. \url{https://doi.org/10.1145/3068335}
+\bibitem{liu2008} Liu, F. T., Ting, K. M., \& Zhou, Z.-H. (2008). Isolation Forest. \textit{Proc. 8th IEEE International
+Conference on Data Mining}, 413--422. \url{https://doi.org/10.1109/ICDM.2008.17}
 \end{thebibliography}
 
 \end{document}
