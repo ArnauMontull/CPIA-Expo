@@ -320,7 +320,10 @@ de \texttt{nukeDBSCAN\_arnau.py}, que \texttt{nukeval.py} importa.
 
 \begin{itemize}
   \item \textbf{Finestra de profunditat $[0;\,2{,}5)$ km:} criteri físic. Una explosió nuclear soterrada és a menys d'uns
-        pocs km de la superfície; els terratrèmols tectònics són, majoritàriament, molt més profunds.
+        pocs km de la superfície; els terratrèmols tectònics són, majoritàriament, molt més profunds. Triem un màxim de 2,5 km, i no
+        una finestra estreta al voltant de 0 km, perquè volem que l'algorisme pugui detectar proves futures: el catàleg
+        podria registrar-les a una profunditat que no sigui exactament 0 km, i no volem dependre que l'etiquetatge hi sigui
+        perfecte.
   \item \textbf{$\varepsilon=25$ km:} de l'ordre de la mida d'un polígon d'assaig. És el valor amb menys falsos positius dels
         provats (de 5 a 100 km, vegeu la validació): amb menys radi els terratrèmols superficials queden en grups solts i amb
         més radi els grups d'explosions es fonen amb terratrèmols més profunds. Aquí sí que es mira l'etiqueta.
