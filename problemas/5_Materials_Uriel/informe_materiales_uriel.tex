@@ -263,7 +263,7 @@ Aquesta formulació matemàtica imposa hipòtesis molt restrictives sobre la geo
 
 \subsection{Avantatges determinants de DBSCAN}
 
-DBSCAN defineix els clústers en termes de connectivitat local per densitat espacial:
+DBSCAN defineix els clústers en termes de connectivitat local per densitat espacial~\cite{ester1996, gfg_dbscan}:
 \begin{itemize}
     \item \textbf{$\varepsilon$-Veïnat:} Per a un punt $p$, $N_\varepsilon(p) = \{q \in D \mid \mathrm{dist}(p, q) \le \varepsilon\}$.
     \item \textbf{Punt Nucli (\emph{Core Point}):} Aquell que conté almenys $v_{\min} = \text{min\_samples}$ punts dins del seu radi $\varepsilon$:
@@ -307,7 +307,7 @@ Després de la transformació, ambdues columnes queden exactament amb mitjana $0
     \item \textbf{Radi de veïnat $\varepsilon = 0.65$:} Es va determinar avaluant la gràfica de distàncies al $k$-èssim veí més proper ($k$-NN distance plot amb $k = 3$). La corba presenta un colze geomètric nítid al voltant d'$\varepsilon \in [0.60, 0.70]$. Un radi d'$\varepsilon = 0.65$ garanteix suficient connectivitat per abastar la dispersió dels aïllants, mantenint al mateix temps una separació infranquejable entre el nucli de metalls i els semiconductors.
 \end{enumerate}
 
-L'execució es realitza de forma neta mitjançant la llibreria oficial \texttt{scikit-learn}:
+L'execució es realitza de forma neta mitjançant la llibreria oficial \texttt{scikit-learn}~\cite{sklearn_dbscan, pedregosa2011}:
 \begin{lstlisting}
 dbscan = DBSCAN(eps=0.65, min_samples=3)
 df["cluster"] = dbscan.fit_predict(X_scaled)
@@ -380,13 +380,15 @@ L'anàlisi de la matriu revela un rendiment extraordinari:
 % ==============================================================================
 % BIBLIOGRAFIA
 % ==============================================================================
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 \bibitem{ester1996} Ester, M., Kriegel, H.-P., Sander, J., \& Xu, X. (1996). A density-based algorithm for discovering clusters in large spatial databases with noise. \textit{Proc. 2nd Int. Conf. on Knowledge Discovery and Data Mining (KDD-96)}, 226--231.
 \bibitem{kittel} Kittel, C. (2005). \textit{Introduction to Solid State Physics} (8th ed.). John Wiley \& Sons.
 \bibitem{ashcroft} Ashcroft, N. W., \& Mermin, N. D. (1976). \textit{Solid State Physics}. Saunders College.
 \bibitem{crc} Haynes, W. M. (Ed.). (2016). \textit{CRC Handbook of Chemistry and Physics} (97th ed.). CRC Press.
 \bibitem{schubert2017} Schubert, E., Sander, J., Ester, M., Kriegel, H. P., \& Xu, X. (2017). DBSCAN revisited, revisited: why and how you should (still) use DBSCAN. \textit{ACM Transactions on Database Systems (TODS)}, 42(3), 1--21.
 \bibitem{pedregosa2011} Pedregosa, F., et al. (2011). Scikit-learn: Machine learning in Python. \textit{Journal of Machine Learning Research}, 12, 2825--2830.
+\bibitem{sklearn_dbscan} Scikit-learn Developers. \textit{sklearn.cluster.DBSCAN --- scikit-learn documentation}. \url{https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html}
+\bibitem{gfg_dbscan} GeeksforGeeks. \textit{DBSCAN Clustering in ML: Density-based clustering}. \url{https://www.geeksforgeeks.org/machine-learning/dbscan-clustering-in-ml-density-based-clustering/}
 \end{thebibliography}
 
 \end{document}
