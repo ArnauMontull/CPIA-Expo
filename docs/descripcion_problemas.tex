@@ -230,7 +230,7 @@ sismògrafs (triangles) registren tots dos esdeveniments; aquí només es fa ser
 de detecció i verificació, no una guia per amagar proves.
 
 \subsection{Dades}
-Catàleg de l'USGS (\textit{ComCat}) amb tots els esdeveniments de magnitud $M\ge 4{,}5$ entre 1951 i 2025
+Catàleg de l'USGS (\textit{ComCat: Comprehensive Earthquake Catalog}) amb tots els esdeveniments de magnitud $M\ge 4{,}5$ entre 1951 i 2025
 (\texttt{datos/sismos\_usgs\_M45\_1951\_2025.csv}), descarregat amb \texttt{nukedatos.py}. No es filtra per tipus
 d'esdeveniment. Després de treure els esdeveniments sense latitud, longitud, profunditat o magnitud en queden 298\,127: 614
 etiquetats per l'USGS com a \texttt{nuclear explosion}, 297\,413 \texttt{earthquake} i 100 d'altres tipus (71 erupcions
@@ -248,13 +248,15 @@ volcàniques, 16 \texttt{explosion}, 6 esfondraments de mina, 3 esclats de roca,
 \end{figure}
 
 \subsection{Fonamentació teòrica}
-DBSCAN \cite{ester1996} defineix els grups per densitat. Donats $\varepsilon$ i $v_{\min}$, un punt és central si el seu veïnat
-de radi $\varepsilon$ conté com a mínim $v_{\min}$ punts; dos punts centrals a distància $\le\varepsilon$ pertanyen al mateix
-grup (accessibilitat per densitat) i els punts sense prou veïnat que no abasta cap punt central són soroll. Amb $v_{\min}=1$ tot
-punt és central i els grups són les components connexes del graf que uneix els sismes a menys de $\varepsilon$; és equivalent al
-clustering jeràrquic d'enllaç simple tallat a l'altura $\varepsilon$. Schubert et al.\ \cite{schubert2017} revisen com triar
-$\varepsilon$ i $v_{\min}$ i per què valors baixos de $v_{\min}$ apropen DBSCAN a l'enllaç simple; per a $\varepsilon$, el mateix
-article original proposa el gràfic de distàncies al $k$-èsim veí ordenades, que es fa servir a la validació.
+DBSCAN \cite{ester1996} agrupa els punts que estan a prop els uns dels altres. Té dos paràmetres: un radi $\varepsilon$ i un
+nombre mínim de punts $v_{\min}$. Un punt és \emph{central} si té com a mínim $v_{\min}$ punts (ell inclòs) a una distància
+$\le\varepsilon$. Dos punts centrals que són a menys de $\varepsilon$ l'un de l'altre queden al mateix grup, i així el grup
+creix de punt en punt com una cadena. Els punts que no són centrals ni tenen cap punt central a prop són soroll.
+
+Nosaltres fem servir $v_{\min}=1$. Aleshores tots els punts són centrals, no hi ha soroll i cada grup és simplement un conjunt
+de sismes units per cadenes de menys de $\varepsilon$ km. Per això els assajos d'un mateix polígon, que estan molt a prop, acaben
+al mateix grup. Schubert et al.\ \cite{schubert2017} expliquen com triar $\varepsilon$ i $v_{\min}$; per a $\varepsilon$ proposen mirar
+la distància de cada punt al seu veí més proper, com fem a la validació.
 
 Els epicentres són sobre l'esfera, així que la distància correcta és l'ortodròmica. La fórmula de \emph{haversine}
 \cite{sinnott1984},
