@@ -237,12 +237,6 @@ etiquetats per l'USGS com a \texttt{nuclear explosion}, 297\,413 \texttt{earthqu
 volcàniques, 16 \texttt{explosion}, 6 esfondraments de mina, 3 esclats de roca, 2 esllavissades, 1 voladura de pedrera i 1
 \texttt{other event}). La columna \texttt{tipo} \emph{només s'utilitza per avaluar}, mai per entrenar.
 
-\texttt{nukedatos.py} demana a l'API de l'USGS un any cada vegada (cada consulta torna com a màxim 20\,000 esdeveniments),
-torna a provar-ho si falla la xarxa i desa el resultat canviant el nom de la columna \texttt{type} per \texttt{tipo}. El codi
-complet és a l'Annex.
-
-\lstinputlisting[firstline=13,lastline=23,firstnumber=13,caption={\texttt{nukedatos.py}: descàrrega d'un any del catàleg, amb reintents.},label={lst:datos-descarga}]{../problemas/2_Nuclear/nukedatos.py}
-
 \texttt{nukeDBSCAN\_arnau.py} carrega el CSV i es queda amb els esdeveniments que tenen posició, profunditat i magnitud.
 
 \lstinputlisting[firstline=18,lastline=22,firstnumber=18,caption={\texttt{nukeDBSCAN\_arnau.py}: càrrega i neteja de les dades.},label={lst:datos-carga}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
