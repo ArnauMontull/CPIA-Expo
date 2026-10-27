@@ -5,22 +5,18 @@ import plotly.graph_objects as go
 from sklearn.cluster import DBSCAN
 
 # --- Catalogo y parametros ---
-# 'grande': 1951-2025, 614 explosiones. 'pequeno': sismos_usgs.csv, 554 explosiones.
-CATALOGO = 'grande'
-
+# Catalogo USGS 1951-2025, M>=4.5, todos los eventos (se descarga con nukedatos.py)
 CARPETA = Path(__file__).resolve().parent
-DATOS = CARPETA.parent.parent / 'datos'
-archivos = {'grande': DATOS / 'sismos_usgs_M45_1951_2025.csv',
-            'pequeno': DATOS / 'sismos_usgs.csv'}
+ARCHIVO = CARPETA.parent.parent / 'datos' / 'sismos_usgs_M45_1951_2025.csv'
 
-# Parametros fijos (iguales para los dos catalogos)
+# Parametros fijos
 #   eps_km: radio de DBSCAN. vmin: sismos minimos por cluster.
 #   dmin, dmax: una explosion es casi superficial, asi que un cluster es sospechoso
 #   si la mediana de su profundidad esta entre 0 y 2.5 km.
 parametros = dict(eps_km=25, vmin=1, dmin=0, dmax=2.5)
 
 # --- Datos ---
-df = pd.read_csv(archivos[CATALOGO])
+df = pd.read_csv(ARCHIVO)
 df = df.dropna(subset=['latitude', 'longitude', 'depth', 'mag'])
 df = df[df['mag'] >= 4.5]
 df = df.reset_index(drop=True)

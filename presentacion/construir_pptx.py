@@ -64,8 +64,8 @@ diapo('Problema: ¿terremoto o explosión nuclear?', [
     'Pista 2: ocurren casi en la superficie (mediana 0 km frente a 22 km)'], 'catalogo.png')
 
 diapo('Datos', [
-    'Catálogo USGS, M ≥ 4,5, 1951-2025',
-    '298 025 eventos; 614 etiquetados «nuclear explosion»',
+    'Catálogo USGS, M ≥ 4,5, 1951-2025, todos los tipos de evento',
+    '298 127 eventos; 614 etiquetados «nuclear explosion»',
     'La etiqueta solo se usa para evaluar, nunca para entrenar'], 'profundidad.png', 7.2)
 
 diapo('Cómo se detecta', [
@@ -77,22 +77,23 @@ diapo('Cómo se detecta', [
 
 diapo('Elegir y validar los parámetros', [
     'Parámetros fijos: eps = 25 km, vmin = 1, profundidad mediana en [0; 2,5) km (criterio físico)',
-    'eps = 25 km da el mínimo de falsos positivos (91) entre 5 y 100 km; es la única elección que mira la etiqueta',
+    'eps = 25 km da el mínimo de falsos positivos (115) entre 5 y 100 km; es la única elección que mira la etiqueta',
     'La silueta no elige eps (es negativa y baja con eps); el codo de distancias k no marca un valor claro',
-    'Con eps ≥ 50 km los grupos se funden con terremotos profundos: FP 460 (50 km) y FN 261 (75 km)',
-    'Estabilidad (ARI, muestra del 50 %): 0,52-0,62',
+    'Con eps ≥ 50 km los grupos se funden con terremotos profundos: FP 483 (50 km) y FN 261 (75 km)',
+    'Estabilidad (ARI, muestra del 50 %): 0,54-0,65',
     'nuke_optimizar.py se probó y se descartó: su ventana [0; 0,1) mide la convención del USGS'], 'nukeval_eps.png', 7.2)
 
 diapo('Resultado', [
-    '586 aciertos, 91 FP, 28 FN',
-    'Precisión 86,6 %  ·  recall 95,4 %  ·  F1 = 0,908',
+    '586 aciertos, 115 FP, 28 FN',
+    'Precisión 83,6 %  ·  recall 95,4 %  ·  F1 = 0,891',
     'Globo interactivo: problemas/2_Nuclear/globo.html (4 vistas, sin internet)'], 'resultado.png', 7.2)
 
 diapo('Limitaciones (preguntas probables)', [
-    'vmin = 1: no hay ruido; la selección real la hace la profundidad. Con vmin = 3, F1 baja a 0,910',
-    'Mismos parámetros en los dos catálogos: F1 0,908 (grande) y 0,955 (pequeño); sin conjunto de prueba separado',
-    'El 85 % de las explosiones figura con profundidad 0,0 km en el USGS: una ventana [0; 0,1) daría F1 0,947, pero mediría esa convención',
-    'FP: terremotos muy superficiales y explosiones de minas; algunas pruebas oficiales figuran como earthquake',
+    'vmin = 1: no hay ruido; la selección real la hace la profundidad. Con vmin = 3, F1 baja a 0,899',
+    'Sin conjunto de prueba separado: se ajusta y se evalúa en el mismo catálogo',
+    'El 85 % de las explosiones figura con profundidad 0,0 km en el USGS: una ventana [0; 0,1) daría F1 0,931, pero mediría esa convención',
+    '115 FP: 24 son otros eventos no sísmicos (explosiones, minas); sin ellos serían 91 y F1 0,908',
+    'Algunas pruebas oficiales figuran como earthquake (error de la etiqueta)',
     'No usamos año ni número de estaciones: delatarían la época, no la física'])
 
 # --- Huecos para Matías y Martí ---

@@ -204,11 +204,11 @@ trabajo es de detección y verificación, no una guía para ocultar pruebas.
 
 \subsection{Datos}
 Catálogo del USGS (\textit{ComCat}) con todos los eventos de magnitud $M\ge 4{,}5$ entre 1951 y 2025
-(\texttt{datos/sismos\_usgs\_M45\_1951\_2025.csv}), generado con \texttt{descargar\_datos.py sismos\_hist}. Contiene
-298\,025 eventos, de los cuales 614 están etiquetados por el USGS como \texttt{nuclear explosion}; el resto son
-terremotos y otros eventos. La columna \texttt{tipo} \emph{solo se usa para evaluar}, nunca para entrenar. También se
-puede elegir el catálogo reducido \texttt{sismos\_usgs.csv} (554 explosiones, mayoritariamente 2010--2025), con
-\texttt{CATALOGO = 'pequeno'}.
+(\texttt{datos/sismos\_usgs\_M45\_1951\_2025.csv}), descargado con \texttt{nukedatos.py}. No se filtra por tipo de evento.
+Tras quitar los eventos sin latitud, longitud, profundidad o magnitud quedan 298\,127: 614 etiquetados por el USGS como
+\texttt{nuclear explosion}, 297\,413 \texttt{earthquake} y 100 de otros tipos (71 erupciones volcánicas, 16
+\texttt{explosion}, 6 colapsos de mina, 3 estallidos de roca, 2 deslizamientos, 1 voladura de cantera y 1 \texttt{other event}).
+La columna \texttt{tipo} \emph{solo se usa para evaluar}, nunca para entrenar.
 
 \begin{figure}[H]
 \centering
@@ -263,7 +263,7 @@ los clusters sospechosos por profundidad; círculos rojos: explosiones reales (e
 \end{figure}
 
 \subsection{Elección de parámetros}
-Se usan los mismos parámetros en los dos catálogos: $\varepsilon=25$ km, $v_{\min}=1$, $d_{\min}=0$ y $d_{\max}=2{,}5$ km.
+Parámetros fijos: $\varepsilon=25$ km, $v_{\min}=1$, $d_{\min}=0$ y $d_{\max}=2{,}5$ km.
 \begin{itemize}
   \item \textbf{Ventana de profundidad $[0;\,2{,}5)$ km:} criterio físico. Una explosión nuclear enterrada está a menos de
         unos pocos km de la superficie; los terremotos tectónicos están, en su mayoría, mucho más profundos.
@@ -274,8 +274,8 @@ Se usan los mismos parámetros en los dos catálogos: $\varepsilon=25$ km, $v_{\
 \end{itemize}
 El script \texttt{nuke\_optimizar.py} (búsqueda de la ventana y de $\varepsilon$ por $F_1$) se probó, pero no se usa para
 los parámetros finales: su óptimo, $[0;\,0{,}1)$ km, queda en el borde de su rejilla y aprovecha que el USGS registra con
-profundidad exactamente $0{,}0$ km el 85\,\% de las explosiones (521 de 614) y solo 131 de 297\,411 terremotos. Eso mide
-cómo cataloga el USGS y no la física. La tabla compara ventanas con $\varepsilon=25$ km en el catálogo grande.
+profundidad exactamente $0{,}0$ km el 85\,\% de las explosiones (521 de 614) y solo 154 de 297\,513 eventos que no son
+explosiones nucleares. Eso mide cómo cataloga el USGS y no la física. La tabla compara ventanas con $\varepsilon=25$ km.
 
 \begin{table}[H]
 \centering
@@ -283,26 +283,13 @@ cómo cataloga el USGS y no la física. La tabla compara ventanas con $\varepsil
 \toprule
 Ventana (km) & TP & FP & FN & $F_1$ \\
 \midrule
-$[0;\,0{,}1)$ (óptimo del optimizador) & 585 & 36 & 29 & 0,947 \\
-$[0;\,2{,}5)$ (usada) & 586 & 91 & 28 & 0,908 \\
-$[-5;\,5)$ & 588 & 438 & 26 & 0,717 \\
-$[-5;\,10)$ & 589 & 2\,909 & 25 & 0,286 \\
+$[0;\,0{,}1)$ (la que elegía el optimizador) & 585 & 58 & 29 & 0,931 \\
+$[0;\,2{,}5)$ (usada) & 586 & 115 & 28 & 0,891 \\
+$[0;\,5)$ & 587 & 363 & 27 & 0,751 \\
+$[0;\,10)$ & 588 & 2\,897 & 26 & 0,287 \\
 \bottomrule
 \end{tabular}
-\caption{Efecto de la ventana de profundidad ($\varepsilon=25$ km, $v_{\min}=1$, catálogo grande).}
-\end{table}
-
-\begin{table}[H]
-\centering
-\begin{tabular}{@{}lrrrrr@{}}
-\toprule
-Catálogo & Explosiones & TP & FP & FN & $F_1$ \\
-\midrule
-Grande (1951--2025) & 614 & 586 & 91 & 28 & 0,908 \\
-Pequeño (2010--2025) & 554 & 537 & 34 & 17 & 0,955 \\
-\bottomrule
-\end{tabular}
-\caption{Resultado con los parámetros fijos en cada catálogo.}
+\caption{Efecto de la ventana de profundidad ($\varepsilon=25$ km, $v_{\min}=1$).}
 \end{table}
 
 \subsection{Validación de $\varepsilon$ y estabilidad (\texttt{nukeval.py})}
@@ -316,15 +303,15 @@ distancia haversine sobre una muestra de 2\,000 sismos (sin etiquetas) y los FP 
 \toprule
 $\varepsilon$ (km) & Clusters & Silueta & FP & FN \\
 \midrule
-5 & 111\,103 & $0{,}00$ & 348 & 15 \\
-10 & 44\,791 & $-0{,}15$ & 226 & 13 \\
-25 & 11\,037 & $-0{,}34$ & 91 & 28 \\
-40 & 5\,683 & $-0{,}43$ & 100 & 30 \\
-50 & 4\,205 & $-0{,}50$ & 460 & 28 \\
-100 & 1\,781 & $-0{,}56$ & 140 & 269 \\
+5 & 111\,117 & $0{,}01$ & 500 & 15 \\
+10 & 44\,804 & $-0{,}18$ & 251 & 13 \\
+25 & 11\,049 & $-0{,}45$ & 115 & 28 \\
+40 & 5\,691 & $-0{,}43$ & 123 & 30 \\
+50 & 4\,214 & $-0{,}50$ & 483 & 28 \\
+100 & 1\,786 & $-0{,}51$ & 151 & 269 \\
 \bottomrule
 \end{tabular}
-\caption{Validación de $\varepsilon$ en el catálogo grande (extracto; \texttt{nukeval.py} imprime 10 valores).}
+\caption{Validación de $\varepsilon$ (extracto; \texttt{nukeval.py} imprime 10 valores).}
 \end{table}
 
 \begin{figure}[H]
@@ -337,17 +324,17 @@ $\varepsilon$ (km) & Clusters & Silueta & FP & FN \\
   \item \textbf{La silueta no elige $\varepsilon$:} es negativa y decrece al aumentar $\varepsilon$. Con distancia por
         densidad, DBSCAN une cadenas alargadas de sismos y la silueta (que premia grupos compactos) lo penaliza. Tampoco el
         gráfico de distancias al 4.º vecino muestra un codo claro entre 20 y 30 km.
-  \item \textbf{Lo que sí limita $\varepsilon$ es la profundidad:} los FP bajan al crecer $\varepsilon$ hasta un mínimo de 91 en
+  \item \textbf{Lo que sí limita $\varepsilon$ es la profundidad:} los FP bajan al crecer $\varepsilon$ hasta un mínimo de 115 en
         25 km (con $\varepsilon$ pequeño muchos terremotos superficiales quedan en grupos sueltos); a partir de 40--50 km los
-        grupos de explosiones se funden con terremotos más profundos: los FP suben a 460 con 50 km y los FN pasan de 28 a
+        grupos de explosiones se funden con terremotos más profundos: los FP suben a 483 con 50 km y los FN pasan de 28 a
         261 con 75 km, porque la mediana deja de ser superficial.
   \item \textbf{Estabilidad:} el ARI entre el clustering de todo el catálogo y el de una muestra aleatoria del 50\,\% (5
-        semillas, $\varepsilon=25$ km) vale entre $0{,}52$ y $0{,}62$: moderado, porque al quitar sismos se rompen cadenas de DBSCAN.
+        semillas, $\varepsilon=25$ km) vale entre $0{,}54$ y $0{,}65$: moderado, porque al quitar sismos se rompen cadenas de DBSCAN.
 \end{itemize}
 
 \subsection{Resultados}
-Con el catálogo grande y los parámetros fijos: 586 aciertos, 91 FP y 28 FN, es decir, precisión 86,6\,\%,
-recall 95,4\,\% y $F_1=0{,}908$.
+Con los parámetros fijos: 586 aciertos, 115 FP y 28 FN, es decir, precisión 83,6\,\%,
+recall 95,4\,\% y $F_1=0{,}891$.
 
 \begin{figure}[H]
 \centering
@@ -359,18 +346,18 @@ recall 95,4\,\% y $F_1=0{,}908$.
 \begin{itemize}
   \item \textbf{Con $v_{\min}=1$ no hay ruido:} cada sismo aislado forma su propio cluster. DBSCAN actúa aquí como un
         agrupador por proximidad encadenada, y la selección real la hace el filtro de profundidad. Con $v_{\min}=3$ el
-        resultado empeora ($F_1=0{,}910$; FN = 69), porque muchas pruebas aisladas se perderían como «ruido».
+        resultado empeora ($F_1=0{,}899$; FN = 69), porque muchas pruebas aisladas se perderían como «ruido».
   \item \textbf{Enfoque híbrido, no puramente no supervisado:} DBSCAN agrupa sin etiquetas y la ventana de profundidad es
         un criterio físico previo, pero $\varepsilon$ se ha escogido mirando el $F_1$ contra la etiqueta entre unos pocos
         valores, porque la silueta y el codo no lo determinan (ver la validación).
-  \item \textbf{Generalización:} los mismos parámetros dan $F_1=0{,}908$ en el catálogo grande y $0{,}955$ en el
-        pequeño. El grande es más difícil porque incluye terremotos superficiales de 1951--2009 (más falsos positivos). No hay
-        un subconjunto de prueba separado.
+  \item \textbf{Generalización:} no hay un subconjunto de prueba separado: se ajusta y se evalúa en el mismo catálogo.
   \item \textbf{Convención del catálogo:} el 85\,\% de las explosiones figura con profundidad exactamente $0{,}0$ km.
-        Una ventana más estrecha, $[0;\,0{,}1)$, daría $F_1=0{,}947$ pero mediría esa convención del USGS y no la física.
-  \item \textbf{Falsos positivos:} terremotos muy superficiales (años 80 en Washington, California, Alaska) y
-        explosiones de minas o canteras. Algunas pruebas oficiales de Nevada figuran en el USGS como
-        \texttt{earthquake}; ese error es de la etiqueta, no del método.
+        Una ventana más estrecha, $[0;\,0{,}1)$, daría $F_1=0{,}931$ pero mediría esa convención del USGS y no la física.
+  \item \textbf{Falsos positivos:} terremotos muy superficiales (años 80 en Washington, California, Alaska) y otros
+        eventos no sísmicos. De los 115 FP, 24 son de otro tipo: 16 \texttt{explosion}, 5 colapsos de mina, 1 voladura de cantera,
+        1 estallido de roca y 1 deslizamiento; ninguna de las 71 erupciones volcánicas se marca. Si se descartasen los otros
+        100 eventos no sísmicos (solo terremotos y explosiones nucleares), serían 91 FP y $F_1=0{,}908$. Algunas pruebas
+        oficiales de Nevada figuran en el USGS como \texttt{earthquake}; ese error es de la etiqueta, no del método.
   \item \textbf{Sesgo de época:} no se usan el año ni el número de estaciones como variable, porque delatan la época
         del catálogo y no la física.
 \end{itemize}
@@ -379,7 +366,7 @@ recall 95,4\,\% y $F_1=0{,}908$.
 \subsection{Conclusiones}
 \begin{itemize}
   \item Un clustering espacial sin etiquetas, combinado con la profundidad mediana de cada grupo, recupera el 95\,\% de las
-        explosiones del catálogo ($F_1=0{,}908$) con 91 falsos positivos entre casi 300\,000 sismos.
+        explosiones del catálogo ($F_1=0{,}891$) con 115 falsos positivos entre casi 300\,000 eventos.
   \item La señal útil es doble y física: repetición en los mismos polígonos de ensayo y profundidad casi nula.
   \item Líneas de mejora: elegir $\varepsilon$ en un subconjunto y evaluarlo en otro; añadir la magnitud y la forma de onda como variables; y usar la lista oficial
         DOE/NV-209 \cite{doe2015} en lugar de la etiqueta USGS para las pruebas de Nevada.
@@ -389,13 +376,12 @@ recall 95,4\,\% y $F_1=0{,}908$.
 \begin{enumerate}
   \item Crear el entorno: \texttt{python -m venv .venv} e instalar \texttt{requirements.txt}
         (numpy, pandas, matplotlib, scikit-learn, plotly).
-  \item Opcional: \texttt{python problemas/2\_Nuclear/nukedatos.py} descarga del USGS los dos catálogos
-        (\texttt{sismos\_usgs.csv} y \texttt{sismos\_usgs\_M45\_1951\_2025.csv}) a \texttt{datos/}; \texttt{--forzar} los vuelve a bajar.
+  \item Opcional: \texttt{python problemas/2\_Nuclear/nukedatos.py} descarga del USGS el catálogo
+        (\texttt{sismos\_usgs\_M45\_1951\_2025.csv}) a \texttt{datos/}; si el archivo ya existe, no hace nada.
   \item \texttt{python problemas/2\_Nuclear/nukeDBSCAN\_arnau.py} (se puede lanzar desde cualquier carpeta). Imprime FP y FN
         del run con los parámetros fijos y escribe \texttt{globo.html} (globo interactivo con 4 vistas, funciona sin internet).
-  \item Cambiar \texttt{CATALOGO} al principio del fichero para usar el catálogo pequeño.
   \item \texttt{python problemas/2\_Nuclear/nuke\_optimizar.py} reproduce la búsqueda por $F_1$ que se descartó
-        (opcional; unos 2 min el catálogo pequeño, unos 5 min el grande).
+        (opcional; unos minutos).
   \item \texttt{python problemas/2\_Nuclear/nukeval.py} reproduce la validación de $\varepsilon$ y la estabilidad
         (unos 4 min) y guarda \texttt{nukeval\_eps.png} y \texttt{nukeval\_mapa.png}.
   \item Las figuras de este documento: \texttt{python docs/figuras\_nuclear.py}.

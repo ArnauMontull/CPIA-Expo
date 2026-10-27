@@ -1,69 +1,43 @@
 """
-Descarga los dos catalogos del USGS que usa nukeDBSCAN_arnau.py y los deja en datos/:
-  pequeno -> sismos_usgs.csv                  (terremotos M>=4.5 de 2010-2025 + todas las explosiones nucleares)
-  grande  -> sismos_usgs_M45_1951_2025.csv    (todos los eventos M>=4.5 de 1951-2025; solo se guardan
-                                               terremotos y explosiones)
-
-Uso:  python nukedatos.py            (descarga lo que falte)
-      python nukedatos.py --forzar   (vuelve a descargar todo)
+Descarga el catalogo del USGS (todos los eventos M>=4.5 de 1951 a 2025, de cualquier tipo)
+y lo guarda en datos/sismos_usgs_M45_1951_2025.csv.
 """
-import sys
 from pathlib import Path
 import pandas as pd
 
 DATOS = Path(__file__).resolve().parent.parent.parent / 'datos'
-URL = 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc'
-COLUMNAS = ['time', 'latitude', 'longitude', 'depth', 'mag', 'magType', 'nst', 'gap', 'dmin', 'rms',
-            'place', 'type', 'horizontalError', 'depthError', 'magError', 'magNst', 'status']
+DESTINO = DATOS / 'sismos_usgs_M45_1951_2025.csv'
+URL = 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc&minmagnitude=4.5'
 
 
-def descargar_anyo(anyo, filtro=''):
-    """Eventos M>=4.5 de un anyo (la API limita cada consulta a 20 000 eventos). Reintenta si falla la red."""
-    consulta = f'{URL}&minmagnitude=4.5{filtro}&starttime={anyo}-01-01&endtime={anyo + 1}-01-01'
+def descargar_year(year):
+    # La API limita cada consulta a 20 000 eventos, asi que se pide un año cada vez
+    consulta = f'{URL}&starttime={year}-01-01&endtime={year + 1}-01-01'
+
     for intento in range(4):
         try:
             return pd.read_csv(consulta)
-        except Exception as error:
-            if intento == 3:
-                raise
-            print(f'  {anyo}: reintento ({type(error).__name__})')
+        except Exception:
+            print(f'  {year}: reintento')
 
-
-def guardar(partes, destino):
-    df = pd.concat(partes, ignore_index=True)
-    df = df[COLUMNAS].rename(columns={'type': 'tipo'})
-    df = df[df['tipo'].isin(['earthquake', 'nuclear explosion'])]
-    df.to_csv(destino, index=False)
-    print(f'{destino.name}: {len(df)} eventos, {(df["tipo"] == "nuclear explosion").sum()} explosiones')
-
-
-def catalogo_pequeno(destino):
-    # Todas las explosiones nucleares (sin limite de magnitud) + terremotos de 2010-2025
-    partes = [pd.read_csv(f'{URL}&eventtype=nuclear%20explosion&starttime=1900-01-01')]
-    for anyo in range(2010, 2026):
-        partes.append(descargar_anyo(anyo, '&eventtype=earthquake'))
-        print(f'  {anyo}: {len(partes[-1])} terremotos')
-    guardar(partes, destino)
-
-
-def catalogo_grande(destino):
-    # Sin filtrar por tipo en la consulta: asi la API devuelve explosiones que de otro modo omite
-    partes = []
-    for anyo in range(1951, 2026):
-        partes.append(descargar_anyo(anyo))
-        print(f'  {anyo}: {len(partes[-1])} eventos')
-    guardar(partes, destino)
+    raise RuntimeError(f'No se pudo descargar {year}')
 
 
 if __name__ == '__main__':
-    forzar = '--forzar' in sys.argv
-    DATOS.mkdir(exist_ok=True)
+    if DESTINO.exists():
+        print(f'{DESTINO.name}: ya esta')
+    else:
+        DATOS.mkdir(exist_ok=True)
 
-    catalogos = [(catalogo_pequeno, DATOS / 'sismos_usgs.csv'),
-                 (catalogo_grande, DATOS / 'sismos_usgs_M45_1951_2025.csv')]
-    for funcion, destino in catalogos:
-        if destino.exists() and not forzar:
-            print(f'{destino.name}: ya esta')
-        else:
-            print(f'{destino.name}: descargando...')
-            funcion(destino)
+        years = []
+        for year in range(1951, 2026):
+            eventos = descargar_year(year)
+            years.append(eventos)
+            print(f'{year}: {len(eventos)} eventos')
+
+        df = pd.concat(years, ignore_index=True)
+        df = df.rename(columns={'type': 'tipo'})
+        df.to_csv(DESTINO, index=False)
+
+        explosiones = (df['tipo'] == 'nuclear explosion').sum()
+        print(f'{DESTINO.name}: {len(df)} eventos, {explosiones} explosiones')
