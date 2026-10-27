@@ -13,7 +13,7 @@ ARCHIVO = CARPETA.parent.parent / 'datos' / 'sismos_usgs_M45_1951_2025.csv'
 #   eps_km: radio de DBSCAN. vmin: sismos minimos por cluster.
 #   dmin, dmax: una explosion es casi superficial, asi que un cluster es sospechoso
 #   si la mediana de su profundidad esta entre 0 y 2.5 km.
-parametros = dict(eps_km=25, vmin=1, dmin=0, dmax=2.5)
+parametros = dict(eps_km=25, vmin=2, dmin=0, dmax=2.5)
 
 # --- Datos ---
 df = pd.read_csv(ARCHIVO)

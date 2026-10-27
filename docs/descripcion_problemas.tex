@@ -252,10 +252,11 @@ nombre mínim de punts $v_{\min}$. Un punt és \emph{central} si té com a míni
 $\le\varepsilon$. Dos punts centrals que són a menys de $\varepsilon$ l'un de l'altre queden al mateix grup, i així el grup
 creix de punt en punt com una cadena. Els punts que no són centrals ni tenen cap punt central a prop es marquen com soroll.
 
-Nosaltres fem servir $v_{\min}=1$. Aleshores tots els punts són centrals, no hi ha soroll i cada grup és simplement un conjunt
-de sismes units per cadenes de menys de $\varepsilon$ km. Per això els assajos d'un mateix polígon, que estan molt a prop, acaben
-al mateix grup. Schubert et al.\ \cite{schubert2017} expliquen com triar $\varepsilon$ i $v_{\min}$; per a $\varepsilon$ proposen mirar
-la distància de cada punt al seu veí més proper, com fem a la validació.
+Nosaltres fem servir $v_{\min}=2$: un sisme és central si té almenys un altre sisme a menys de $\varepsilon$ km. Així, els sismes
+que estan sols en un radi de $\varepsilon$ km queden com a soroll i no formen cap grup, i els altres s'uneixen per cadenes de
+menys de $\varepsilon$ km. Per això els assajos d'un mateix polígon, que estan molt a prop, acaben al mateix grup. Schubert et
+al.\ \cite{schubert2017} expliquen com triar $\varepsilon$ i $v_{\min}$; per a $\varepsilon$ proposen mirar la distància de cada
+punt al seu veí més proper, com fem a la validació.
 
 Els epicentres són sobre l'esfera, així que la distància correcta és l'ortodròmica. La fórmula de \emph{haversine}
 \cite{sinnott1984},
@@ -274,7 +275,8 @@ recall $R=\mathrm{TP}/(\mathrm{TP}+\mathrm{FN})$ i la seva mitjana harmònica, $
 \begin{enumerate}
   \item \textbf{Agrupar per posició.} DBSCAN amb distància \emph{haversine} (distància sobre l'esfera; les coordenades es
         passen a radiants i el radi $\varepsilon$ es divideix pel radi terrestre, 6371 km). Dos sismes són del mateix clúster
-        si hi ha una cadena de sismes a menys de $\varepsilon$ km l'un del següent.
+        si hi ha una cadena de sismes a menys de $\varepsilon$ km l'un del següent; els sismes aïllats són soroll i no
+        s'assignen a cap clúster.
   \item \textbf{Mirar la profunditat de cada clúster.} Es calcula la \emph{mediana} de la profunditat de cada clúster (la
         mediana no es deixa enganyar per uns pocs valors atípics).
   \item \textbf{Marcar com a sospitosos} els clústers amb la mediana dins de $[d_{\min}, d_{\max})$: gairebé a la superfície.
@@ -311,7 +313,7 @@ sospitosos per profunditat; cercles negres petits: explosions reals (etiqueta de
 \end{figure}
 
 \subsection{Elecció dels paràmetres}
-Paràmetres fixos: $\varepsilon=25$ km, $v_{\min}=1$, $d_{\min}=0$ i $d_{\max}=2{,}5$ km. Són en un únic diccionari al principi
+Paràmetres fixos: $\varepsilon=25$ km, $v_{\min}=2$, $d_{\min}=0$ i $d_{\max}=2{,}5$ km. Són en un únic diccionari al principi
 de \texttt{nukeDBSCAN\_arnau.py}, que \texttt{nukeval.py} importa.
 
 \lstinputlisting[firstline=12,lastline=16,firstnumber=12,caption={\texttt{nukeDBSCAN\_arnau.py}: paràmetres fixos.},label={lst:parametros}]{../problemas/2_Nuclear/nukeDBSCAN_arnau.py}
@@ -322,7 +324,10 @@ de \texttt{nukeDBSCAN\_arnau.py}, que \texttt{nukeval.py} importa.
   \item \textbf{$\varepsilon=25$ km:} de l'ordre de la mida d'un polígon d'assaig. És el valor amb menys falsos positius dels
         provats (de 5 a 100 km, vegeu la validació): amb menys radi els terratrèmols superficials queden en grups solts i amb
         més radi els grups d'explosions es fonen amb terratrèmols més profunds. Aquí sí que es mira l'etiqueta.
-  \item \textbf{$v_{\min}=1$:} amb $v_{\min}=3$ empitjora (vegeu les limitacions).
+  \item \textbf{$v_{\min}=2$:} és el mínim perquè hi hagi soroll. Amb $v_{\min}=1$ no hi ha soroll i es detecten més explosions
+        (FN 28), però també molts més terratrèmols superficials aïllats (FP 115, $F_1=0{,}891$); amb $v_{\min}=2$ els FP baixen a
+        57 i els FN pugen a 63 ($F_1=0{,}902$), perquè les explosions que estan soles en 25 km queden com a soroll (vegeu les
+        limitacions).
 \end{itemize}
 L'script \texttt{nuke\_optimizar.py} (cerca de la finestra i de $\varepsilon$ per $F_1$) es va provar, però no es fa servir per
 als paràmetres finals: el seu òptim, $[0;\,0{,}1)$ km, queda a la vora de la seva graella i aprofita que l'USGS registra amb
@@ -335,18 +340,17 @@ explosions nuclears. Això mesura com cataloga l'USGS i no la física. La taula 
 \toprule
 Finestra (km) & TP & FP & FN & $F_1$ \\
 \midrule
-$[0;\,0{,}1)$ (la que triava l'optimitzador) & 585 & 58 & 29 & 0,931 \\
-$[0;\,2{,}5)$ (la utilitzada) & 586 & 115 & 28 & 0,891 \\
-$[0;\,5)$ & 587 & 363 & 27 & 0,751 \\
-$[0;\,10)$ & 588 & 2\,897 & 26 & 0,287 \\
+$[0;\,0{,}1)$ (la que triava l'optimitzador) & 551 & 30 & 63 & 0,922 \\
+$[0;\,2{,}5)$ (la utilitzada) & 551 & 57 & 63 & 0,902 \\
+$[0;\,5)$ & 552 & 259 & 62 & 0,775 \\
+$[0;\,10)$ & 552 & 2\,581 & 62 & 0,295 \\
 \bottomrule
 \end{tabular}
-\caption{Efecte de la finestra de profunditat ($\varepsilon=25$ km, $v_{\min}=1$).}
+\caption{Efecte de la finestra de profunditat ($\varepsilon=25$ km, $v_{\min}=2$).}
 \end{table}
 
 \subsection{Validació de $\varepsilon$ i estabilitat (\texttt{nukeval.py})}
-Seguint l'esquema de validació del temari (silueta, colze i estabilitat), \texttt{nukeval.py} avalua $\varepsilon$ amb
-$v_{\min}=1$ i la finestra $[0;\,2{,}5)$ km. Per a cada $\varepsilon$ compta els clústers, calcula la silueta amb distància
+Seguint l'esquema de validació del temari (silueta, colze i estabilitat), \texttt{nukeval.py} avalua $\varepsilon$ amb $v_{\min}=2$ i la finestra $[0;\,2{,}5)$ km. Per a cada $\varepsilon$ compta els clústers, calcula la silueta amb distància
 haversine sobre una mostra de 2\,000 sismes (sense etiquetes) i els FP i FN (amb etiquetes).
 
 \lstinputlisting[firstline=18,lastline=46,firstnumber=18,caption={\texttt{nukeval.py}: silueta d'uns clústers i taula per a cada $\varepsilon$ provat.},label={lst:val-eps}]{../problemas/2_Nuclear/nukeval.py}
@@ -361,12 +365,12 @@ L'estabilitat compara els clústers del catàleg complet amb els de cinc mostres
 \toprule
 $\varepsilon$ (km) & Clústers & Silueta & FP & FN \\
 \midrule
-5 & 111\,117 & $0{,}01$ & 500 & 15 \\
-10 & 44\,804 & $-0{,}18$ & 251 & 13 \\
-25 & 11\,049 & $-0{,}45$ & 115 & 28 \\
-40 & 5\,691 & $-0{,}43$ & 123 & 30 \\
-50 & 4\,214 & $-0{,}50$ & 483 & 28 \\
-100 & 1\,786 & $-0{,}51$ & 151 & 269 \\
+5 & 29\,451 & $-0{,}26$ & 266 & 77 \\
+10 & 14\,166 & $-0{,}27$ & 126 & 56 \\
+25 & 3\,759 & $-0{,}45$ & 57 & 63 \\
+40 & 1\,941 & $-0{,}40$ & 88 & 62 \\
+50 & 1\,464 & $-0{,}49$ & 453 & 57 \\
+100 & 669 & $-0{,}41$ & 136 & 293 \\
 \bottomrule
 \end{tabular}
 \caption{Validació de $\varepsilon$ (extracte; \texttt{nukeval.py} n'imprimeix 10 valors).}
@@ -379,20 +383,16 @@ $\varepsilon$ (km) & Clústers & Silueta & FP & FN \\
 \end{figure}
 
 \begin{itemize}
-  \item \textbf{La silueta no tria $\varepsilon$:} és negativa i decreix quan $\varepsilon$ augmenta. Amb distància per
+  \item \textbf{La silueta no tria $\varepsilon$:} és negativa per a tots els valors provats. Amb distància per
         densitat, DBSCAN uneix cadenes allargades de sismes i la silueta \cite{rousseeuw}, que premia grups compactes i
         separats, el penalitza. Tampoc el gràfic de distàncies al 4t veí no mostra un colze clar entre 20 i 30 km.
-  \item \textbf{El que sí que limita $\varepsilon$ és la profunditat:} els FP baixen quan $\varepsilon$ creix fins a un mínim
-        de 115 a 25 km (amb $\varepsilon$ petit molts terratrèmols superficials queden en grups solts); a partir de 40--50 km els
-        grups d'explosions es fonen amb terratrèmols més profunds: els FP pugen a 483 amb 50 km i els FN passen de 28 a 261 amb
-        75 km, perquè la mediana deixa de ser superficial.
+  \item \textbf{El que sí que limita $\varepsilon$ és la profunditat:} els FP baixen quan $\varepsilon$ creix fins a un mínim de 57 a 25 km (amb $\varepsilon$ petit molts terratrèmols superficials formen grups propis); a partir de 40--50 km els grups d'explosions es fonen amb terratrèmols més profunds: els FP pugen a 453 amb 50 km i els FN passen de 63 a 288 amb 75 km, perquè la mediana deixa de ser superficial.
   \item \textbf{Estabilitat:} l'ARI \cite{hubert} (val 1 si dues particions coincideixen i 0 si s'assemblen com dues a l'atzar)
-        entre el clustering de tot el catàleg i el d'una mostra aleatòria del 50\,\% (5 llavors, $\varepsilon=25$ km) val entre
-        $0{,}54$ i $0{,}65$: moderat, perquè en treure sismes es trenquen cadenes de DBSCAN.
+        entre el clustering de tot el catàleg i el d'una mostra aleatòria del 50\,\% (5 llavors, $\varepsilon=25$ km) val entre $0{,}54$ i $0{,}64$: moderat, perquè en treure sismes es trenquen cadenes de DBSCAN.
 \end{itemize}
 
 \subsection{Resultats}
-Amb els paràmetres fixos: 586 encerts, 115 FP i 28 FN, és a dir, precisió del 83,6\,\%, recall del 95,4\,\% i $F_1=0{,}891$.
+Amb els paràmetres fixos: 551 encerts, 57 FP i 63 FN, és a dir, precisió del 90,6\,\%, recall del 89,7\,\% i $F_1=0{,}902$.
 
 \begin{figure}[H]
 \centering
@@ -401,8 +401,7 @@ Amb els paràmetres fixos: 586 encerts, 115 FP i 28 FN, és a dir, precisió del
 \end{figure}
 
 \subsection{Què hi ha darrere de cada clúster}
-DBSCAN no en sap res, d'història, però els clústers que troba són els polígons d'assaig de la Guerra Freda. Les 614
-explosions cauen en 59 clústers; la taula mostra els més grans, amb el lloc que dona el mateix catàleg de l'USGS.
+DBSCAN no en sap res, d'història, però els clústers que troba són els polígons d'assaig de la Guerra Freda. De les 614 explosions, 574 cauen en 19 clústers i 40 queden com a soroll (sismes aïllats); la taula mostra els clústers més grans, amb el lloc que dona el mateix catàleg de l'USGS.
 
 \begin{table}[H]
 \centering\small
@@ -420,7 +419,7 @@ Astracan (Rússia) & 1980--1984 & 15 & 15 & 0,0 & Sí \\
 Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
 \bottomrule
 \end{tabular}
-\caption{Clústers de DBSCAN amb més explosions ($\varepsilon=25$ km, $v_{\min}=1$).}
+\caption{Clústers de DBSCAN amb més explosions ($\varepsilon=25$ km, $v_{\min}=2$).}
 \end{table}
 
 \begin{itemize}
@@ -440,16 +439,12 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
   \item \textbf{Nova Zembla.} L'arxipèlag àrtic rus dona dos clústers petits: Matotxkin Xar, la zona central d'assajos
         subterranis en galeries, i Txernaia Guba, al sud. Més al nord, sobre la península de Sukhoi Nos, va esclatar el 30
         d'octubre de 1961 la \emph{Bomba Tsar}, d'uns 50 Mt, l'assaig més gran de la història \cite{yang2003}. Va ser una
-        explosió aèria a uns 4 km d'altura i l'USGS la registra a $-4$ km, per sobre de la superfície: queda fora de la
-        finestra $[0;\,2{,}5)$ i és un dels 28 falsos negatius.
+        explosió aèria a uns 4 km d'altura i l'USGS la registra a $-4$ km, per sobre de la superfície: queda fora de la finestra $[0;\,2{,}5)$ i, a més, està sola: és un dels 63 falsos negatius.
   \item \textbf{Lop Nur.} La Xina hi va fer els seus 45 assajos entre 1964 i 1996 \cite{yang2003}, al costat del Tian Shan,
         una serralada amb molta sismicitat natural. És la gran fallada del mètode: les 18 explosions del clúster cauen al costat
         de 29 terratrèmols, amb mediana de 24,5 km, i diverses explosions figuren a 33 km, una profunditat fixa que el catàleg
-        feia servir quan no la podia resoldre. La mediana del clúster puja a 15,7 km i es perd tot el grup: són 18 dels 28 FN.
-        Dels 28, 10 tenen aquesta profunditat de 33 km.
-  \item \textbf{Astracan i Iacútia.} Clústers petits a Rússia sense cap polígon militar. Corresponen a explosions nuclears amb
-        finalitats civils del programa soviètic; les 15 d'Astracan (1980--1984) van crear cavitats en doms de sal per
-        emmagatzemar gas.
+        feia servir quan no la podia resoldre. La mediana del clúster puja a 15,7 km i es perd tot el grup: són 18 dels 63 FN. Dels 63, 10 tenen aquesta profunditat de 33 km.
+  \item \textbf{Astracan i les explosions civils de Sibèria.} Les 15 d'Astracan (1980--1984), del programa soviètic d'explosions nuclears amb finalitats civils, van crear cavitats en doms de sal per emmagatzemar gas i formen un clúster petit que es detecta. Moltes altres explosions civils de Rússia i del Kazakhstan, en canvi, van ser assajos aïllats a centenars de quilòmetres de qualsevol altre: amb $v_{\min}=2$ queden com a soroll, i són 40 dels 63 FN.
   \item \textbf{Punggye-ri.} Els cinc assajos nord-coreans amb $M\ge4{,}5$ (2009--2017); el del 2006 va tenir una magnitud
         inferior i queda per sota del tall. El del 3 de setembre de 2017, de magnitud 6,3, és l'explosió més gran del segle
         \textsc{xxi} al catàleg. Uns 8,5 minuts després, el sostre de la cavitat es va enfonsar i va produir un segon
@@ -463,20 +458,15 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
 
 \paragraph{Limitacions i honestedat del resultat.}
 \begin{itemize}
-  \item \textbf{Amb $v_{\min}=1$ no hi ha soroll:} cada sisme aïllat forma el seu propi clúster. Aquí DBSCAN actua com un
-        agrupador per proximitat encadenada, i la selecció real la fa el filtre de profunditat. Amb $v_{\min}=3$ el resultat
-        empitjora ($F_1=0{,}899$; FN = 69), perquè moltes proves aïllades es perdrien com a «soroll».
+  \item \textbf{Les explosions aïllades es perden:} amb $v_{\min}=2$, un sisme sol en un radi de 25 km és soroll. Això treu molts terratrèmols superficials (els FP baixen de 115 a 57), però també 40 explosions que van ser assajos aïllats. Amb $v_{\min}=1$ no es perd cap per aquest motiu (FN 28), però el $F_1$ és menor (0,891). No hi ha una elecció que guanyi en tot: és un compromís entre precisió i recall.
   \item \textbf{Enfocament híbrid, no purament no supervisat:} DBSCAN agrupa sense etiquetes i la finestra de profunditat és un
         criteri físic previ, però $\varepsilon$ s'ha triat mirant l'$F_1$ contra l'etiqueta entre uns pocs valors, perquè ni la
         silueta ni el colze no el determinen (vegeu la validació).
   \item \textbf{Generalització:} no hi ha cap subconjunt de prova separat: s'ajusta i s'avalua en el mateix catàleg.
   \item \textbf{Convenció del catàleg:} el 85\,\% de les explosions figura amb profunditat exactament $0{,}0$ km. Una finestra
-        més estreta, $[0;\,0{,}1)$, donaria $F_1=0{,}931$ però mesuraria aquesta convenció de l'USGS i no la física.
+        més estreta, $[0;\,0{,}1)$, donaria $F_1=0{,}922$ però mesuraria aquesta convenció de l'USGS i no la física.
   \item \textbf{Falsos positius:} terratrèmols molt superficials (anys 80 a Washington, Califòrnia i Alaska) i altres
-        esdeveniments no sísmics. Dels 115 FP, 24 són d'un altre tipus: 16 \texttt{explosion}, 5 esfondraments de mina, 1
-        voladura de pedrera, 1 esclat de roca i 1 esllavissada; cap de les 71 erupcions volcàniques no es marca. Si es
-        descartessin els altres 100 esdeveniments no sísmics (només terratrèmols i explosions nuclears), serien 91 FP i
-        $F_1=0{,}908$. Algunes proves oficials de Nevada figuren a l'USGS com a \texttt{earthquake}; aquest error és de
+        esdeveniments no sísmics. Dels 57 FP, 14 són d'un altre tipus: 10 \texttt{explosion}, 3 esfondraments de mina i 1 voladura de pedrera; cap de les 71 erupcions volcàniques no es marca. Si es descartessin els altres 100 esdeveniments no sísmics (només terratrèmols i explosions nuclears), serien 43 FP i $F_1=0{,}912$. Algunes proves oficials de Nevada figuren a l'USGS com a \texttt{earthquake}; aquest error és de
         l'etiqueta, no del mètode.
   \item \textbf{Biaix d'època:} no es fan servir l'any ni el nombre d'estacions com a variables, perquè delaten l'època del
         catàleg i no la física.
@@ -484,8 +474,7 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
 
 \subsection{Conclusions}
 \begin{itemize}
-  \item Un clustering espacial sense etiquetes, combinat amb la profunditat mediana de cada grup, recupera el 95\,\% de les
-        explosions del catàleg ($F_1=0{,}891$) amb 115 falsos positius entre gairebé 300\,000 esdeveniments.
+  \item Un clustering espacial sense etiquetes, combinat amb la profunditat mediana de cada grup, recupera el 90\,\% de les explosions del catàleg ($F_1=0{,}902$) amb 57 falsos positius entre gairebé 300\,000 esdeveniments.
   \item El senyal útil és doble i físic: repetició als mateixos polígons d'assaig i profunditat gairebé nul·la.
   \item Línies de millora: triar $\varepsilon$ en un subconjunt i avaluar-lo en un altre; afegir la magnitud i la forma d'ona
         com a variables; i fer servir la llista oficial DOE/NV-209 \cite{doe2015} en lloc de l'etiqueta de l'USGS per a les
@@ -513,7 +502,7 @@ Punggye-ri (Corea del Nord) & 2009--2017 & 5 & 5 & 0,0 & Sí \\
 % ==========================================
 Material a \texttt{problemas/3\_Sismes\_Matias/} (\texttt{presentation\_matias\_FINAL.py}, \texttt{validacio\_FINAL.py},
 \texttt{earthquakes.csv}, README i informe propi \texttt{informe\_sismes.tex}) i a \texttt{presentacion/matias/}
-(presentació). El text i els resultats que segueixen són els de la presentació de Matías.
+(presentació). El text i els resultats que segueixen són els de la presentació de Matías (Matías Stein Niell), també a la presentació comuna del grup.
 
 \subsection{Punt de partida i interès}
 I si milers de terratrèmols amaguen patrons? La pregunta inicial és si podem resumir dades sísmiques i detectar registres que
@@ -525,10 +514,12 @@ passarà el pròxim terratrèmol.
 El projecte transforma una taula en evidència visual i preguntes que es poden investigar: explorar les relacions entre
 magnitud, profunditat i localització (ciència), practicar la neteja, la normalització, el modelatge i la validació amb dades
 reals (dades), i explicar milers de punts amb mapes, gràfics i indicadors interpretables (comunicació). L'objectiu general és
-trobar grups exploratoris de terratrèmols i assenyalar els registres més allunyats dels seus veïns.
+organitzar en grups els diferents terratrèmols segons propietats semblants, trobar grups exploratoris i assenyalar els registres
+més allunyats dels seus veïns, és a dir, detectar casos excepcionals.
 
 \subsection{Dades d'entrada}
-S'utilitza el fitxer \texttt{earthquakes.csv}, amb 10\,174 registres analitzats i quatre variables: la magnitud (\texttt{mag}),
+S'utilitza el fitxer \texttt{earthquakes.csv}, amb esdeveniments sísmics d'arreu del món entre el 15/09/2026 i el 15/10/2026 del
+Servei Geològic dels Estats Units (USGS), amb 10\,174 registres analitzats i quatre variables: la magnitud (\texttt{mag}),
 la profunditat en km (\texttt{depth}) i la latitud i la longitud (\texttt{latitude}, \texttt{longitude}). La magnitud és la mida
 de l'esdeveniment, la profunditat és el context físic del sisme i les coordenades donen la distribució espacial. En la neteja
 s'eliminen les files amb valors absents en les quatre variables.
@@ -537,7 +528,11 @@ s'eliminen les files amb valors absents en les quatre variables.
 S'han triat mètodes no supervisats perquè no hi ha etiquetes prèvies que indiquin el grup correcte.
 \begin{itemize}
   \item \textbf{K-Means:} agrupa els registres en $K$ grups segons la distància als centres; és eficient i fàcil de resumir.
+        Serveix per identificar grups de terratrèmols amb característiques similars, observar com es distribueixen geogràficament i
+        facilitar la interpretació de moltes dades.
   \item \textbf{Veïns propers:} mesura si un registre queda lluny dels seus veïns, i és útil per prioritzar possibles anomalies.
+        Serveix per detectar terratrèmols que són diferents dels que tenen a prop, identificar registres que mereixen una anàlisi
+        més detallada i ordenar els casos segons com d'aïllats estan respecte de les altres dades.
   \item \textbf{Alternatives:} DBSCAN (grups per densitat), clustering jeràrquic o Isolation Forest per a les anomalies.
 \end{itemize}
 K-Means dona una visió global, i els veïns propers hi afegeixen una mirada local als casos inusuals.
@@ -678,6 +673,13 @@ alts es mostren com a candidats anòmals.
 Una anomalia estadística no és un error ni un terratrèmol perillós: és un punt poc semblant als seus veïns segons les
 variables triades.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figuras/matias/clusters_anomalies.png}
+\caption{Clustering i anomalies de terratrèmols: els quadrats vermells marquen les anomalies sobre el gràfic de magnitud i
+profunditat, acolorit per clúster (figura de Matías, de la presentació comuna). Són esdeveniments profunds, de 400 a 650 km.}
+\end{figure}
+
 \subsection{Com reproduir l'anàlisi}
 Els dos scripts separen l'anàlisi principal de la validació del model. \texttt{presentation\_matias\_FINAL.py} carrega i neteja
 \texttt{earthquakes.csv}, normalitza les quatre variables, ajusta K-Means amb $K=3$, calcula les distàncies als veïns i dibuixa el
@@ -702,9 +704,15 @@ plaques tectòniques, i validar-ho després amb experts i fonts independents.
   \item Cal provar $K$ alternatius, projeccions geogràfiques i mètodes com DBSCAN.
 \end{itemize}
 
-\paragraph{Conclusions.} S'ha construït un flux complet: neteja, normalització, clustering, validació i visualització. $K=3$ és
-estable en les llavors provades, però no maximitza la silueta global. Els clústers i les anomalies són pistes per investigar,
-no veredictes científics. En conclusió, l'aprenentatge no supervisat ajuda a veure patrons en dades sísmiques, sempre que
+\paragraph{Conclusions.} S'ha construït un flux complet: neteja, normalització, clustering, validació i visualització. Els
+10\,174 terratrèmols s'han analitzat sense pèrdues després de la neteja. K-Means amb $K=3$ agrupa les dades sobretot segons les
+regions geogràfiques i és estable en les llavors provades, però no maximitza la silueta global. S'han detectat casos inusuals,
+inclosos terratrèmols profunds de la zona Tonga--Fiji--Kermadec. Els resultats globals són estables, però cal millorar la
+precisió de les distàncies i comprovar-los amb dades externes. Els clústers i les anomalies són pistes per investigar, no
+veredictes científics ni prediccions de terratrèmols.
+
+\paragraph{Què podem millorar.} Filtrar només terratrèmols, calcular millor les distàncies geogràfiques i provar altres mètodes de
+detecció d'anomalies. En conclusió, l'aprenentatge no supervisat ajuda a veure patrons en dades sísmiques, sempre que
 validem els resultats i expliquem amb claredat què signifiquen i què no.
 
 \paragraph{Preguntes obertes.} Si canviéssim $K=3$ per $K=2$ o $K=5$, quin criteri prioritzaríem: simplicitat, silueta o

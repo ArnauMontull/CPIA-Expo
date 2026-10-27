@@ -76,23 +76,23 @@ diapo('Cómo se detecta', [
     notas='Zoom en Nevada: a la izquierda los epicentros, a la derecha los clusters; en naranja los sospechosos y con un círculo negro las explosiones reales.')
 
 diapo('Elegir y validar los parámetros', [
-    'Parámetros fijos: eps = 25 km, vmin = 1, profundidad mediana en [0; 2,5) km (criterio físico)',
-    'eps = 25 km da el mínimo de falsos positivos (115) entre 5 y 100 km; es la única elección que mira la etiqueta',
+    'Parámetros fijos: eps = 25 km, vmin = 2, profundidad mediana en [0; 2,5) km (criterio físico)',
+    'eps = 25 km da el mínimo de falsos positivos (57) entre 5 y 100 km; es la única elección que mira la etiqueta',
     'La silueta no elige eps (es negativa y baja con eps); el codo de distancias k no marca un valor claro',
-    'Con eps ≥ 50 km los grupos se funden con terremotos profundos: FP 483 (50 km) y FN 261 (75 km)',
-    'Estabilidad (ARI, muestra del 50 %): 0,54-0,65',
+    'Con eps ≥ 50 km los grupos se funden con terremotos profundos: FP 453 (50 km) y FN 288 (75 km)',
+    'Estabilidad (ARI, muestra del 50 %): 0,54-0,64',
     'nuke_optimizar.py se probó y se descartó: su ventana [0; 0,1) mide la convención del USGS'], 'nukeval_eps.png', 7.2)
 
 diapo('Resultado', [
-    '586 aciertos, 115 FP, 28 FN',
-    'Precisión 83,6 %  ·  recall 95,4 %  ·  F1 = 0,891',
+    '551 aciertos, 57 FP, 63 FN',
+    'Precisión 90,6 %  ·  recall 89,7 %  ·  F1 = 0,902',
     'Globo interactivo: problemas/2_Nuclear/globo.html (4 vistas, sin internet)'], 'resultado.png', 7.2)
 
 diapo('Limitaciones (preguntas probables)', [
-    'vmin = 1: no hay ruido; la selección real la hace la profundidad. Con vmin = 3, F1 baja a 0,899',
+    'vmin = 2: los sismos aislados son ruido. Con vmin = 1 hay 28 FN pero 115 FP (F1 0,891): compromiso precisión-recall',
     'Sin conjunto de prueba separado: se ajusta y se evalúa en el mismo catálogo',
-    'El 85 % de las explosiones figura con profundidad 0,0 km en el USGS: una ventana [0; 0,1) daría F1 0,931, pero mediría esa convención',
-    '115 FP: 24 son otros eventos no sísmicos (explosiones, minas); sin ellos serían 91 y F1 0,908',
+    'El 85 % de las explosiones figura con profundidad 0,0 km en el USGS: una ventana [0; 0,1) daría F1 0,922, pero mediría esa convención',
+    '57 FP: 14 son otros eventos no sísmicos (explosiones, minas); sin ellos serían 43 y F1 0,912. 40 de los 63 FN son explosiones aisladas (ruido)',
     'Algunas pruebas oficiales figuran como earthquake (error de la etiqueta)',
     'No usamos año ni número de estaciones: delatarían la época, no la física'])
 
