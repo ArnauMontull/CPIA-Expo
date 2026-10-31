@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explosiones nucleares 1951–2025</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#02040a; --panel:rgba(8,13,24,.58); --line:rgba(160,200,255,.12); --txt:#e8eef8; --mut:#8a9ab3; --dim:#56657d;
+  --fire:#ffb357; --hot:#ff6a2b;
+  --sans:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--sans);overflow:hidden}
+#stage{position:fixed;inset:0;will-change:transform}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#gl:active{cursor:grabbing}
+#flash{position:fixed;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at 50% 50%,rgba(255,236,200,.95) 0%,rgba(255,150,60,.55) 35%,rgba(120,30,0,0) 75%);mix-blend-mode:screen}
+#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,transparent 55%,rgba(0,0,0,.65) 100%)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.labels{position:fixed;inset:0;pointer-events:none}
+.lab{position:absolute;transform:translate(10px,-50%);font:500 11px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(232,238,248,.85);white-space:nowrap;text-shadow:0 0 6px #000,0 0 2px #000;transition:opacity .25s}
+.lab i{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;vertical-align:1px;box-shadow:0 0 8px currentColor}
+
+/* cabecera */
+#head{position:fixed;left:24px;top:22px;max-width:440px}
+.kick{font:600 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--fire)}
+#head h1{font-size:30px;line-height:1.08;font-weight:700;margin:10px 0 8px;letter-spacing:-.01em}
+#head p{color:var(--mut);font-size:13.5px;line-height:1.5}
+
+/* año */
+#year{position:fixed;right:28px;top:14px;text-align:right}
+#yy{font:600 104px/1 var(--mono);letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+  background:linear-gradient(180deg,#fff 20%,#9fb6d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+#ymeta{font:400 13px/1.4 var(--mono);color:var(--mut);margin-top:4px}
+#ymeta b{color:var(--txt);font-weight:600}
+
+/* contadores */
+#paises{position:fixed;left:24px;bottom:150px;width:250px;padding:14px 16px}
+.ttl{font:600 10.5px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.pr{display:grid;grid-template-columns:1fr auto;gap:3px 8px;margin-bottom:9px;font-size:13px}
+.pr span{display:flex;align-items:center;gap:8px}
+.pr span i{width:8px;height:8px;border-radius:50%;box-shadow:0 0 10px currentColor;background:currentColor}
+.pr b{font:600 13px/1 var(--mono);font-variant-numeric:tabular-nums}
+.bar{grid-column:1/-1;height:3px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden}
+.bar div{height:100%;width:0;border-radius:2px;transition:width .3s}
+#total{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+#total b{font:600 26px/1 var(--mono);font-variant-numeric:tabular-nums;color:#fff}
+#total span{color:var(--mut);font-size:12px}
+
+/* registro */
+#feed{position:fixed;right:24px;bottom:150px;width:300px;padding:14px 16px}
+#feedl{list-style:none;display:flex;flex-direction:column;gap:7px;min-height:182px}
+#feedl li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:12.5px;animation:inn .45s ease-out}
+#feedl li i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+#feedl li em{font-style:normal;color:var(--mut);font:400 11px var(--mono);display:block}
+#feedl li b{font:600 13px/1 var(--mono);color:var(--fire)}
+#feedl li:not(:first-child){opacity:.62}
+@keyframes inn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.leg{display:flex;align-items:flex-end;gap:14px;border-top:1px solid var(--line);margin-top:12px;padding-top:10px;color:var(--mut);font:400 11px var(--mono)}
+.leg div{display:flex;flex-direction:column;align-items:center;gap:5px}
+.leg s{display:block;border-radius:50%;background:radial-gradient(circle,#fff3d6 0%,#ff9a3c 45%,rgba(255,90,20,0) 72%)}
+
+/* barra inferior */
+#dock{position:fixed;left:24px;right:24px;bottom:20px;padding:12px 16px 10px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+#ctrls{display:flex;gap:8px;align-items:center}
+button{font:500 12px/1 var(--sans);color:var(--txt);background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;
+  padding:9px 11px;cursor:pointer;transition:background .15s,border-color .15s;white-space:nowrap}
+button:hover{background:rgba(255,255,255,.1);border-color:rgba(160,200,255,.3)}
+button:focus-visible{outline:2px solid var(--fire);outline-offset:2px}
+button.on{border-color:rgba(255,179,87,.55);color:var(--fire)}
+#play{width:46px;height:46px;border-radius:50%;padding:0;display:grid;place-items:center;
+  background:linear-gradient(180deg,#ffb357,#ff6a2b);border:0;box-shadow:0 0 24px rgba(255,120,40,.45)}
+#play:hover{filter:brightness(1.1)}
+#play svg{width:18px;height:18px;fill:#1a0a00}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;padding:9px 9px;color:var(--mut)}
+.seg button.on{color:#1a0a00;background:var(--fire)}
+#tl{width:100%;height:64px;display:block;cursor:pointer}
+
+/* avisos */
+#toast{position:fixed;left:50%;bottom:132px;transform:translateX(-50%);max-width:min(560px,calc(100vw - 32px));padding:12px 18px;text-align:center;
+  font-size:14px;line-height:1.45;opacity:0;transition:opacity .5s, transform .5s;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+#toast b{color:var(--fire)}
+
+/* portada */
+#intro{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 55%,rgba(2,4,10,.25),rgba(2,4,10,.82) 70%);transition:opacity .8s}
+#intro.hide{opacity:0;pointer-events:none}
+.ibox{text-align:center;max-width:620px;padding:0 20px}
+.ibox h2{font-size:clamp(34px,6vw,64px);line-height:1.02;font-weight:700;letter-spacing:-.02em;margin:16px 0 14px}
+.ibox h2 span{background:linear-gradient(90deg,#ffd38a,#ff6a2b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ibox p{color:var(--mut);font-size:15px;line-height:1.55;margin-bottom:28px}
+#go{font:600 15px/1 var(--sans);padding:16px 28px;border-radius:999px;border:0;color:#1a0a00;background:linear-gradient(180deg,#ffc070,#ff6a2b);
+  box-shadow:0 0 40px rgba(255,120,40,.5)}
+#go:hover{filter:brightness(1.08)}
+.hint{margin-top:16px;font:400 11.5px var(--mono);color:var(--dim)}
+
+@media (max-width:900px){
+  #feed,#head p{display:none}
+  #paises{bottom:auto;top:150px;left:16px;width:200px;padding:10px 12px}
+  #head{left:16px;top:16px;max-width:60vw} #head h1{font-size:20px}
+  #year{right:16px} #yy{font-size:60px}
+  #dock{left:16px;right:16px;bottom:16px;grid-template-columns:1fr;gap:10px}
+  #ctrls{flex-wrap:wrap}
+}
+@media (prefers-reduced-motion:reduce){#feedl li{animation:none}}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="gl"></canvas></div>
+<div id="vignette"></div>
+<div id="flash"></div>
+<div class="labels" id="labels"></div>
+
+<header id="head">
+  <div class="kick">CPIA · Expo · Detección de anomalías</div>
+  <h1>Explosiones nucleares en el catálogo sísmico</h1>
+  <p id="sub"></p>
+</header>
+
+<div id="year"><div id="yy">1951</div><div id="ymeta"></div></div>
+
+<section id="paises" class="panel" aria-label="Explosiones por país">
+  <div class="ttl">Por país</div>
+  <div id="prs"></div>
+  <div id="total"><span>total</span><b id="tot">0</b></div>
+</section>
+
+<section id="feed" class="panel" aria-label="Últimas explosiones">
+  <div class="ttl">Últimas detonaciones</div>
+  <ul id="feedl"></ul>
+  <div class="leg" id="leg"></div>
+</section>
+
+<div id="toast" class="panel" role="status"></div>
+
+<nav id="dock" class="panel">
+  <div id="ctrls">
+    <button id="play" aria-label="Reproducir"><svg viewBox="0 0 24 24" id="pico"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+    <div class="seg" id="speed" aria-label="Velocidad"></div>
+    <button id="snd" class="on" title="Sonido (S)">Sonido</button>
+    <button id="fol" class="on" title="La cámara sigue las explosiones (C)">Cámara</button>
+    <button id="rst" title="Volver a 1951 (R)">↺</button>
+  </div>
+  <canvas id="tl" aria-label="Línea de tiempo: haz clic para saltar a un año"></canvas>
+</nav>
+
+<div id="intro">
+  <div class="ibox">
+    <div class="kick">USGS · 1951 → 2025</div>
+    <h2>75 años de <span>pruebas nucleares</span> vistas por los sismógrafos</h2>
+    <p id="itxt"></p>
+    <button id="go">▶&nbsp; Reproducir</button>
+    <div class="hint">Con sonido: sube el volumen · Espacio: pausa · arrastra el globo para girarlo · rueda: zoom</div>
+  </div>
+</div>
+
+<!--LIBS-->
+<script>
+'use strict';
+const D = /*DATOS*/null;
+const E = D.ev, N = E.t.length, PAIS = D.paises, SITIO = D.sitios;
+const COL = ['#5aa9ff', '#ff4d5e', '#c08cff', '#ffc94d', '#ff8a3d', '#39e6a0'];
+const T0 = 1951, T1 = 2026;
+const $ = s => document.querySelector(s);
+const fmtM = m => m.toFixed(1).replace('.', ',');
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const MAXI = E.mag.indexOf(Math.max(...E.mag));
+
+$('#sub').textContent = `Las ${N.toLocaleString('es-ES')} detonaciones que el USGS etiqueta como «nuclear explosion». Cada hongo crece con la magnitud: un punto más son unas 32 veces más energía sísmica.`;
+$('#itxt').textContent = `${N.toLocaleString('es-ES')} explosiones registradas como terremotos por la red sísmica mundial. El tamaño de cada hongo y la fuerza de la onda dependen de la magnitud (de ${fmtM(Math.min(...E.mag))} a ${fmtM(Math.max(...E.mag))}).`;
+
+/* ---------- three.js ---------- */
+const cv = $('#gl');
+const renderer = new THREE.WebGLRenderer({canvas: cv, antialias: true, powerPreference: 'high-performance'});
+const DPR = Math.min(window.devicePixelRatio || 1, 1.75);
+renderer.setPixelRatio(DPR);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x02040a);
+const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 200);
+let camDist = 3.35, camDistT = 3.35;
+
+const composer = new THREE.EffectComposer(renderer);
+composer.setPixelRatio(DPR);
+composer.addPass(new THREE.RenderPass(scene, camera));
+const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(512, 512), 1.15, 0.6, 0.8);
+composer.addPass(bloom);
+
+// lat/lon -> vector con la misma convención que las UV de SphereGeometry
+function ll2v(lat, lon, r = 1) {
+  const f = lat * Math.PI / 180, l = lon * Math.PI / 180;
+  return new THREE.Vector3(Math.cos(f) * Math.cos(l) * r, Math.sin(f) * r, -Math.cos(f) * Math.sin(l) * r);
+}
+
+/* textura de la Tierra: océano, graticula, países, fronteras y costa */
+function texturaTierra() {
+  const W = 4096, H = 2048, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const oc = g.createLinearGradient(0, 0, 0, H);
+  oc.addColorStop(0, '#030a16'); oc.addColorStop(.5, '#08203b'); oc.addColorStop(1, '#030a16');
+  g.fillStyle = oc; g.fillRect(0, 0, W, H);
+  const X = lon => (lon + 180) / 360 * W, Y = lat => (90 - lat) / 180 * H;
+  g.strokeStyle = 'rgba(90,150,230,.10)'; g.lineWidth = 1.2;
+  for (let lo = -180; lo <= 180; lo += 15) { g.beginPath(); g.moveTo(X(lo), 0); g.lineTo(X(lo), H); g.stroke(); }
+  for (let la = -75; la <= 75; la += 15) { g.beginPath(); g.moveTo(0, Y(la)); g.lineTo(W, Y(la)); g.stroke(); }
+
+  const A = D.mundo.arcos;
+  const arco = i => {               // puntos [lon, lat] del arco i (los negativos van al revés)
+    const a = A[i < 0 ? ~i : i], p = [];
+    for (let k = 0; k < a.length; k += 2) p.push([a[k], a[k + 1]]);
+    return i < 0 ? p.reverse() : p;
+  };
+  const desenvolver = pts => {      // longitudes continuas para que los anillos que cruzan ±180 no se rompan
+    const o = [pts[0].slice()];
+    for (let k = 1; k < pts.length; k++) {
+      let lo = pts[k][0];
+      while (lo - o[k - 1][0] > 180) lo -= 360;
+      while (lo - o[k - 1][0] < -180) lo += 360;
+      o.push([lo, pts[k][1]]);
+    }
+    return o;
+  };
+  const trazar = (pts, dx, cerrar) => {
+    g.moveTo(X(pts[0][0]) + dx, Y(pts[0][1]));
+    for (let k = 1; k < pts.length; k++) g.lineTo(X(pts[k][0]) + dx, Y(pts[k][1]));
+    if (cerrar) g.closePath();
+  };
+  // relleno por país, con un tono algo distinto en cada uno
+  let semilla = 7;
+  const rnd = () => (semilla = (semilla * 16807) % 2147483647) / 2147483647;
+  for (const poly of D.mundo.poligonos) {
+    const l = 13 + rnd() * 5;
+    g.fillStyle = `hsl(${212 + rnd() * 10},${30 + rnd() * 10}%,${l}%)`;
+    g.beginPath();
+    for (const anillo of poly) {
+      let pts = [];
+      anillo.forEach((i, j) => { const p = arco(i); pts = pts.concat(j ? p.slice(1) : p); });
+      pts = desenvolver(pts);
+      const span = pts[pts.length - 1][0] - pts[0][0];
+      if (Math.abs(span) > 300) {    // anillo que rodea el polo (Antártida): se cierra por el polo
+        const pol = pts[0][1] < 0 ? -90 : 90;
+        pts.push([pts[pts.length - 1][0], pol], [pts[0][0], pol]);
+      }
+      let mn = Infinity, mx = -Infinity;
+      for (const p of pts) { mn = Math.min(mn, p[0]); mx = Math.max(mx, p[0]); }
+      trazar(pts, 0, true);
+      if (mx > 180) trazar(pts, -W, true);
+      if (mn < -180) trazar(pts, W, true);
+    }
+    g.fill('evenodd');
+  }
+  // fronteras y costa (cada arco una sola vez)
+  const lineas = (costa, estilo, ancho, sombra) => {
+    g.strokeStyle = estilo; g.lineWidth = ancho; g.lineJoin = 'round'; g.lineCap = 'round';
+    g.shadowColor = sombra || 'transparent'; g.shadowBlur = sombra ? 10 : 0;
+    g.beginPath();
+    A.forEach((_, i) => {
+      if (D.mundo.costa[i] !== costa) return;
+      const pts = desenvolver(arco(i));
+      for (let k = 1; k < pts.length; k++) {
+        const a = pts[k - 1], b = pts[k];
+        if ((Math.abs(a[0]) >= 179.9 && Math.abs(b[0]) >= 179.9) || (a[1] <= -89.9 && b[1] <= -89.9)) continue;
+        for (const dx of [0, -W, W]) {
+          const x0 = X(a[0]) + dx, x1 = X(b[0]) + dx;
+          if (Math.max(x0, x1) < 0 || Math.min(x0, x1) > W) continue;
+          g.moveTo(x0, Y(a[1])); g.lineTo(x1, Y(b[1]));
+        }
+      }
+    });
+    g.stroke();
+  };
+  lineas(0, 'rgba(150,200,255,.42)', 1.6);
+  lineas(1, 'rgba(120,205,255,.85)', 2.4, 'rgba(70,170,255,.9)');
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+
+/* globo elástico: las ondas desplazan la superficie y la iluminan en el frente */
+const NW = 16;
+const ondas = {dir: Array.from({length: NW}, () => new THREE.Vector4(0, 1, 0, -99)), amp: new Array(NW).fill(0)};
+let ondaSig = 0;
+const globoMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uMap: {value: texturaTierra()}, uTime: {value: 0}, uW: {value: ondas.dir}, uA: {value: ondas.amp},
+    uLight: {value: new THREE.Vector3(-0.45, 0.55, 0.75).normalize()},
+  },
+  vertexShader: `
+    uniform float uTime; uniform vec4 uW[${NW}]; uniform float uA[${NW}];
+    varying vec2 vUv; varying vec3 vN; varying vec3 vView; varying float vGlow;
+    void main(){
+      vec3 p = normalize(position);
+      float h = 0.0, glow = 0.0; vec3 grad = vec3(0.0);
+      for (int i = 0; i < ${NW}; i++) {
+        float a = uA[i];
+        float age = uTime - uW[i].w;
+        if (a <= 0.0 || age < 0.0 || age > 4.0) continue;
+        vec3 c = uW[i].xyz;
+        float cd = clamp(dot(p, c), -1.0, 1.0);
+        float d = acos(cd);
+        float w = 0.035 + 0.022 * age;
+        float x = d - age * 1.15;
+        float env = exp(-age * 0.95);
+        float g1 = exp(-x * x / (w * w));
+        float y2 = x + 2.3 * w;
+        float g2 = exp(-y2 * y2 / (w * w));
+        // cresta seguida de un valle: la corteza rebota
+        float onda = (g1 - 0.65 * g2) * env;
+        float donda = (-2.0 * x / (w * w) * g1 + 0.65 * 2.0 * y2 / (w * w) * g2) * env;
+        // muelle amortiguado en el epicentro: se hunde y rebota
+        float s2 = 0.008;
+        float muelle = -cos(age * 15.0) * exp(-age * 2.4);
+        float loc = exp(-d * d / s2);
+        h += a * (onda + 1.4 * loc * muelle);
+        float dh = a * (donda + 1.4 * muelle * (-2.0 * d / s2) * loc);
+        vec3 t = p - c * cd;
+        float tl = length(t);
+        if (tl > 1e-4) grad += dh * t / tl;
+        glow += min(1.0, a * 26.0) * g1 * exp(-age * 1.7) + min(1.0, a * 25.0) * loc * exp(-age * 4.0);
+        // vibración de todo el planeta
+        h += a * 0.35 * sin(age * 11.0) * exp(-age * 2.2);
+      }
+      vec3 pos = p * (1.0 + h);
+      vec3 n = normalize(p - grad * 2.2);
+      vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+      vUv = uv; vN = normalize(normalMatrix * n); vView = -mv.xyz; vGlow = 1.0 - exp(-glow);
+      gl_Position = projectionMatrix * mv;
+    }`,
+  fragmentShader: `
+    uniform sampler2D uMap; uniform vec3 uLight;
+    varying vec2 vUv; varying vec3 vN; varying vec3 vView; varying float vGlow;
+    void main(){
+      vec3 base = texture2D(uMap, vUv).rgb;
+      vec3 n = normalize(vN), v = normalize(vView);
+      float lam = max(dot(n, uLight), 0.0);
+      float spec = pow(max(dot(reflect(-uLight, n), v), 0.0), 28.0) * (base.b > base.r * 2.2 ? 0.35 : 0.08);
+      vec3 col = base * (0.38 + 0.95 * lam) + vec3(0.55, 0.75, 1.0) * spec;
+      float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+      col += vec3(0.2, 0.5, 1.0) * rim * 0.55;
+      col += vec3(1.0, 0.45, 0.14) * vGlow * 0.8;
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+});
+const globo = new THREE.Group();
+scene.add(globo);
+globo.add(new THREE.Mesh(new THREE.SphereGeometry(1, 384, 192), globoMat));
+
+/* atmósfera */
+const atmMat = new THREE.ShaderMaterial({
+  uniforms: {uPulse: {value: 0}},
+  vertexShader: `varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform float uPulse; varying vec3 vN;
+    void main(){ float i = pow(clamp(0.72 - dot(vN, vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 3.2);
+      vec3 c = mix(vec3(0.25, 0.55, 1.0), vec3(1.0, 0.45, 0.15), clamp(uPulse, 0.0, 1.0));
+      gl_FragColor = vec4(c * i * (1.15 + 1.5 * uPulse), i); }`,
+  side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false,
+});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.17, 96, 48), atmMat));
+
+/* estrellas */
+(function () {
+  const n = 5000, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const v = new THREE.Vector3().randomDirection ? new THREE.Vector3().randomDirection() :
+      new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
+    v.multiplyScalar(60 + Math.random() * 40).toArray(pos, i * 3);
+    const b = 0.25 + Math.pow(Math.random(), 4) * 0.9, tint = Math.random();
+    col.set([b * (tint > .8 ? 1 : .8), b * .88, b * (tint < .3 ? 1 : .95)], i * 3);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({size: 1.4, sizeAttenuation: false, vertexColors: true, depthWrite: false})));
+})();
+
+/* cicatrices: un punto por explosión, visible desde su fecha */
+const cicMat = new THREE.ShaderMaterial({
+  uniforms: {uNow: {value: T0}, uPx: {value: DPR}},
+  vertexShader: `
+    attribute float aT; attribute float aMag; attribute vec3 aCol;
+    uniform float uNow; uniform float uPx;
+    varying vec3 vC; varying float vA; varying float vHot;
+    void main(){
+      float age = uNow - aT;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mv;
+      float vis = step(0.0, age);
+      float hot = vis * exp(-max(age, 0.0) * 5.0);
+      gl_PointSize = vis * uPx * (2.2 + 2.0 * pow(1.6, aMag - 4.5)) * (1.0 + 1.8 * hot) * (3.3 / -mv.z);
+      vec3 n = normalize(normalMatrix * normalize(position));
+      vA = vis * smoothstep(0.02, 0.2, dot(n, normalize(-mv.xyz)));
+      vC = aCol; vHot = hot;
+    }`,
+  fragmentShader: `
+    varying vec3 vC; varying float vA; varying float vHot;
+    void main(){
+      float d = length(gl_PointCoord - 0.5) * 2.0;
+      float a = smoothstep(1.0, 0.25, d), core = smoothstep(0.45, 0.0, d);
+      vec3 col = vC * (0.75 + 0.5 * core) + vec3(1.0, 0.75, 0.45) * vHot * core * 1.6;
+      gl_FragColor = vec4(col, a * vA * 0.92);
+    }`,
+  transparent: true, depthWrite: false, depthTest: false,
+});
+(function () {
+  const pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    ll2v(E.lat[i], E.lon[i], 1.004).toArray(pos, i * 3);
+    new THREE.Color(COL[E.pais[i]]).toArray(col, i * 3);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('aT', new THREE.BufferAttribute(new Float32Array(E.t), 1));
+  geo.setAttribute('aMag', new THREE.BufferAttribute(new Float32Array(E.mag), 1));
+  geo.setAttribute('aCol', new THREE.BufferAttribute(col, 3));
+  const pts = new THREE.Points(geo, cicMat);
+  pts.renderOrder = 2;
+  globo.add(pts);
+})();
+
+/* ---------- hongos ---------- */
+function texturaBrillo() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.25, 'rgba(255,255,255,.55)');
+  r.addColorStop(.6, 'rgba(255,255,255,.12)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+function texturaHumo(seed) {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  let s = seed;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let k = 0; k < 22; k++) {
+    const a = rnd() * Math.PI * 2, d = rnd() * 30, x = 64 + Math.cos(a) * d, y = 64 + Math.sin(a) * d, rr = 18 + rnd() * 22;
+    const r = g.createRadialGradient(x, y, 0, x, y, rr);
+    const l = 200 + rnd() * 55;
+    r.addColorStop(0, `rgba(${l},${l},${l},.42)`); r.addColorStop(1, `rgba(${l},${l},${l},0)`);
+    g.fillStyle = r; g.fillRect(0, 0, 128, 128);
+  }
+  return new THREE.CanvasTexture(c);
+}
+const TX = {brillo: texturaBrillo(), humo: [1, 2, 3, 4].map(k => texturaHumo(k * 7919))};
+const anilloGeo = new THREE.RingGeometry(0.82, 1, 72);
+const UP = new THREE.Vector3(0, 1, 0);
+const hongos = [];
+const MAXH = 42;
+
+function sprite(map, aditivo) {
+  const m = new THREE.SpriteMaterial({map, transparent: true, depthWrite: false, toneMapped: false,
+    blending: aditivo ? THREE.AdditiveBlending : THREE.NormalBlending, rotation: Math.random() * 6.283});
+  return new THREE.Sprite(m);
+}
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+function crearHongo(i, ahora) {
+  const m = E.mag[i], s = 0.034 * Math.pow(1.5, m - 4.5), v = ll2v(E.lat[i], E.lon[i]);
+  const g = new THREE.Group();
+  g.position.copy(v); g.quaternion.setFromUnitVectors(UP, v);
+  const h = {g, t0: ahora, s, m, L: 3.4 + 0.55 * (m - 4.5), tallo: [], copa: [], falda: []};
+  h.flash = sprite(TX.brillo, true); h.bola = sprite(TX.brillo, true);
+  for (let k = 0; k < 7; k++) h.tallo.push(sprite(TX.humo[k % 4]));
+  for (let k = 0; k < 11; k++) h.copa.push(Object.assign(sprite(TX.humo[k % 4]), {fase: k / 11 * 6.283 + Math.random() * .4, rr: .8 + Math.random() * .4}));
+  for (let k = 0; k < 8; k++) h.falda.push(Object.assign(sprite(TX.humo[(k + 2) % 4]), {fase: k / 8 * 6.283}));
+  h.anillo = new THREE.Mesh(anilloGeo, new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending,
+    depthWrite: false, side: THREE.DoubleSide, toneMapped: false}));
+  h.anillo.rotation.x = -Math.PI / 2; h.anillo.position.y = 0.002;
+  [...h.falda, ...h.tallo, ...h.copa, h.bola, h.flash, h.anillo].forEach(o => g.add(o));
+  globo.add(g);
+  hongos.push(h);
+  if (hongos.length > MAXH) quitarHongo(hongos.shift());
+}
+function quitarHongo(h) {
+  globo.remove(h.g);
+  h.g.traverse(o => { if (o.material) o.material.dispose(); });
+}
+function colorHumo(mat, u, brillo) {
+  // de fuego (HDR, hace bloom) a humo gris-pardo
+  const f = 1 - smooth(0.08, 0.5, u);
+  mat.color.setRGB(lerp(0.34, 2.1, f) * brillo, lerp(0.30, 0.85, f) * brillo, lerp(0.28, 0.3, f) * brillo);
+}
+function animarHongo(h, ahora) {
+  const age = ahora - h.t0, u = age / h.L, s = h.s;
+  if (u >= 1) return false;
+  const grow = ease(u / 0.42), H = s * 3.6 * grow, fade = 1 - smooth(0.62, 1, u), aparece = smooth(0, 0.06, u);
+  // destello
+  const fl = Math.exp(-age * 7);
+  h.flash.scale.setScalar(s * (2.5 + 5 * age));
+  h.flash.material.color.setRGB(3.2 * fl, 2.7 * fl, 2 * fl);
+  h.flash.material.opacity = fl;
+  // bola de fuego que sube
+  const fb = 1 - smooth(0.05, 0.5, u);
+  h.bola.position.y = H * 0.96;
+  h.bola.scale.setScalar(s * (0.7 + 1.3 * grow));
+  h.bola.material.color.setRGB(3.4 * fb, 1.6 * fb, 0.5 * fb);
+  h.bola.material.opacity = fb;
+  // tallo
+  h.tallo.forEach((sp, k) => {
+    const f = k / (h.tallo.length - 1);
+    sp.position.set(Math.sin(age * 1.7 + k) * s * 0.04, H * f * 0.9, 0);
+    sp.scale.setScalar(s * (0.32 + 0.12 * f) * (0.4 + 0.6 * grow));
+    colorHumo(sp.material, u + 0.15 * (1 - f), 0.85);
+    sp.material.opacity = aparece * fade * 0.75;
+  });
+  // copa: un toro que se enrolla sobre sí mismo
+  h.copa.forEach(sp => {
+    const a = sp.fase + age * 0.35, r = s * 0.5 * grow * sp.rr, roll = sp.fase * 2 + age * 2.4;
+    sp.position.set(Math.cos(a) * r, H + Math.sin(roll) * s * 0.16 * grow, Math.sin(a) * r);
+    sp.scale.setScalar(s * (0.4 + 0.55 * grow) * sp.rr);
+    sp.material.rotation += 0.004;
+    colorHumo(sp.material, u, 1);
+    sp.material.opacity = aparece * fade * 0.85;
+  });
+  // falda de polvo en la base
+  h.falda.forEach(sp => {
+    const r = s * (0.3 + 1.7 * ease(u / 0.7));
+    sp.position.set(Math.cos(sp.fase) * r, s * 0.08, Math.sin(sp.fase) * r);
+    sp.scale.setScalar(s * (0.5 + 0.6 * grow));
+    sp.material.color.setRGB(0.42, 0.33, 0.25);
+    sp.material.opacity = aparece * (1 - smooth(0.35, 0.85, u)) * 0.6;
+  });
+  // onda de choque en el suelo
+  const ur = clamp(age / 1.3, 0, 1);
+  h.anillo.scale.setScalar(s * (0.3 + 3.2 * ease(ur)));
+  h.anillo.material.color.setRGB(1.5, 0.65, 0.25);
+  h.anillo.material.opacity = (1 - ur) * 0.7;
+  return true;
+}
+
+/* ---------- sonido ---------- */
+// Se crea al pulsar Reproducir (los navegadores no dejan sonar audio antes de un clic).
+let audio = null, sonido = true, ultimoBoom = 0, master = null, reverb = null, ruido = null;
+function iniciarAudio() {
+  if (audio) { if (audio.state === 'suspended') audio.resume(); return; }
+  audio = new (window.AudioContext || window.webkitAudioContext)();
+  const comp = audio.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.4;
+  master = audio.createGain(); master.gain.value = 0.9;
+  master.connect(comp).connect(audio.destination);
+  // ruido blanco reutilizable (4 s)
+  ruido = audio.createBuffer(1, audio.sampleRate * 4, audio.sampleRate);
+  const r = ruido.getChannelData(0);
+  for (let k = 0; k < r.length; k++) r[k] = Math.random() * 2 - 1;
+  // reverberación: respuesta al impulso sintética de 3,5 s, como un eco en un valle
+  const n = Math.floor(audio.sampleRate * 3.5), ir = audio.createBuffer(2, n, audio.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = ir.getChannelData(c);
+    for (let k = 0; k < n; k++) d[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / n, 3.2);
+  }
+  reverb = audio.createConvolver(); reverb.buffer = ir;
+  const rg = audio.createGain(); rg.gain.value = 0.55;
+  reverb.connect(rg).connect(master);
+  // rumor de fondo muy bajo mientras se reproduce
+  const fondo = audio.createBufferSource(); fondo.buffer = ruido; fondo.loop = true;
+  const fl = audio.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 90;
+  ambiente = audio.createGain(); ambiente.gain.value = 0;
+  fondo.connect(fl).connect(ambiente).connect(master); fondo.start();
+}
+let ambiente = null;
+function ruidoFiltrado(t, dur, tipo, f0, f1, vol, curva, destinos) {
+  const src = audio.createBufferSource(); src.buffer = ruido;
+  const f = audio.createBiquadFilter(); f.type = tipo;
+  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  const g = audio.createGain();
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + curva);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f).connect(g); destinos.forEach(d => g.connect(d));
+  src.start(t, Math.random() * 2); src.stop(t + dur + 0.05);
+}
+function boom(m) {
+  if (!sonido || !audio) return;
+  const ms = performance.now();
+  if (ms - ultimoBoom < 70 && m < 5.5) return;
+  ultimoBoom = ms;
+  const t = audio.currentTime + 0.01, e = clamp((m - 2) / 5, 0, 1);       // 0 = M2, 1 = M7
+  const vol = 0.05 + 0.75 * e * e, dur = 1.0 + 4.5 * e;
+  // chasquido del destello
+  ruidoFiltrado(t, 0.12 + 0.1 * e, 'highpass', 2500, 900, vol * 0.5, 0.003, [master, reverb]);
+  // golpe: ruido grave que se oscurece
+  ruidoFiltrado(t, dur * 0.7, 'lowpass', 1400 * (0.5 + e), 60, vol, 0.008, [master, reverb]);
+  // retumbo largo, llega un poco después (la onda que viaja por el suelo)
+  ruidoFiltrado(t + 0.08 + 0.25 * e, dur, 'lowpass', 220, 35, vol * 0.9, 0.25 + 0.4 * e, [master, reverb]);
+  // subgrave que baja de tono: se nota en el pecho con altavoces buenos
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(62 + 20 * (1 - e), t); o.frequency.exponentialRampToValueAtTime(24, t + dur * 0.8);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol * 1.1, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.8);
+  o.connect(g).connect(master); o.start(t); o.stop(t + dur);
+}
+
+/* ---------- estado ---------- */
+let now = T0, play = false, vel = 1, seguir = true, sig = 0, temblor = 0, flash = 0, pulso = 0, rt = 0;
+const AÑO_S = 1 / 2.6;                 // a 1×, un año cada 2,6 s
+const cuenta = new Array(PAIS.length).fill(0);
+const finalPais = new Array(PAIS.length).fill(0);
+E.pais.forEach(p => finalPais[p]++);
+const maxPais = Math.max(...finalPais);
+
+// cámara: lat/lon que mira de frente, y foco que sigue la actividad reciente
+let vLat = 5, vLon = -100, vLatT = 5, vLonT = -100, arrastre = 0;
+const foco = ll2v(37, -116);
+
+function lanzar(i, visual) {
+  cuenta[E.pais[i]]++;
+  const v = ll2v(E.lat[i], E.lon[i]);
+  foco.lerp(v, clamp(0.1 + 0.07 * (E.mag[i] - 4), 0.04, 0.35)).normalize();   // las grandes tiran más de la cámara
+  if (!visual) return;
+  const m = E.mag[i];
+  crearHongo(i, rt);
+  // onda elástica en el hueco más antiguo
+  let k = 0, edad = -1;
+  for (let j = 0; j < NW; j++) { const e = rt - ondas.dir[j].w; if (ondas.amp[j] <= 0 || e > 4) { k = j; edad = 1e9; break; } if (e > edad) { edad = e; k = j; } }
+  ondas.dir[k].set(v.x, v.y, v.z, rt);
+  ondas.amp[k] = 0.010 * Math.pow(1.85, m - 4.5);
+  temblor = Math.max(temblor, clamp(0.15 * Math.pow(2.2, m - 4.5), 0.03, 1.4));
+  if (m >= 5.4) flash = Math.max(flash, clamp((m - 5.2) / 2.5, 0, 0.5));
+  pulso = Math.max(pulso, clamp((m - 4) / 3, 0, 1));
+  boom(m);
+  feed(i);
+  if (m >= 6) aviso(i === MAXI ? `<b>M ${fmtM(m)}</b> · ${SITIO[E.sitio[i]]}, ${fecha(i)}: la explosión más fuerte del catálogo`
+                               : `<b>M ${fmtM(m)}</b> · ${SITIO[E.sitio[i]]} (${PAIS[E.pais[i]]}), ${fecha(i)}`);
+}
+const fecha = i => { const [y, mo, d] = E.fecha[i].split('-'); return `${+d} ${MESES[+mo - 1]} ${y}`; };
+
+/* hitos */
+const HITOS = [
+  {t: 1953.0, txt: '<b>1953–1960</b>: hubo más de 200 pruebas, pero el catálogo del USGS no las recoge.'},
+  {t: 1963.6, txt: '<b>1963 · Tratado de prohibición parcial</b>: EE. UU., la URSS y el Reino Unido llevan sus pruebas bajo tierra.'},
+  {t: 1992.75, txt: '<b>1992</b>: última prueba de EE. UU. en Nevada. La URSS paró en 1990.'},
+  {t: 1996.73, txt: '<b>1996 · Tratado de prohibición completa (CTBT)</b>. Faltan en el catálogo India y Pakistán (1998) y Corea del Norte (2006–2013).'},
+  {t: 2017.7, txt: '<b>2017</b>: última explosión del catálogo, en Corea del Norte (M 6,3).'},
+];
+let hitoSig = 0;
+
+/* ---------- interfaz ---------- */
+$('#prs').innerHTML = PAIS.map((p, k) => `<div class="pr"><span style="color:${COL[k]}"><i></i><em style="font-style:normal;color:var(--txt)">${p}</em></span><b id="c${k}">0</b><div class="bar"><div id="b${k}" style="background:${COL[k]}"></div></div></div>`).join('');
+$('#leg').innerHTML = [3, 4, 5, 6].map(m => { const d = Math.round(10 * Math.pow(1.55, m - 4.5) * 1.6); return `<div><s style="width:${d}px;height:${d}px"></s>M${m}</div>`; }).join('') + '<div style="margin-left:auto;align-items:flex-end;text-align:right">tamaño del<br>hongo</div>';
+const VELS = [0.5, 1, 2, 4];
+$('#speed').innerHTML = VELS.map(v => `<button data-v="${v}" class="${v === 1 ? 'on' : ''}">${String(v).replace('.', ',')}×</button>`).join('');
+$('#speed').onclick = e => { const b = e.target.closest('button'); if (!b) return; vel = +b.dataset.v; [...$('#speed').children].forEach(x => x.classList.toggle('on', x === b)); };
+
+function feed(i) {
+  const ul = $('#feedl'), li = document.createElement('li');
+  li.style.color = COL[E.pais[i]];
+  li.innerHTML = `<i></i><div style="color:var(--txt)">${SITIO[E.sitio[i]]}<em>${fecha(i)} · ${PAIS[E.pais[i]]}</em></div><b>M ${fmtM(E.mag[i])}</b>`;
+  ul.prepend(li);
+  while (ul.children.length > 7) ul.lastChild.remove();
+}
+let avisoT = 0;
+function aviso(html) { const t = $('#toast'); t.innerHTML = html; t.classList.add('show'); avisoT = 6; }
+
+function setPlay(p) {
+  play = p;
+  $('#pico').innerHTML = p ? '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>' : '<path d="M7 4.5v15l13-7.5z"/>';
+  $('#play').setAttribute('aria-label', p ? 'Pausa' : 'Reproducir');
+  if (p && now >= T1 - 1e-6) irA(T0);
+}
+function irA(t) {
+  now = clamp(t, T0, T1);
+  cuenta.fill(0);
+  sig = 0;
+  while (sig < N && E.t[sig] <= now) { cuenta[E.pais[sig]]++; sig++; }
+  hongos.splice(0).forEach(quitarHongo);
+  ondas.amp.fill(0);
+  hitoSig = HITOS.findIndex(h => h.t > now); if (hitoSig < 0) hitoSig = HITOS.length;
+  $('#feedl').innerHTML = '';
+  for (let k = Math.max(0, sig - 7); k < sig; k++) feed(k);
+  if (sig) { foco.copy(ll2v(E.lat[sig - 1], E.lon[sig - 1])); }
+}
+$('#play').onclick = () => { iniciarAudio(); setPlay(!play); };
+$('#go').onclick = () => { iniciarAudio(); $('#intro').classList.add('hide'); setPlay(true); };
+$('#rst').onclick = () => { irA(T0); setPlay(true); };
+$('#snd').onclick = () => { sonido = !sonido; $('#snd').classList.toggle('on', sonido); if (sonido) iniciarAudio(); };
+$('#fol').onclick = () => { seguir = !seguir; $('#fol').classList.toggle('on', seguir); };
+addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); iniciarAudio(); $('#intro').classList.add('hide'); setPlay(!play); }
+  else if (e.key === 's' || e.key === 'S') $('#snd').click();
+  else if (e.key === 'c' || e.key === 'C') $('#fol').click();
+  else if (e.key === 'r' || e.key === 'R') $('#rst').click();
+});
+
+/* arrastrar y zoom */
+let drag = null;
+cv.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY}; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointerup', () => { drag = null; });
+cv.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const k = 0.25 * camDist / 3.35;
+  vLonT -= (e.clientX - drag.x) * k; vLatT = clamp(vLatT + (e.clientY - drag.y) * k, -80, 80);
+  vLon = vLonT; vLat = vLatT;
+  drag = {x: e.clientX, y: e.clientY};
+  arrastre = 6;
+});
+cv.addEventListener('wheel', e => { e.preventDefault(); camDistT = clamp(camDistT * (e.deltaY < 0 ? 0.9 : 1.1), 1.6, 7); }, {passive: false});
+
+/* línea de tiempo */
+const tl = $('#tl'), tg = tl.getContext('2d');
+const AÑOS = T1 - T0, hist = Array.from({length: AÑOS}, () => new Array(PAIS.length).fill(0));
+E.t.forEach((t, i) => hist[Math.floor(t) - T0][E.pais[i]]++);
+const maxAño = Math.max(...hist.map(h => h.reduce((a, b) => a + b, 0)));
+function dibujarTL() {
+  const w = tl.clientWidth, h = tl.clientHeight, r = window.devicePixelRatio || 1;
+  if (tl.width !== Math.round(w * r)) { tl.width = Math.round(w * r); tl.height = Math.round(h * r); }
+  tg.setTransform(r, 0, 0, r, 0, 0);
+  tg.clearRect(0, 0, w, h);
+  const base = h - 16, alto = base - 6, bw = w / AÑOS, xt = t => (t - T0) / AÑOS * w;
+  hist.forEach((col, k) => {
+    let y = base;
+    const pasado = T0 + k + 1 <= now ? 1 : T0 + k <= now ? 0.85 : 0.22;
+    col.forEach((c, p) => {
+      if (!c) return;
+      const hh = c / maxAño * alto;
+      tg.globalAlpha = pasado; tg.fillStyle = COL[p];
+      tg.fillRect(k * bw + 1, y - hh, Math.max(1, bw - 2), hh);
+      y -= hh;
+    });
+  });
+  tg.globalAlpha = 1;
+  tg.font = '10px JetBrains Mono, monospace'; tg.fillStyle = '#56657d'; tg.textAlign = 'center';
+  for (let a = 1960; a <= 2020; a += 10) tg.fillText(a, xt(a), h - 3);
+  tg.textAlign = 'left'; tg.fillText(T0, 0, h - 3); tg.textAlign = 'right'; tg.fillText('2025', w, h - 3);
+  [[1963.6, 'PTBT'], [1996.73, 'CTBT']].forEach(([t, n]) => {
+    tg.strokeStyle = 'rgba(255,179,87,.5)'; tg.setLineDash([3, 3]);
+    tg.beginPath(); tg.moveTo(xt(t), 2); tg.lineTo(xt(t), base); tg.stroke(); tg.setLineDash([]);
+    tg.fillStyle = 'rgba(255,179,87,.85)'; tg.textAlign = 'left'; tg.fillText(n, xt(t) + 4, 10);
+  });
+  const x = xt(now);
+  tg.fillStyle = '#fff'; tg.shadowColor = '#ff9a3c'; tg.shadowBlur = 10;
+  tg.fillRect(x - 1, 0, 2, base); tg.shadowBlur = 0;
+}
+let scrub = false;
+const tlA = e => { const b = tl.getBoundingClientRect(); irA(T0 + clamp((e.clientX - b.left) / b.width, 0, 1) * AÑOS); };
+tl.addEventListener('pointerdown', e => { scrub = true; tl.setPointerCapture(e.pointerId); tlA(e); });
+tl.addEventListener('pointermove', e => { if (scrub) tlA(e); });
+tl.addEventListener('pointerup', () => { scrub = false; });
+
+/* etiquetas de los polígonos de pruebas */
+const labs = D.etiquetas.map(l => {
+  const el = document.createElement('div');
+  el.className = 'lab'; el.innerHTML = `<i style="color:${COL[l.pais]};background:${COL[l.pais]}"></i>${l.nombre}`;
+  $('#labels').appendChild(el);
+  return {el, v: ll2v(l.lat, l.lon, 1.01)};
+});
+const tmp = new THREE.Vector3(), tmpN = new THREE.Vector3();
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false); composer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.fov = w / h < 0.8 ? 52 : 36;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+resize();
+
+/* ---------- bucle ---------- */
+const reloj = new THREE.Clock();
+const stage = $('#stage'), flashEl = $('#flash');
+function frame() {
+  const dt = Math.min(reloj.getDelta(), 0.05);
+  rt += dt;
+
+  if (play) {
+    let rate = AÑO_S * vel;
+    if (sig < N && E.t[sig] - now > 0.35) rate *= 9;          // los huecos sin pruebas pasan rápido
+    now = Math.min(T1, now + rate * dt);
+    // varias explosiones en el mismo fotograma: solo las 4 más fuertes se dibujan
+    const nuevas = [];
+    while (sig < N && E.t[sig] <= now) nuevas.push(sig++);
+    const fuertes = new Set(nuevas.slice().sort((a, b) => E.mag[b] - E.mag[a]).slice(0, 4));
+    nuevas.forEach(i => lanzar(i, fuertes.has(i)));
+    while (hitoSig < HITOS.length && HITOS[hitoSig].t <= now) aviso(HITOS[hitoSig++].txt);
+    if (now >= T1) { setPlay(false); aviso(`<b>1951–2025</b>: ${N.toLocaleString('es-ES')} explosiones en el catálogo. Pulsa ▶ para verlo otra vez.`); }
+  }
+
+  // cámara
+  if (arrastre > 0) arrastre -= dt;
+  else if (seguir && play && sig > 0) {
+    vLatT = clamp(Math.asin(clamp(foco.y, -1, 1)) * 180 / Math.PI - 24, -75, 65);   // inclinada: los hongos se ven de lado
+    vLonT = Math.atan2(-foco.z, foco.x) * 180 / Math.PI;
+  } else if (!play) vLonT += dt * 3;
+  let dl = ((vLonT - vLon + 540) % 360) - 180;
+  const kc = 1 - Math.exp(-dt * 1.4);
+  vLon += dl * kc; vLat += (vLatT - vLat) * kc;
+  camDist += (camDistT - camDist) * (1 - Math.exp(-dt * 5));
+  globo.rotation.set(vLat * Math.PI / 180, -(vLon * Math.PI / 180 + Math.PI / 2), 0, 'XYZ');
+
+  // temblor de pantalla y de cámara
+  temblor *= Math.exp(-dt * 4.2);
+  const sh = temblor;
+  camera.position.set((Math.random() - .5) * sh * 0.05, (Math.random() - .5) * sh * 0.05, camDist);
+  camera.lookAt(0, 0, 0);
+  camera.rotation.z = (Math.random() - .5) * sh * 0.02;
+  stage.style.transform = sh > 0.01 ? `translate(${(Math.random() - .5) * sh * 22}px,${(Math.random() - .5) * sh * 22}px) rotate(${(Math.random() - .5) * sh * 0.6}deg)` : '';
+  flash *= Math.exp(-dt * 5); flashEl.style.opacity = flash.toFixed(3);
+  pulso *= Math.exp(-dt * 2.2);
+  if (ambiente) ambiente.gain.setTargetAtTime(sonido && play ? 0.05 + pulso * 0.12 : 0, audio.currentTime, 0.3);
+  atmMat.uniforms.uPulse.value = pulso;
+  bloom.strength = 1.15 + pulso * 0.6;
+
+  globoMat.uniforms.uTime.value = rt;
+  cicMat.uniforms.uNow.value = now;
+  for (let k = hongos.length - 1; k >= 0; k--) if (!animarHongo(hongos[k], rt)) quitarHongo(hongos.splice(k, 1)[0]);
+
+  // interfaz
+  const y = Math.min(2025, Math.floor(now)), fr = now - Math.floor(now);
+  $('#yy').textContent = y;
+  const enAño = y - T0 < AÑOS ? hist[y - T0].reduce((a, b) => a + b, 0) : 0;
+  $('#ymeta').innerHTML = `${now >= T1 ? '31 dic' : `${Math.max(1, Math.floor((fr * 365) % 30.4) + 1)} ${MESES[Math.min(11, Math.floor(fr * 12))]}`} · <b>${enAño}</b> ${enAño === 1 ? 'explosión' : 'explosiones'} este año`;
+  let tot = 0;
+  cuenta.forEach((c, k) => { tot += c; $('#c' + k).textContent = c; $('#b' + k).style.width = (c / maxPais * 100) + '%'; });
+  $('#tot').textContent = tot.toLocaleString('es-ES');
+  if (avisoT > 0 && (avisoT -= dt) <= 0) $('#toast').classList.remove('show');
+  dibujarTL();
+
+  // etiquetas
+  globo.updateMatrixWorld();
+  labs.forEach(l => {
+    tmp.copy(l.v).applyMatrix4(globo.matrixWorld);
+    tmpN.copy(tmp).normalize();
+    const cara = tmpN.dot(tmp.clone().sub(camera.position).normalize().negate());
+    tmp.project(camera);
+    l.el.style.left = ((tmp.x + 1) / 2 * innerWidth) + 'px';
+    l.el.style.top = ((1 - tmp.y) / 2 * innerHeight) + 'px';
+    l.el.style.opacity = clamp((cara - 0.15) * 4, 0, 1);
+  });
+
+  composer.render();
+  requestAnimationFrame(frame);
+}
+irA(T0);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
